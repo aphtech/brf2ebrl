@@ -1,6 +1,18 @@
 [tool.pdm]
 version = { source = "file", path = "src/brf2ebrf/__init__.py" }
+[tool.pdm.scripts]
+test = "pytest"
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest>=7.3.1",
+]
 
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+pythonpath = "src"
+testpaths = ["tests",]
 [project]
 dynamic = ["version"]
 name = "brf2ebrf"
