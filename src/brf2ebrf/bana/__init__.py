@@ -3,7 +3,7 @@ from brf2ebrf.parser import DetectionResult
 
 
 class PageDetector:
-    def __call__(self, text: str, cursor: int, state: str) -> DetectionResult:
+    def __call__(self, text: str, cursor: int, state: str, cells_per_line: int = 40, lines_per_page: int = 25) -> DetectionResult:
         if state == "StartBraillePage":
             end_of_page = text.find("\f", cursor)
             if end_of_page < 0:

@@ -19,3 +19,9 @@ def test_assume_all_is_page_when_no_form_feed():
     expected = DetectionResult(text="\ue000{\"BraillePage\": {}}\ue001" + brf, cursor=len(brf), state="StartBraillePage", confidence=1.0)
     actual = PageDetector()(brf, 0, "StartBraillePage")
     assert actual == expected
+
+def test_when_state_does_not_apply():
+    expected = DetectionResult("", 0, "OtherState", 0.0)
+    brf = "TE/ TEXT\nEXTRA TEXT\f"
+    actual = PageDetector()(brf, 0, "OtherState")
+    assert actual == expected
