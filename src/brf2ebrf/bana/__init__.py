@@ -24,7 +24,7 @@ class PageNumberPosition(Enum):
         return self.value.bit_count() == 2
 
 
-class PageDetector:
+class BraillePageDetector:
     def __init__(self, number_position: PageNumberPosition = PageNumberPosition.NONE):
         super().__init__()
         self._number_position = number_position
