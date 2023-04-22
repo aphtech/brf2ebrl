@@ -1,4 +1,4 @@
-from brf2ebrf.bana import PageDetector
+from brf2ebrf.bana import PageDetector, PageNumberPosition
 from brf2ebrf.parser import DetectionResult
 
 
@@ -23,4 +23,13 @@ def test_when_state_does_not_apply():
     expected = DetectionResult("", 0, "OtherState", 0.0)
     brf = "TE/ TEXT\nEXTRA TEXT\f"
     actual = PageDetector()(brf, 0, "OtherState")
+    assert actual == expected
+
+
+def test_detect_braille_page_number():
+    brf = "\n".join(["TE/ TEXT"] * 25)
+    expected_brf = "\ue000{\"BraillePage\": {\"Number\": \"#A\"}}\ue001" + brf
+    brf += (" " * 30) + "#A"
+    expected = DetectionResult(expected_brf, len(brf), "StartBraillePage", 1.0)
+    actual = PageDetector(number_position=PageNumberPosition.BOTTOM_RIGHT)(brf, 0, "StartBraillePage")
     assert actual == expected
