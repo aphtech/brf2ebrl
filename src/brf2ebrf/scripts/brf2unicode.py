@@ -1,6 +1,6 @@
 import argparse
 
-from brf2ebrf.common_detectors import convert_ascii_to_unicode_braille
+from brf2ebrf.common_detectors import convert_ascii_to_unicode_braille_bulk
 from brf2ebrf.common_selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass
 
@@ -14,7 +14,7 @@ def main():
     with open(args.brf, "r") as f:
         for line in f.readlines():
             brf += line
-    output_text = parse(brf, [ParserPass("Default", [convert_ascii_to_unicode_braille], most_confident_detector)])
+    output_text = parse(brf, [ParserPass("Default", [convert_ascii_to_unicode_braille_bulk], most_confident_detector)])
     with open(args.output_file, "w") as f:
         f.write(output_text)
 
