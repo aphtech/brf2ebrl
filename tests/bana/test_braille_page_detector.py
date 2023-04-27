@@ -20,7 +20,7 @@ def test_assume_all_is_page_when_no_form_feed():
 
 
 def test_when_state_does_not_apply():
-    expected = DetectionResult("", 0, "OtherState", 0.0)
+    expected = DetectionResult("T", 1, "OtherState", 0.0)
     brf = "TE/ TEXT\nEXTRA TEXT\f"
     actual = BraillePageDetector()(brf, 0, "OtherState")
     assert actual == expected

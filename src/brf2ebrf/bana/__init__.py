@@ -55,4 +55,4 @@ class BraillePageDetector:
             page_cmd = json.dumps({"BraillePage": number_data})
             output = f"\ue000{page_cmd}\ue001{page_content}"
             return DetectionResult(text=output, cursor=new_cursor, state=state, confidence=1.0)
-        return DetectionResult("", cursor, state, 0.0)
+        return DetectionResult(text[cursor], cursor + 1, state, 0.0)
