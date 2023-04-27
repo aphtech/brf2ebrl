@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence, Callable
+from collections.abc import Iterable, Callable
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -10,13 +10,13 @@ class DetectionResult:
 
 
 Detector = Callable[[str, int, str], DetectionResult]
-DetectionSelector = Callable[[str, int, str, Sequence[Detector]], DetectionResult]
+DetectionSelector = Callable[[str, int, str, Iterable[Detector]], DetectionResult]
 
 
 @dataclass(frozen=True)
 class ParserPass:
     initial_state: str
-    detectors: Sequence[Detector]
+    detectors: Iterable[Detector]
     selector: DetectionSelector
 
 
