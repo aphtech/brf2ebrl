@@ -25,6 +25,9 @@ requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "MIT"}
 
+[project.scripts]
+brf2unicode = "brf2ebrf.scripts.brf2unicode:main"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
