@@ -13,7 +13,7 @@ from brf2ebrf.parser import DetectionResult, parse, ParserPass
     (r""" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)=""", 0, "".join([chr(x) for x in range(0x2800, 0x2840)]))
 ])
 def test_convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, expected_text: str):
-    assert convert_ascii_to_unicode_braille_bulk(text, cursor, "Default") == DetectionResult(expected_text, len(text), "Default",
+    assert convert_ascii_to_unicode_braille_bulk(text, cursor, "Default", "") == DetectionResult(expected_text, len(text), "Default",
                                                                                              1.0)
 
 
@@ -24,15 +24,15 @@ def test_convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, expected_
     ("TEST\nTEST", 4, "\n")
 ])
 def test_convert_ascii_to_unicode_braille(text: str, cursor: int, expected_text: str):
-    assert convert_ascii_to_unicode_braille(text, cursor, "Default") == DetectionResult(expected_text, cursor + 1, "Default", 1.0)
+    assert convert_ascii_to_unicode_braille(text, cursor, "Default", "") == DetectionResult(expected_text, cursor + 1, "Default", 1.0)
 
 
 
 @pytest.mark.parametrize("text", [
-    ("SOME TEXT"),
-    ("( M TEXT 9 ! TEST"),
-    ("BRL DOCU;T"),
-    ("TEST\nDOCU;mT\f")
+    "SOME TEXT",
+    "( M TEXT 9 ! TEST",
+    "BRL DOCU;T",
+    "TEST\nDOCU;mT\f"
 ])
 def test_conversion_by_character_vs_bulk(text: str):
     assert parse(text, [ParserPass("Default", [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [ParserPass("Default", [convert_ascii_to_unicode_braille], most_confident_detector)])

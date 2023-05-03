@@ -44,7 +44,7 @@ class BraillePageDetector:
                         return "\n".join(lines), page_num
         return page_content, ""
 
-    def __call__(self, text: str, cursor: int, state: str, cells_per_line: int = 40,
+    def __call__(self, text: str, cursor: int, state: str, output_text: str, cells_per_line: int = 40,
                  lines_per_page: int = 25) -> DetectionResult:
         if state == "StartBraillePage":
             end_of_page = text.find("\f", cursor)
@@ -54,5 +54,5 @@ class BraillePageDetector:
             number_data = {"Number": page_num} if page_num else {}
             page_cmd = json.dumps({"BraillePage": number_data})
             output = f"\ue000{page_cmd}\ue001{page_content}"
-            return DetectionResult(text=output, cursor=new_cursor, state=state, confidence=1.0)
-        return DetectionResult(text[cursor], cursor + 1, state, 0.0)
+            return DetectionResult(text=output_text + output, cursor=new_cursor, state=state, confidence=1.0)
+        return DetectionResult(output_text + text[cursor], cursor + 1, state, 0.0)

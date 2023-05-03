@@ -7,9 +7,9 @@ _ASCII_TO_UNICODE_DICT = str.maketrans(
 
 
 
-def convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, state: str) -> DetectionResult:
-    return DetectionResult(text[cursor:].translate(_ASCII_TO_UNICODE_DICT), len(text), state, 1.0)
+def convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
+    return DetectionResult(output_text + text[cursor:].translate(_ASCII_TO_UNICODE_DICT), len(text), state, 1.0)
 
 
-def convert_ascii_to_unicode_braille(text: str, cursor: int, state: str) -> DetectionResult:
-    return DetectionResult(text[cursor].translate(_ASCII_TO_UNICODE_DICT), cursor + 1, state, 1.0)
+def convert_ascii_to_unicode_braille(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
+    return DetectionResult(output_text + text[cursor].translate(_ASCII_TO_UNICODE_DICT), cursor + 1, state, 1.0)
