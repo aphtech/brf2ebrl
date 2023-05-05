@@ -1,8 +1,11 @@
 import json
 from enum import Enum
+import string
 
 from brf2ebrf.parser import DetectionResult
 
+
+_BRL_WHITESPACE = string.whitespace + "\u2800"
 
 class PageNumberPosition(Enum):
     NONE = 0
@@ -25,12 +28,12 @@ class PageNumberPosition(Enum):
 
 
 class BraillePageDetector:
-    def __init__(self, number_position: PageNumberPosition = PageNumberPosition.NONE, cells_per_line: int = 40, lines_per_page: int = 25, space_char: str = " "):
+    def __init__(self, number_position: PageNumberPosition = PageNumberPosition.NONE, cells_per_line: int = 40, lines_per_page: int = 25, separator: str = "   "):
         super().__init__()
         self._number_position = number_position
         self._cells_per_line = cells_per_line
         self._lines_per_page = lines_per_page
-        self._space_char = space_char
+        self._separator = separator
 
     def _find_page_number(self, page_content: str) -> tuple[str, str]:
         if self._number_position:
@@ -40,8 +43,8 @@ class BraillePageDetector:
                 line = lines[line_index]
                 left = self._number_position.is_left()
                 if left or len(line) >= self._cells_per_line:
-                    parted = line.partition(self._space_char * 3) if left else line.rpartition(self._space_char * 3)
-                    line, page_num = (parted[2].lstrip(self._space_char), parted[0]) if left else (parted[0].rstrip(self._space_char), parted[2])
+                    parted = line.partition(self._separator) if left else line.rpartition(self._separator)
+                    line, page_num = (parted[2].lstrip(_BRL_WHITESPACE), parted[0]) if left else (parted[0].rstrip(_BRL_WHITESPACE), parted[2])
                     if parted[1] and page_num:
                         lines[line_index] = line
                         return "\n".join(lines), page_num
