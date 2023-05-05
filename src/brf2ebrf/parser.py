@@ -4,10 +4,11 @@ from functools import cached_property
 
 @dataclass(frozen=True)
 class DetectionResult:
-    text: str
+
     cursor: int
     state: str
     confidence: float
+    text: str
 
 
 @dataclass(frozen=True)

@@ -27,6 +27,7 @@ license = {text = "MIT"}
 
 [project.scripts]
 brf2unicode = "brf2ebrf.scripts.brf2unicode:main"
+brf2ebrf = "brf2ebrf.scripts.brf2ebrf:main"
 
 [build-system]
 requires = ["pdm-backend"]
