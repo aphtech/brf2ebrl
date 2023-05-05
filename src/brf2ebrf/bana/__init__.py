@@ -27,6 +27,10 @@ class PageNumberPosition(Enum):
         return self.value.bit_count() == 2
 
 
+def create_braille_page_detector(number_position: PageNumberPosition = PageNumberPosition.NONE, cells_per_line: int = 40, lines_per_page: int = 25, separator: str = "   "):
+    return BraillePageDetector(number_position, cells_per_line, lines_per_page, separator)
+
+
 class BraillePageDetector:
     def __init__(self, number_position: PageNumberPosition = PageNumberPosition.NONE, cells_per_line: int = 40, lines_per_page: int = 25, separator: str = "   "):
         super().__init__()
