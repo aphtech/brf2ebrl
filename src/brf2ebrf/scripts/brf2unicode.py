@@ -18,5 +18,6 @@ def main():
     with open(args.output_file, "w") as f:
         f.write(output_text)
 
+
 if __name__ == "__main__":
     main()

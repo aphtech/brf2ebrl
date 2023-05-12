@@ -2,8 +2,10 @@ from collections.abc import Iterable, Callable
 from dataclasses import dataclass, field
 from functools import cached_property
 
+
 @dataclass(frozen=True)
 class DetectionResult:
+    """A detection result for the current parser position."""
 
     cursor: int
     state: str
@@ -13,10 +15,13 @@ class DetectionResult:
 
 @dataclass(frozen=True)
 class LazyDetectionResult(DetectionResult):
+    """A detection result which can generate the output text when actually required."""
     text_func: Callable[[], str] = field(compare=False)
-    def create_text(self) -> str:
+
+    def _create_text(self) -> str:
         return self.text_func()
-    text: str = field(init=False, default=cached_property(create_text))
+
+    text: str = field(init=False, default=cached_property(_create_text))
 
 
 Detector = Callable[[str, int, str, str], DetectionResult]
