@@ -1,3 +1,4 @@
+"""Script to convert BRF into eBRF."""
 import argparse
 
 from brf2ebrf.common_detectors import convert_ascii_to_unicode_braille_bulk
@@ -11,12 +12,12 @@ def main():
     arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
     brf = ""
-    with open(args.brf, "r") as f:
-        for line in f.readlines():
+    with open(args.brf, "r", encoding="utf-8") as in_file:
+        for line in in_file.readlines():
             brf += line
     output_text = parse(brf, [ParserPass("Default", [convert_ascii_to_unicode_braille_bulk], most_confident_detector)])
-    with open(args.output_file, "w") as f:
-        f.write(output_text)
+    with open(args.output_file, "w", encoding="utf-8") as out_file:
+        out_file.write(output_text)
 
 
 if __name__ == "__main__":

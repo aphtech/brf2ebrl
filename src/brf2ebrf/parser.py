@@ -1,3 +1,4 @@
+"""Main parser framework for the brf2ebrf system."""
 from collections.abc import Iterable, Callable
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -30,12 +31,14 @@ DetectionSelector = Callable[[str, int, str, str, Iterable[Detector]], Detection
 
 @dataclass(frozen=True)
 class ParserPass:
+    """A configuration for a single step in a multipass parsing."""
     initial_state: str
     detectors: Iterable[Detector]
     selector: DetectionSelector
 
 
 def parse(brf: str, parser_passes: Iterable[ParserPass]) -> str:
+    """Perform a parse of the BRF according to the steps in the parser configuration."""
     text = brf
     for parser_pass in parser_passes:
         text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
