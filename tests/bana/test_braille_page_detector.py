@@ -26,6 +26,13 @@ def test_when_state_does_not_apply():
     assert actual == expected
 
 
+def test_consume_formfeed_in_any_state():
+    brf = "TE/ TEXT\f"
+    expected = DetectionResult(9, state="StartBraillePage", confidence=1.0, text="TE/ TEXT\f")
+    actual = create_braille_page_detector(page_layout=PageLayout())(brf, 8, "", "TE/ TEXT")
+    assert actual == expected
+
+
 def test_detect_braille_page_number():
     brf = "\n".join(["TE/ TEXT"] * 25)
     expected_brf = "\ue000{\"BraillePage\": {\"Number\": \"#A\"}}\ue001" + brf
