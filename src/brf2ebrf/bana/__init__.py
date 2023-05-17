@@ -72,12 +72,12 @@ def create_braille_page_detector(page_layout: PageLayout, separator: str = "   "
     def detect_braille_page_number(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
         if state == "StartBraillePage":
             end_of_page = text.find("\f", cursor)
-            page_content, new_cursor = (text[cursor:end_of_page], end_of_page + 1) if end_of_page >= 0 else (
+            page_content, new_cursor = (text[cursor:end_of_page], end_of_page) if end_of_page >= 0 else (
                 text[cursor:], len(text))
             page_content, page_num = _find_page_number(page_content, page_layout.braille_page_number, page_layout.cells_per_line,
                                                        page_layout.lines_per_page, separator)
             output = format_output(page_content, page_num)
-            return DetectionResult(cursor=new_cursor, state=state, confidence=1.0, text=output_text + output)
+            return DetectionResult(cursor=new_cursor, state="", confidence=1.0, text=output_text + output)
         return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
 
     return detect_braille_page_number
