@@ -1,5 +1,6 @@
 """BANA specific components for processing BRF."""
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 import string
@@ -59,7 +60,14 @@ def _find_page_number(page_content: str, number_position: PageNumberPosition, ce
     return page_content, ""
 
 
-def create_braille_page_detector(page_layout: PageLayout, separator: str = "   "):
+def _create_braille_page_command(page_content: str, page_num: str) -> str:
+    number_data = {"Number": page_num} if page_num else {}
+    page_cmd = json.dumps({"BraillePage": number_data})
+    output = f"\ue000{page_cmd}\ue001{page_content}"
+    return output
+
+
+def create_braille_page_detector(page_layout: PageLayout, separator: str = "   ", format_output: Callable[[str, str], str] = _create_braille_page_command):
     """Factory function to create a detector for Braille page numbers."""
     def detect_braille_page_number(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
         if state == "StartBraillePage":
@@ -68,9 +76,7 @@ def create_braille_page_detector(page_layout: PageLayout, separator: str = "   "
                 text[cursor:], len(text))
             page_content, page_num = _find_page_number(page_content, page_layout.braille_page_number, page_layout.cells_per_line,
                                                        page_layout.lines_per_page, separator)
-            number_data = {"Number": page_num} if page_num else {}
-            page_cmd = json.dumps({"BraillePage": number_data})
-            output = f"\ue000{page_cmd}\ue001{page_content}"
+            output = format_output(page_content, page_num)
             return DetectionResult(cursor=new_cursor, state=state, confidence=1.0, text=output_text + output)
         return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
 
