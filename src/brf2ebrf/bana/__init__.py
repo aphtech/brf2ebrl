@@ -1,5 +1,6 @@
 """BANA specific components for processing BRF."""
 import json
+from dataclasses import dataclass
 from enum import Enum
 import string
 
@@ -33,6 +34,13 @@ class PageNumberPosition(Enum):
         return self.value.bit_count() == 2
 
 
+@dataclass(frozen=True)
+class PageLayout:
+    cells_per_line: int = 40
+    lines_per_page: int = 25
+    braille_page_number: PageNumberPosition = PageNumberPosition.NONE
+
+
 def _find_page_number(page_content: str, number_position: PageNumberPosition, cells_per_line: int, lines_per_page: int,
                       separator: str) -> tuple[str, str]:
     if number_position:
@@ -51,16 +59,15 @@ def _find_page_number(page_content: str, number_position: PageNumberPosition, ce
     return page_content, ""
 
 
-def create_braille_page_detector(number_position: PageNumberPosition = PageNumberPosition.NONE,
-                                 cells_per_line: int = 40, lines_per_page: int = 25, separator: str = "   "):
+def create_braille_page_detector(page_layout: PageLayout, separator: str = "   "):
     """Factory function to create a detector for Braille page numbers."""
     def detect_braille_page_number(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
         if state == "StartBraillePage":
             end_of_page = text.find("\f", cursor)
             page_content, new_cursor = (text[cursor:end_of_page], end_of_page + 1) if end_of_page >= 0 else (
                 text[cursor:], len(text))
-            page_content, page_num = _find_page_number(page_content, number_position, cells_per_line,
-                                                       lines_per_page, separator)
+            page_content, page_num = _find_page_number(page_content, page_layout.braille_page_number, page_layout.cells_per_line,
+                                                       page_layout.lines_per_page, separator)
             number_data = {"Number": page_num} if page_num else {}
             page_cmd = json.dumps({"BraillePage": number_data})
             output = f"\ue000{page_cmd}\ue001{page_content}"
