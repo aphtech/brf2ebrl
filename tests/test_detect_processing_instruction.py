@@ -1,4 +1,4 @@
-from brf2ebrf.common_detectors import detect_and_pass_processing_instructions
+from brf2ebrf.common.detectors import detect_and_pass_processing_instructions
 from brf2ebrf.parser import DetectionResult
 
 

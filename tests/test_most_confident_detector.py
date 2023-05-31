@@ -1,4 +1,4 @@
-from brf2ebrf.common_selectors import most_confident_detector
+from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import DetectionResult
 
 

@@ -1,8 +1,8 @@
 """Script to convert a ASCII BRF into unicode Braille."""
 import argparse
 
-from brf2ebrf.common_detectors import convert_ascii_to_unicode_braille_bulk
-from brf2ebrf.common_selectors import most_confident_detector
+from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk
+from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass
 
 
