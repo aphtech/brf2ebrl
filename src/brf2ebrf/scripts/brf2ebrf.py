@@ -2,7 +2,7 @@
 import argparse
 
 from brf2ebrf.bana import create_braille_page_detector, PageLayout, PageNumberPosition
-from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions
+from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, convert_blank_line_to_pi
 from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass
 
@@ -17,6 +17,7 @@ def main():
         for line in in_file.readlines():
             brf += line
     output_text = parse(brf, [ParserPass("Default", [convert_ascii_to_unicode_braille_bulk], most_confident_detector),
+                              ParserPass("Default", [convert_blank_line_to_pi], most_confident_detector),
                               ParserPass("StartBraillePage", [create_braille_page_detector(
                                   page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800"*3,
                                   format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
