@@ -28,6 +28,6 @@ def detect_and_pass_processing_instructions(text: str, cursor: int, state: str, 
 def convert_blank_line_to_pi(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
     """Convert blank braille lines into pi for later use if needed"""                
     if text.startswith("\n\n", cursor):                           
-        return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "<? blank-line ?>")
+        return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "<?blank-line ?>")
     return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
 
