@@ -12,6 +12,7 @@ _BRL_WHITESPACE = string.whitespace + "\u2800"
 
 class PageNumberPosition(Enum):
     """The position of a page number on the page."""
+
     NONE = 0
     TOP_LEFT = 2
     TOP_RIGHT = 3
@@ -42,8 +43,13 @@ class PageLayout:
     braille_page_number: PageNumberPosition = PageNumberPosition.NONE
 
 
-def _find_page_number(page_content: str, number_position: PageNumberPosition, cells_per_line: int, lines_per_page: int,
-                      separator: str) -> tuple[str, str]:
+def _find_page_number(
+    page_content: str,
+    number_position: PageNumberPosition,
+    cells_per_line: int,
+    lines_per_page: int,
+    separator: str,
+) -> tuple[str, str]:
     if number_position:
         lines = page_content.splitlines()
         line_index = 0 if number_position.is_top() else (lines_per_page - 1)
@@ -51,9 +57,14 @@ def _find_page_number(page_content: str, number_position: PageNumberPosition, ce
             line = lines[line_index]
             left = number_position.is_left()
             if left or len(line) >= cells_per_line:
-                parted = line.partition(separator) if left else line.rpartition(separator)
-                line, page_num = (parted[2].lstrip(_BRL_WHITESPACE), parted[0]) if left else (
-                    parted[0].rstrip(_BRL_WHITESPACE), parted[2])
+                parted = (
+                    line.partition(separator) if left else line.rpartition(separator)
+                )
+                line, page_num = (
+                    (parted[2].lstrip(_BRL_WHITESPACE), parted[0])
+                    if left
+                    else (parted[0].rstrip(_BRL_WHITESPACE), parted[2])
+                )
                 if parted[1] and page_num:
                     lines[line_index] = line
                     return "\n".join(lines), page_num
@@ -67,19 +78,70 @@ def _create_braille_page_command(page_content: str, page_num: str) -> str:
     return output
 
 
-def create_braille_page_detector(page_layout: PageLayout, separator: str = "   ", format_output: Callable[[str, str], str] = _create_braille_page_command):
+def create_braille_page_detector(
+    page_layout: PageLayout,
+    separator: str = "   ",
+    format_output: Callable[[str, str], str] = _create_braille_page_command,
+):
     """Factory function to create a detector for Braille page numbers."""
-    def detect_braille_page_number(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
+
+    def detect_braille_page_number(
+        text: str, cursor: int, state: str, output_text: str
+    ) -> DetectionResult:
         if state == "StartBraillePage":
             end_of_page = text.find("\f", cursor)
-            page_content, new_cursor = (text[cursor:end_of_page], end_of_page) if end_of_page >= 0 else (
-                text[cursor:], len(text))
-            page_content, page_num = _find_page_number(page_content, page_layout.braille_page_number, page_layout.cells_per_line,
-                                                       page_layout.lines_per_page, separator)
+            page_content, new_cursor = (
+                (text[cursor:end_of_page], end_of_page)
+                if end_of_page >= 0
+                else (text[cursor:], len(text))
+            )
+            page_content, page_num = _find_page_number(
+                page_content,
+                page_layout.braille_page_number,
+                page_layout.cells_per_line,
+                page_layout.lines_per_page,
+                separator,
+            )
             output = format_output(page_content, page_num)
-            return DetectionResult(cursor=new_cursor, state="", confidence=1.0, text=output_text + output)
+            return DetectionResult(
+                cursor=new_cursor, state="", confidence=1.0, text=output_text + output
+            )
         if text.startswith("\f", cursor):
-            return DetectionResult(cursor + 1, "StartBraillePage", confidence=1.0, text=output_text + text[cursor])
+            return DetectionResult(
+                cursor + 1,
+                "StartBraillePage",
+                confidence=1.0,
+                text=output_text + text[cursor],
+            )
         return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
 
     return detect_braille_page_number
+
+
+def detect_centered_heading(
+    text: str, cursor: int, state: str, output_text: str
+) -> DetectionResult:
+    """detect centered headings and convert to h1"""
+    pass
+
+
+def detect_level_five_heading(
+    text: str, cursor: int, state: str, output_text: str
+) -> DetectionResult:
+    """detect heading five headings and convert to h2"""
+    pass
+
+
+def detect_level_seven_heading(
+    text: str, cursor: int, state: str, output_text: str
+) -> DetectionResult:
+    """detect heading seven headings and convert to h2"""
+    pass
+
+
+def detect_paragraph(
+    text: str, cursor: int, state: str, output_text: str
+) -> DetectionResult:
+    """detect paragraph and return p"""
+    pass
+

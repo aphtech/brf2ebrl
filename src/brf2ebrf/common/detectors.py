@@ -1,4 +1,6 @@
 """Some detectors common t multiple Braille codes/standards."""
+import re
+
 from brf2ebrf.parser import DetectionResult
 
 _ASCII_TO_UNICODE_DICT = str.maketrans(
@@ -26,8 +28,19 @@ def detect_and_pass_processing_instructions(text: str, cursor: int, state: str, 
     return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
 
 def convert_blank_line_to_pi(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
-    """Convert blank braille lines into pi for later use if needed"""                
-    if text.startswith("\n\n", cursor):                           
-        return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "<?blank-line ?>")
+    """Convert blank braille lines into pi for later use if needed"""
+    if text.startswith("\n\n", cursor) or text.startswith("\f\n", cursor):
+        return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "<?blank-line?>")
     return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
 
+def convert_unknown_to_pre(
+    text: str, cursor: int, state: str, output_text: str
+) -> DetectionResult:
+    """Create pre sections out of undetected blocks"""
+    result = re.search("\n|<.*?>.*?</.*?>|<\?.*?\?>|<.*?/>|$",text[cursor:])
+    if result != None  :
+        pre=""
+        if text[cursor:cursor+result.start()]:
+            pre=f"<pre>{text[cursor:cursor+result.start()]}</pre>"
+        return DetectionResult(cursor+result.end(), state, confidence=0.4, text=f"{output_text}{pre}{result.group()}")
+    return DetectionResult(cursor+1, state, confidence=0.0, text=output_text + text[cursor])
