@@ -1,6 +1,5 @@
 """Some detectors common t multiple Braille codes/standards."""
 import re
-
 from brf2ebrf.parser import DetectionResult
 
 _ASCII_TO_UNICODE_DICT = str.maketrans(
@@ -21,6 +20,7 @@ def convert_ascii_to_unicode_braille(text: str, cursor: int, state: str, output_
 
 def detect_and_pass_processing_instructions(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
     """Detect and pass through processing instructions"""
+
     if text.startswith("<?", cursor):
         end_of_pi = text.find("?>", cursor) + 2
         if end_of_pi >= 4:
@@ -29,18 +29,52 @@ def detect_and_pass_processing_instructions(text: str, cursor: int, state: str, 
 
 def convert_blank_line_to_pi(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
     """Convert blank braille lines into pi for later use if needed"""
+    if cursor == 0 and  text[cursor]=="\n":
+        return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "<?blank-line?>")
     if text.startswith("\n\n", cursor) or text.startswith("\f\n", cursor):
         return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "<?blank-line?>")
     return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
 
+def detect_and_pass_XML(text: str, cursor: int, state: str, output_text: str) -> DetectionResult:
+    """Detect and pass through pre-processed xml for use with pre pass"""
+
+    #singlton
+    result = re.search("<.*?>", text[cursor:])
+    if result  and result.group().endswith("/>") or result  and result.group().endswith("?>"):
+        return DetectionResult(cursor+result.end(), state, confidence=0.9, text=output_text + text[cursor:cursor+result.end()])
+    xml_nodes =[]        
+    start_tag = re.search("<.*?>",text[cursor:])
+    if start_tag and start_tag.start()==0:
+        search_cursor = cursor+start_tag.end()
+        end_tag= re.search("<.*?>",text[search_cursor:])
+        if end_tag is None:
+            return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
+        if end_tag.group().startswith("</"):
+            return DetectionResult(cursor+start_tag.end()+end_tag.end(), state, confidence=0.9, text=output_text + text[cursor:cursor+start_tag.end()+end_tag.end()])
+        end_cursor = cursor + start_tag.end()
+        xml_nodes.append(start_tag)
+        tag=True
+        while  tag and xml_nodes:
+            tag= re.search("<.*?>",text[end_cursor:])
+            if tag is None:
+                continue
+            #singlton
+            if tag.group().startswith("</"):
+                xml_nodes.pop()
+            else:
+                if not tag.group().endswith("/>") and  not tag.group().endswith("?>"):
+                    xml_nodes.append(tag)
+            end_cursor  += tag.end()
+        if not xml_nodes:
+            return DetectionResult(end_cursor, state, confidence=0.9, text=output_text + text[cursor:end_cursor])
+    return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
+
+        
 def convert_unknown_to_pre(
     text: str, cursor: int, state: str, output_text: str
 ) -> DetectionResult:
-    """Create pre sections out of undetected blocks"""
-    result = re.search("\n|<.*?>.*?</.*?>|<\?.*?\?>|<.*?/>|$",text[cursor:])
-    if result != None  :
-        pre=""
-        if text[cursor:cursor+result.start()]:
-            pre=f"<pre>{text[cursor:cursor+result.start()]}</pre>"
-        return DetectionResult(cursor+result.end(), state, confidence=0.4, text=f"{output_text}{pre}{result.group()}")
+    """Converts all non-consumed elements and wraps them in pre tags"""
+    result = re.search("\n|<|$",text[cursor:])
+    if result:
+        return DetectionResult(cursor+result.start(), state, confidence=0.4, text=f"{output_text}<pre>{text[cursor:cursor+result.start()]}</pre>")
     return DetectionResult(cursor+1, state, confidence=0.0, text=output_text + text[cursor])

@@ -2,7 +2,7 @@
 import argparse
 
 from brf2ebrf.bana import create_braille_page_detector, PageLayout, PageNumberPosition
-from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, convert_blank_line_to_pi, convert_unknown_to_pre
+from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, convert_blank_line_to_pi, convert_unknown_to_pre,detect_and_pass_XML
 from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass
 
@@ -33,7 +33,7 @@ def main():
                                                               detect_and_pass_processing_instructions],
                                          most_confident_detector),
                               ParserPass("Default", [convert_blank_line_to_pi, detect_and_pass_processing_instructions], most_confident_detector),
-                              ParserPass("Default", [convert_unknown_to_pre], most_confident_detector)
+                              ParserPass("Default", [convert_unknown_to_pre,detect_and_pass_XML], most_confident_detector)
                               ])
     with open(args.output_file, "w", encoding="utf-8") as out_file:
         out_file.write(f"{xhtml_header}{output_text}{xhtml_footer}")
