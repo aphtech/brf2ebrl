@@ -44,7 +44,7 @@ def parse(brf: str, parser_passes: Iterable[ParserPass]) -> str:
         text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
         while cursor < len(text):
             result = selector(text, cursor, state, text_builder, parser_pass.detectors)
-            assert state != result.state or cursor != result.cursor, f"Input conditions not changed by detector, cursor={cursor}, stte={state}"
+            assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}"
             text_builder, cursor, state = result.text, result.cursor, result.state
         text = text_builder
     return text
