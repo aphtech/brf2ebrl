@@ -1,15 +1,18 @@
 """Main parser framework for the brf2ebrf system."""
-from collections.abc import Iterable, Callable
+from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
+from typing import Any
 
+
+DetectionState = Mapping[str, Any]
 
 @dataclass(frozen=True)
 class DetectionResult:
     """A detection result for the current parser position."""
 
     cursor: int
-    state: str
+    state: DetectionState
     confidence: float
     text: str
 
@@ -25,14 +28,14 @@ class LazyDetectionResult(DetectionResult):
     text: str = field(init=False, default=cached_property(_create_text))
 
 
-Detector = Callable[[str, int, str, str], DetectionResult]
-DetectionSelector = Callable[[str, int, str, str, Iterable[Detector]], DetectionResult]
+Detector = Callable[[str, int, DetectionState, str], DetectionResult]
+DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]], DetectionResult]
 
 
 @dataclass(frozen=True)
 class ParserPass:
     """A configuration for a single step in a multipass parsing."""
-    initial_state: str
+    initial_state: DetectionState
     detectors: Iterable[Detector]
     selector: DetectionSelector
 

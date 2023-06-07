@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 import string
 
-from brf2ebrf.parser import DetectionResult
+from brf2ebrf.parser import DetectionResult, DetectionState, Detector
 
 _BRL_WHITESPACE = string.whitespace + "\u2800"
 
@@ -82,13 +82,13 @@ def create_braille_page_detector(
     page_layout: PageLayout,
     separator: str = "   ",
     format_output: Callable[[str, str], str] = _create_braille_page_command,
-):
+) -> Detector:
     """Factory function to create a detector for Braille page numbers."""
 
     def detect_braille_page_number(
-        text: str, cursor: int, state: str, output_text: str
+        text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult:
-        if state == "StartBraillePage":
+        if state.get("StartBraillePage", False):
             end_of_page = text.find("\f", cursor)
             page_content, new_cursor = (
                 (text[cursor:end_of_page], end_of_page)
@@ -104,12 +104,12 @@ def create_braille_page_detector(
             )
             output = format_output(page_content, page_num)
             return DetectionResult(
-                cursor=new_cursor, state="", confidence=1.0, text=output_text + output
+                cursor=new_cursor, state=dict(state, StartBraillePage=False), confidence=1.0, text=output_text + output
             )
         if text.startswith("\f", cursor):
             return DetectionResult(
                 cursor + 1,
-                "StartBraillePage",
+                dict(state, StartBraillePage=True),
                 confidence=1.0,
                 text=output_text + text[cursor],
             )
@@ -119,7 +119,7 @@ def create_braille_page_detector(
 
 
 def detect_centered_heading(
-    text: str, cursor: int, state: str, output_text: str
+    text: str, cursor: int, state: DetectionState, output_text: str
 ) -> DetectionResult:
     """detect centered headings and convert to h1"""
     pass

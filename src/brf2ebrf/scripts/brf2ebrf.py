@@ -26,14 +26,14 @@ def main():
     brf = ""
     with open(args.brf, "r", encoding="utf-8") as in_file:
         brf = in_file.read()
-    output_text = parse(brf, [ParserPass("Default", [convert_ascii_to_unicode_braille_bulk], most_confident_detector),
-                              ParserPass("StartBraillePage", [create_braille_page_detector(
+    output_text = parse(brf, [ParserPass({}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector),
+                              ParserPass({"StartBraillePage":True}, [create_braille_page_detector(
                                   page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800"*3,
                                   format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
                                                               detect_and_pass_processing_instructions],
                                          most_confident_detector),
-                              ParserPass("Default", [convert_blank_line_to_pi, detect_and_pass_processing_instructions], most_confident_detector),
-                              ParserPass("Default", [convert_unknown_to_pre], most_confident_detector)
+                              ParserPass({}, [convert_blank_line_to_pi, detect_and_pass_processing_instructions], most_confident_detector),
+                              ParserPass({}, [convert_unknown_to_pre], most_confident_detector)
                               ])
     with open(args.output_file, "w", encoding="utf-8") as out_file:
         out_file.write(f"{xhtml_header}{output_text}{xhtml_footer}")

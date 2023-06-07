@@ -13,7 +13,7 @@ from brf2ebrf.parser import DetectionResult, parse, ParserPass
     (r""" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)=""", 0, "".join([chr(x) for x in range(0x2800, 0x2840)]))
 ])
 def test_convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, expected_text: str):
-    assert convert_ascii_to_unicode_braille_bulk(text, cursor, "Default", "") == DetectionResult(len(text), "Default",
+    assert convert_ascii_to_unicode_braille_bulk(text, cursor, {}, "") == DetectionResult(len(text), {},
                                                                                              1.0, expected_text)
 
 
@@ -24,7 +24,7 @@ def test_convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, expected_
     ("TEST\nTEST", 4, "\n")
 ])
 def test_convert_ascii_to_unicode_braille(text: str, cursor: int, expected_text: str):
-    assert convert_ascii_to_unicode_braille(text, cursor, "Default", "") == DetectionResult(cursor + 1, "Default", 1.0, expected_text)
+    assert convert_ascii_to_unicode_braille(text, cursor, {}, "") == DetectionResult(cursor + 1, {}, 1.0, expected_text)
 
 
 
@@ -35,4 +35,4 @@ def test_convert_ascii_to_unicode_braille(text: str, cursor: int, expected_text:
     "TEST\nDOCU;mT\f"
 ])
 def test_conversion_by_character_vs_bulk(text: str):
-    assert parse(text, [ParserPass("Default", [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [ParserPass("Default", [convert_ascii_to_unicode_braille], most_confident_detector)])
+    assert parse(text, [ParserPass({}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [ParserPass({}, [convert_ascii_to_unicode_braille], most_confident_detector)])
