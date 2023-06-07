@@ -9,16 +9,13 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
     def detect_cell_heading(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
         lines = []
         new_cursor = cursor
-        while line := find_heading_line(new_cursor, text):
+        while line := re.search(f"^\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+", text[new_cursor:]):
             lines.append(line.group(1))
             new_cursor += line.end()
         brl = "\u2800".join(lines)
         return DetectionResult(new_cursor, state, 0.9,
                                f"{output_text}<{tag_name}>{brl}</{tag_name}>\n") if brl else DetectionResult(cursor + 1, state, 0.0,
                                                                                            output_text + text[cursor])
-
-    def find_heading_line(new_cursor, text):
-        return re.search(f"^\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n", text[new_cursor:])
 
     return detect_cell_heading
 
