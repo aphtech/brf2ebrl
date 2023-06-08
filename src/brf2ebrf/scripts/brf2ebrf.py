@@ -3,8 +3,7 @@ import argparse
 from collections.abc import Iterable
 
 from brf2ebrf.bana import create_braille_page_detector, PageLayout, PageNumberPosition
-from brf2ebrf.bana.block_detectors import create_cell_heading
-from brf2ebrf.common.block_detectors import detect_pre
+from brf2ebrf.common.block_detectors import detect_pre, create_cell_heading, create_centered_detector
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, \
     convert_blank_line_to_pi
 from brf2ebrf.common.selectors import most_confident_detector
@@ -36,12 +35,13 @@ def main():
 
 
 def create_brf2ebrf_parser() -> Iterable[ParserPass]:
+    page_layout = PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT)
     return [
         # Convert to unicode pass
         ParserPass({}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector),
         # Detect Braille pages pass
             ParserPass({"StartBraillePage": True}, [create_braille_page_detector(
-                page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT),
+                page_layout=page_layout,
                 separator="\u2800" * 3,
                 format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
                 detect_and_pass_processing_instructions],
@@ -50,7 +50,7 @@ def create_brf2ebrf_parser() -> Iterable[ParserPass]:
             ParserPass({}, [convert_blank_line_to_pi, detect_and_pass_processing_instructions],
                        most_confident_detector),
         # Detect blocks pass
-            ParserPass({}, [create_cell_heading(6, "h3"), create_cell_heading(4, "h2"), detect_pre, detect_and_pass_processing_instructions], most_confident_detector),
+            ParserPass({}, [create_centered_detector(page_layout.cells_per_line, 3, "h1"), create_cell_heading(6, "h3"), create_cell_heading(4, "h2"), detect_pre, detect_and_pass_processing_instructions], most_confident_detector),
         # Make complete XHTML pass
             ParserPass({}, [lambda text, cursor, state, output_text: DetectionResult(len(text), state, 1.0, f"{output_text}{xhtml_header}{text[cursor:]}{xhtml_footer}")], most_confident_detector)
             ]
