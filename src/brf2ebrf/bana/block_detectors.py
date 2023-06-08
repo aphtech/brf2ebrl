@@ -18,13 +18,3 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
                                                                                            output_text + text[cursor])
 
     return detect_cell_heading
-
-def extract_indented_line(text, indent):
-    brl = ""
-    if re.search(f"^\u2800{{{indent}}}[\u2801-\u28ff]", text):
-        for c in text[indent:]:
-            if ord(c) in range(0x2800, 0x2900):
-                brl += c
-            else:
-                break
-    return brl
