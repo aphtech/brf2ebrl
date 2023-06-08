@@ -9,18 +9,17 @@ from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, det
 from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass, DetectionResult
 
-xhtml_header = """
-<?xml version="1.0" encoding="UTF-8"?>
+xhtml_header = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 "http://www.w3.org/TR/xhtml1/DTD/strict.dtd">
 <html xmlns="http://www.w3.org/TR/xhtml1/strict" >
 <body>
 """
 
-xhtml_footer= """
-</body>
+xhtml_footer= """</body>
 </html>
 """
+
 def main():
     arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
     arg_parser.add_argument("brf", help="The BRF to convert")
@@ -46,6 +45,11 @@ def create_brf2ebrf_parser() -> Iterable[ParserPass]:
                 format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
                 detect_and_pass_processing_instructions],
                        most_confident_detector),
+        # Remove form feeds pass.
+        ParserPass({}, [lambda text, cursor, state, output_text: DetectionResult(cursor + 1, state, 1.0,
+                                                                                 output_text + text[cursor] if text[
+                                                                                                                   cursor] != "\f" else output_text)],
+                   most_confident_detector),
         # Detect blank lines pass
             ParserPass({}, [convert_blank_line_to_pi, detect_and_pass_processing_instructions],
                        most_confident_detector),
