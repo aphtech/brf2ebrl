@@ -81,24 +81,29 @@ def create_centered_detector(
     return detect_centered
 
 
-def detect_paragraph(
-    text: str, cursor: int, state: DetectionState, output_text: str
-) -> DetectionResult:
-    """Detect paragraphs in 3-1 format"""
-    lines = []
-    new_cursor = cursor
-    if line := re.search(
-        "^\u2800{2}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+", text[new_cursor:]
-    ):
-        lines.append(line.group(1))
-        new_cursor += line.end()
-        while line := re.search(
-            "^([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+", text[new_cursor:]
+def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector:
+    """Creates a detector for finding paragraphs with the specified first line indent and run over."""
+    first_line_re = re.compile(f"\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+    run_over_re = re.compile(f"^\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+
+    def detect_paragraph(
+            text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> DetectionResult:
+        lines = []
+        new_cursor = cursor
+        if line := first_line_re.match(
+                text[new_cursor:]
         ):
             lines.append(line.group(1))
             new_cursor += line.end()
-    brl = "\u2800".join(lines)
-    if brl:
-        print ("got here")
-        return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n")
-    return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
+            while line := run_over_re.match(
+                    text[new_cursor:]
+            ):
+                lines.append(line.group(1))
+                new_cursor += line.end()
+        brl = "\u2800".join(lines)
+        if brl:
+            print("got here")
+            return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n")
+        return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
+    return detect_paragraph
