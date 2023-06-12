@@ -116,32 +116,3 @@ def create_braille_page_detector(
         return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
 
     return detect_braille_page_number
-
-
-def detect_centered_heading(
-    text: str, cursor: int, state: DetectionState, output_text: str
-) -> DetectionResult:
-    """detect centered headings and convert to h1"""
-    pass
-
-
-def detect_level_five_heading(
-    text: str, cursor: int, state: str, output_text: str
-) -> DetectionResult:
-    """detect heading five headings and convert to h2"""
-    pass
-
-
-def detect_level_seven_heading(
-    text: str, cursor: int, state: str, output_text: str
-) -> DetectionResult:
-    """detect heading seven headings and convert to h2"""
-    pass
-
-
-def detect_paragraph(
-    text: str, cursor: int, state: str, output_text: str
-) -> DetectionResult:
-    """detect paragraph and return p"""
-    pass
-
