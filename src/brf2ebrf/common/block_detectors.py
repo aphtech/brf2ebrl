@@ -22,15 +22,15 @@ def detect_pre(
 
 
 def create_cell_heading(indent: int, tag_name: str) -> Detector:
-    """Creates a detector for a heading inented by the specified amount."""
+    """Creates a detector for a heading indented by the specified amount."""
+    heading_re = re.compile(f"\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
 
     def detect_cell_heading(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult:
         lines = []
         new_cursor = cursor
-        while line := re.search(
-            f"^\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+",
+        while line := heading_re.match(
             text[new_cursor:],
         ):
             lines.append(line.group(1))
@@ -51,14 +51,14 @@ def create_centered_detector(
     cells_per_line: int, min_indent: int, tag_name: str
 ) -> Detector:
     """Creates a detector for detecting centered text."""
+    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+",)
 
     def detect_centered(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult:
         lines = []
         new_cursor = cursor
-        while line := re.search(
-            f"^(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+",
+        while line := heading_re.match(
             text[new_cursor:],
         ):
             line_brl = line.group(2).rstrip("\u2800")
