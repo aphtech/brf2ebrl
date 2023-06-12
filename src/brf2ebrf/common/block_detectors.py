@@ -5,7 +5,7 @@ from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 
 def detect_pre(
-    text: str, cursor: int, state: DetectionState, output_text: str
+        text: str, cursor: int, state: DetectionState, output_text: str
 ) -> DetectionResult:
     """Detects preformatted Braille"""
     brl = ""
@@ -26,12 +26,12 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
     heading_re = re.compile(f"\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
 
     def detect_cell_heading(
-        text: str, cursor: int, state: DetectionState, output_text: str
+            text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult:
         lines = []
         new_cursor = cursor
         while line := heading_re.match(
-            text[new_cursor:],
+                text[new_cursor:],
         ):
             lines.append(line.group(1))
             new_cursor += line.end()
@@ -48,18 +48,18 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
 
 
 def create_centered_detector(
-    cells_per_line: int, min_indent: int, tag_name: str
+        cells_per_line: int, min_indent: int, tag_name: str
 ) -> Detector:
     """Creates a detector for detecting centered text."""
-    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+",)
+    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+", )
 
     def detect_centered(
-        text: str, cursor: int, state: DetectionState, output_text: str
+            text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult:
         lines = []
         new_cursor = cursor
         while line := heading_re.match(
-            text[new_cursor:],
+                text[new_cursor:],
         ):
             line_brl = line.group(2).rstrip("\u2800")
             indent, indent_mod = divmod(cells_per_line - len(line_brl), 2)
@@ -102,8 +102,7 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
                 lines.append(line.group(1))
                 new_cursor += line.end()
         brl = "\u2800".join(lines)
-        if brl:
-            print("got here")
-            return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n")
-        return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
+        return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n") if brl else DetectionResult(
+            cursor + 1, state, 0.0, output_text + text[cursor])
+
     return detect_paragraph
