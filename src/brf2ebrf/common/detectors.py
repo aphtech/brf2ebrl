@@ -1,7 +1,7 @@
 """Some detectors common t multiple Braille codes/standards."""
 import re
 
-from brf2ebrf.parser import DetectionResult, DetectionState
+from brf2ebrf.parser import DetectionResult, DetectionState, Detector
 
 _ASCII_TO_UNICODE_DICT = str.maketrans(
     r""" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)=""",
@@ -32,3 +32,13 @@ def convert_blank_line_to_pi(text: str, cursor: int, state: DetectionState, outp
     if text.startswith("\n\n", cursor) or text.startswith("\f\n", cursor):
         return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "\n<?blank-line?>")
     return DetectionResult(cursor + 1, state, confidence=0.0, text=output_text + text[cursor])
+
+
+def create_running_head_detector(min_indent: int) -> Detector:
+    """Create a detector for running heads."""
+    min_indent_re = re.compile(f"(<\\?braille-page [\u2800-\u28ff]*\\?>)\u2800{{{min_indent},}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+    def detect_running_head(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
+        if m := min_indent_re.match(text[cursor:]):
+            return DetectionResult(cursor + m.end(), state, 1.0, f"{output_text}{m.group(1)}<?running-head {m.group(2)}?>")
+        return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
+    return detect_running_head

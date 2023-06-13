@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from brf2ebrf.bana import create_braille_page_detector, PageLayout, PageNumberPosition
 from brf2ebrf.common.block_detectors import detect_pre, create_cell_heading, create_centered_detector, create_paragraph_detector
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, \
-    convert_blank_line_to_pi
+    convert_blank_line_to_pi, create_running_head_detector
 from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass, DetectionResult
 
@@ -34,6 +34,8 @@ def create_brf2ebrf_parser(page_layout: PageLayout = PageLayout()) -> Iterable[P
                     format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
                 detect_and_pass_processing_instructions
             ], most_confident_detector),
+        # Running head pass
+        ParserPass({"brlnum": 1}, [create_running_head_detector(3)], most_confident_detector),
         # Remove form feeds pass.
         ParserPass({}, [
             lambda t, c, s, o: DetectionResult(c + 1, s, 1.0, o + t[c] if t[c] != "\f" else o)
