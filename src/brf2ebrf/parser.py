@@ -2,8 +2,7 @@
 from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Any
-
+from typing import Any, Optional
 
 DetectionState = Mapping[str, Any]
 
@@ -28,7 +27,7 @@ class LazyDetectionResult(DetectionResult):
     text: str = field(init=False, default=cached_property(_create_text))
 
 
-Detector = Callable[[str, int, DetectionState, str], DetectionResult]
+Detector = Callable[[str, int, DetectionState, str], Optional[DetectionResult]]
 DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]], DetectionResult]
 
 

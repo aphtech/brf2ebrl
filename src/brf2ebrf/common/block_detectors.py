@@ -1,12 +1,13 @@
 """Detectors for blocks"""
 import re
+from typing import Optional
 
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 
 def detect_pre(
         text: str, cursor: int, state: DetectionState, output_text: str
-) -> DetectionResult:
+) -> Optional[DetectionResult]:
     """Detects preformatted Braille"""
     brl = ""
     for c in text[cursor:]:
@@ -14,11 +15,7 @@ def detect_pre(
             brl += c
         else:
             break
-    return (
-        DetectionResult(cursor + len(brl), state, 0.4, f"{output_text}<pre>{brl}</pre>")
-        if brl
-        else DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
-    )
+    return DetectionResult(cursor + len(brl), state, 0.4, f"{output_text}<pre>{brl}</pre>") if brl else None
 
 
 def create_cell_heading(indent: int, tag_name: str) -> Detector:
@@ -27,7 +24,7 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
 
     def detect_cell_heading(
             text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult:
+    ) -> Optional[DetectionResult]:
         lines = []
         new_cursor = cursor
         while line := heading_re.match(
@@ -36,13 +33,9 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
             lines.append(line.group(1))
             new_cursor += line.end()
         brl = "\u2800".join(lines)
-        return (
-            DetectionResult(
+        return DetectionResult(
                 new_cursor, state, 0.9, f"{output_text}<{tag_name}>{brl}</{tag_name}>\n"
-            )
-            if brl
-            else DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
-        )
+            ) if brl else None
 
     return detect_cell_heading
 
@@ -55,7 +48,7 @@ def create_centered_detector(
 
     def detect_centered(
             text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult:
+    ) -> Optional[DetectionResult]:
         lines = []
         new_cursor = cursor
         while line := heading_re.match(
@@ -70,13 +63,9 @@ def create_centered_detector(
             else:
                 break
         brl = "\u2800".join(lines)
-        return (
-            DetectionResult(
+        return DetectionResult(
                 new_cursor, state, 0.9, f"{output_text}<{tag_name}>{brl}</{tag_name}>\n"
-            )
-            if brl
-            else DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
-        )
+            ) if brl else None
 
     return detect_centered
 
@@ -88,7 +77,7 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
 
     def detect_paragraph(
             text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult:
+    ) -> Optional[DetectionResult]:
         lines = []
         new_cursor = cursor
         if line := first_line_re.match(
@@ -102,7 +91,6 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
                 lines.append(line.group(1))
                 new_cursor += line.end()
         brl = "\u2800".join(lines)
-        return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n") if brl else DetectionResult(
-            cursor + 1, state, 0.0, output_text + text[cursor])
+        return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n") if brl else None
 
     return detect_paragraph

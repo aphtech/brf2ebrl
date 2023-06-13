@@ -4,6 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 import string
+from typing import Optional
 
 from brf2ebrf.parser import DetectionResult, DetectionState, Detector
 
@@ -87,7 +88,7 @@ def create_braille_page_detector(
 
     def detect_braille_page_number(
         text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult:
+    ) -> Optional[DetectionResult]:
         if state.get("StartBraillePage", False):
             end_of_page = text.find("\f", cursor)
             page_content, new_cursor = (
@@ -113,6 +114,6 @@ def create_braille_page_detector(
                 confidence=1.0,
                 text=output_text + text[cursor],
             )
-        return DetectionResult(cursor + 1, state, 0.0, output_text + text[cursor])
+        return None
 
     return detect_braille_page_number
