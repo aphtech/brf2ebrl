@@ -2,7 +2,8 @@
 import argparse
 from collections.abc import Iterable
 
-from brf2ebrf.bana import create_braille_page_detector, PageLayout, PageNumberPosition
+from brf2ebrf.bana import create_braille_page_detector
+from brf2ebrf.common import PageNumberPosition, PageLayout
 from brf2ebrf.common.block_detectors import detect_pre, create_cell_heading, create_centered_detector, create_paragraph_detector
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, \
     convert_blank_line_to_pi, create_running_head_detector
