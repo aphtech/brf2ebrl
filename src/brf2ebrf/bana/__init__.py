@@ -79,3 +79,10 @@ def create_braille_page_detector(
         return None
 
     return detect_braille_page_number
+
+
+def create_print_page_detector() -> Detector:
+    """Create a detector for print page numbers."""
+    def detect_print_page_number(text: str, cursor: int, state: DetectionState, output_text: str) -> Optional[DetectionResult]:
+        return None
+    return detect_print_page_number
