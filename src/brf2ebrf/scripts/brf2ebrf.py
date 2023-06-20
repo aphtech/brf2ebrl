@@ -2,9 +2,10 @@
 import argparse
 from collections.abc import Iterable
 
-from brf2ebrf.bana import create_braille_page_detector
+from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
 from brf2ebrf.common import PageNumberPosition, PageLayout
-from brf2ebrf.common.block_detectors import detect_pre, create_cell_heading, create_centered_detector, create_paragraph_detector
+from brf2ebrf.common.block_detectors import detect_pre, create_cell_heading, create_centered_detector, \
+    create_paragraph_detector
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, \
     convert_blank_line_to_pi, create_running_head_detector
 from brf2ebrf.common.selectors import most_confident_detector
@@ -35,6 +36,8 @@ def create_brf2ebrf_parser(page_layout: PageLayout = PageLayout()) -> Iterable[P
                     format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
                 detect_and_pass_processing_instructions
             ], most_confident_detector),
+        ParserPass({}, [create_print_page_detector(page_layout=page_layout, separator="\u2800" * 3)],
+                   most_confident_detector),
         # Running head pass
         ParserPass({"brlnum": 1}, [create_running_head_detector(3)], most_confident_detector),
         # Remove form feeds pass.
@@ -46,7 +49,8 @@ def create_brf2ebrf_parser(page_layout: PageLayout = PageLayout()) -> Iterable[P
                    most_confident_detector),
         # Detect blocks pass
         ParserPass({}, [create_centered_detector(page_layout.cells_per_line, 3, "h1"), create_cell_heading(6, "h3"),
-                        create_cell_heading(4, "h2"), create_paragraph_detector(2, 0), detect_pre, detect_and_pass_processing_instructions],
+                        create_cell_heading(4, "h2"), create_paragraph_detector(2, 0), detect_pre,
+                        detect_and_pass_processing_instructions],
                    most_confident_detector),
         # Make complete XHTML pass
         ParserPass({}, [

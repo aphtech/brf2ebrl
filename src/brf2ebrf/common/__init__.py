@@ -33,3 +33,4 @@ class PageLayout:
     cells_per_line: int = 40
     lines_per_page: int = 25
     braille_page_number: PageNumberPosition = PageNumberPosition.NONE
+    print_page_number: PageNumberPosition = PageNumberPosition.NONE

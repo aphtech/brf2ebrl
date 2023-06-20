@@ -81,8 +81,13 @@ def create_braille_page_detector(
     return detect_braille_page_number
 
 
-def create_print_page_detector() -> Detector:
+def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800"*3) -> Detector:
     """Create a detector for print page numbers."""
     def detect_print_page_number(text: str, cursor: int, state: DetectionState, output_text: str) -> Optional[DetectionResult]:
+        if ord(text[cursor]) in range(0x2800, 0x2900):
+            page_content = text[cursor:].split("\f")[0]
+            new_cursor = cursor + len(page_content)
+            page_content, page_num = _find_page_number(page_content, page_layout.print_page_number, page_layout.cells_per_line, page_layout.lines_per_page, separator)
+            return DetectionResult(new_cursor, state, 0.9, f"{output_text}{page_content}")
         return None
     return detect_print_page_number
