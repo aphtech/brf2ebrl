@@ -36,7 +36,7 @@ def create_brf2ebrf_parser(page_layout: PageLayout = PageLayout()) -> Iterable[P
                     format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}"),
                 detect_and_pass_processing_instructions
             ], most_confident_detector),
-        ParserPass({}, [create_print_page_detector(page_layout=page_layout, separator="\u2800" * 3)],
+        ParserPass({}, [create_print_page_detector(page_layout=page_layout, separator="\u2800" * 3), detect_and_pass_processing_instructions],
                    most_confident_detector),
         # Running head pass
         ParserPass({"brlnum": 1}, [create_running_head_detector(3)], most_confident_detector),
@@ -64,7 +64,7 @@ def main():
     arg_parser.add_argument("brf", help="The BRF to convert")
     arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
-    page_layout = PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT)
+    page_layout = PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT, print_page_number=PageNumberPosition.TOP_RIGHT)
     brf = ""
     with open(args.brf, "r", encoding="utf-8") as in_file:
         brf = in_file.read()
