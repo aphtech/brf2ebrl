@@ -1,5 +1,6 @@
 """BANA specific components for processing BRF."""
 import json
+import re
 from collections.abc import Callable
 import string
 from typing import Optional
@@ -16,6 +17,7 @@ def _find_page_number(
     cells_per_line: int,
     lines_per_page: int,
     separator: str,
+        number_filter: Callable[[str], bool] = lambda n: True,
 ) -> tuple[str, str]:
     if number_position:
         lines = page_content.splitlines()
@@ -32,7 +34,7 @@ def _find_page_number(
                     if left
                     else (parted[0].rstrip(_BRL_WHITESPACE), parted[2])
                 )
-                if parted[1] and page_num:
+                if parted[1] and page_num and number_filter(page_num):
                     lines[line_index] = line
                     return "\n".join(lines), page_num
     return page_content, ""
@@ -64,6 +66,7 @@ def create_braille_page_detector(
                 page_layout.cells_per_line,
                 page_layout.lines_per_page,
                 separator,
+                lambda n: bool(re.fullmatch("[\u280f\u281e]?\u283c[\u2801\u2803\u2809\u2819\u2811\u280b\u281b\u2813\u280a\u281a]+", n)),
             )
             output = format_output(page_content, page_num)
             return DetectionResult(
