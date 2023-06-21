@@ -40,10 +40,10 @@ def test_consume_formfeed_in_any_state():
 
 
 def test_detect_braille_page_number():
-    brf = "\n".join(["TE/ TEXT"] * 25)
-    expected_brf = "\ue000{\"BraillePage\": {\"Number\": \"#A\"}}\ue001" + brf
-    brf += (" " * 30) + "#A"
+    brf = "\n".join(["\u281e\u2811\u280c\u2800\u281e\u2811\u282d\u281e"] * 25)
+    expected_brf = "\ue000{\"BraillePage\": {\"Number\": \"\\u283c\\u2801\"}}\ue001" + brf
+    brf += ("\u2800" * 30) + "\u283c\u2801"
     expected = DetectionResult(len(brf), {"StartBraillePage": False}, 1.0, expected_brf)
-    actual = create_braille_page_detector(page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT))(
+    actual = create_braille_page_detector(page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800"*3)(
         brf, 0, {"StartBraillePage": True}, "")
     assert actual == expected
