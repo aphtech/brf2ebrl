@@ -53,6 +53,7 @@ def create_braille_page_detector(
     format_output: Callable[[str, str], str] = _create_braille_page_command,
 ) -> Detector:
     """Factory function to create a detector for Braille page numbers."""
+    braille_page_number_pattern = re.compile("[\u280f\u281e]?\u283c[\u2801\u2803\u2809\u2819\u2811\u280b\u281b\u2813\u280a\u281a]+")
 
     def detect_braille_page_number(
         text: str, cursor: int, state: DetectionState, output_text: str
@@ -66,7 +67,7 @@ def create_braille_page_detector(
                 page_layout.cells_per_line,
                 page_layout.lines_per_page,
                 separator,
-                lambda n: bool(re.fullmatch("[\u280f\u281e]?\u283c[\u2801\u2803\u2809\u2819\u2811\u280b\u281b\u2813\u280a\u281a]+", n)),
+                lambda n: bool(braille_page_number_pattern.fullmatch(n)),
             )
             output = format_output(page_content, page_num)
             return DetectionResult(
