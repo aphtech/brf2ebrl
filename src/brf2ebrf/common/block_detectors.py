@@ -128,7 +128,7 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
         if li_items:
             brl ='<ul style="list-style-type: none">'+''.join(li_items) + "</ul>" 
         return (
-            DetectionResult(new_cursor, state, 0.9, f"{output_text}{brl}\n")
+                DetectionResult(new_cursor, state, 0.9, f"{output_text}{brl}\n")
             if brl
             else None
         )
