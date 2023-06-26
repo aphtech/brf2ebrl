@@ -99,7 +99,7 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
     first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
-    run_over_re = re.compile(f"^\u2800{{{run_over}}}+([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+    run_over_re = re.compile(f"^\u2800{{{run_over},}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
 
 
     # numbers = "\u283c[\u2801|\u2803|\u2809|\u2819|\u2811|\u280b|\u281b|\u2813|\u280a|\u281a]+\u2832 "
