@@ -1,4 +1,4 @@
-"""Some detectors common t multiple Braille codes/standards."""
+"""Some detectors common to multiple Braille codes/standards."""
 import re
 from typing import Optional
 
