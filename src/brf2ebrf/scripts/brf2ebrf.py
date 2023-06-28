@@ -72,7 +72,7 @@ def create_brf2ebrf_parser(
             {},
             [
                 lambda t, c, s, o: DetectionResult(
-                    c + 1, s, 1.0, o + t[c] if t[c] != "\f" else o
+                    c + 1, s, 1.0, o + t[c] if t[c] != "\f" else o + "\n"
                 )
             ],
             most_confident_detector,
