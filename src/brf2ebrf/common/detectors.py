@@ -50,7 +50,7 @@ def create_running_head_detector(min_indent: int) -> Detector:
         DetectionResult]:
         if m := min_indent_re.match(text[cursor:]):
             braille_page_pi, brl_page_num, running_head = (m.group(x) for x in ["braille_page_pi", "brl_page_num", "running_head"])
-            prev_braille_page_type = state.get("braille-page-type", default=BraillePageType.UNSET)
+            prev_braille_page_type = state.get("braille-page-type", BraillePageType.UNSET)
             braille_page_type = BraillePageType.T if brl_page_num.startswith("\u281e") else BraillePageType.P if brl_page_num.startswith("\u280f") else BraillePageType.NORMAL if brl_page_num else prev_braille_page_type
             return DetectionResult(cursor + m.end(), state, 1.0, f"{output_text}{braille_page_pi}<?running-head {running_head}?>")
         return None
