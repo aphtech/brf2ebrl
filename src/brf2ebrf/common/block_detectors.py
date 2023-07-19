@@ -84,12 +84,12 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
                 text[new_cursor:]
         ):
             lines.append(line.group(1))
-            new_cursor += line.end()+1 #+ 1 for the end line
+            new_cursor += line.end()
             while line := run_over_re.match(
                     text[new_cursor:]
             ):
                 lines.append(line.group(1))
-                new_cursor += line.end()+1 # + 1 for the new line
+                new_cursor += line.end()
         brl = "\u2800".join(lines)
         return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n") if brl else None
 
