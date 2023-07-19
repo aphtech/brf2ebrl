@@ -10,6 +10,7 @@ from brf2ebrf.common.block_detectors import (
     create_centered_detector,
     create_paragraph_detector,
     create_list_detector,
+    create_table_detector,
 )
 from brf2ebrf.common.detectors import (
     convert_ascii_to_unicode_braille_bulk,
@@ -91,6 +92,7 @@ def create_brf2ebrf_parser(
                 create_cell_heading(6, "h3"),
                 create_cell_heading(4, "h2"),
                 create_paragraph_detector(2, 0),
+                create_table_detector(), #might add arguments later
                 create_list_detector(0, 2),
                 detect_pre,
                 detect_and_pass_processing_instructions,

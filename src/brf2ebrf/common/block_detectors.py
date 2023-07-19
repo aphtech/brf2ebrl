@@ -134,3 +134,82 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
         )
 
     return detect_list
+
+def create_table_detector() -> Detector:
+    """Creates a detector for finding simple tables more can be added"""
+    seperator_re = re.compile("((?:[\u2800-\u28ff]+?\n){1,2})(\u2810\u2812+?(?:\u2800\u2800\u2810\u2812+?)+?)\n")
+
+    def row_column_check(widths,line):
+        """compares each row to make sure it has the right seperator to see if it is a row"""
+        i=0
+        for width in widths[:-1]:
+            if line[i+width:i+width+2] != '\u2800\u2800':
+                return False
+            i +=width     +2
+        return True
+
+    def get_line(brf_text,pos,widths):
+        """Gets each line after table header that matches table columns"""
+        pos2 = brf_text[pos:].find('\n')+1
+
+        if not row_column_check(widths,brf_text[pos:pos+pos2]):
+            return None
+        return pos2
+        
+    def detect_table(
+        text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> Optional[DetectionResult]:
+        match = seperator_re.match(text[cursor:])
+        if not match:
+            return None
+        
+        #code
+        col_widths=[len(l) for l in match.group(2).split('\u2800\u2800')]        
+
+
+        #create header
+        header_lines=match.group(1).split('\n')
+        table=['<tr>']
+        if len(header_lines)>1:
+            pos=0
+            for  index, width in enumerate(col_widths):
+                cell_text = header_lines[0][pos:pos+width+2].strip('\u2800')
+                if cell_text and header_lines[1].strip('\u2800'):
+                    cell_text += '\u2800'
+                cell_text = "<th>"+cell_text+""+header_lines[1][pos:pos+width+2].strip('\u2800')+"</th>" 
+                pos+=width+2
+                table[0] += cell_text
+        else:
+            for  cell in header_lines[0].split('\u2800\u2800'):
+                table[0]+="<th>"+cell.strip('\u2800')+"</th>"
+        table[0] +='</tr>'
+                #header done
+
+        cursor+=match.end(2)+1
+        #cells
+        row=0
+        while end_cursor := get_line(text,cursor,col_widths):
+            line=text[cursor:cursor+end_cursor]
+            if line.startswith('\u2800\u2800'):
+                sep='\u2800'
+            else:
+                sep=''
+                table.append(['']*len(col_widths))
+                row += 1
+            
+            for  index, cell in  enumerate(line.split('\u2800\u2800')):
+                if index>=len(col_widths):
+                    continue
+                table[row][index]+=sep+""+cell.strip('\u2800\u2810\n')
+            cursor+=end_cursor
+
+        complete_table=table[0]+"\n"
+        for row in table[1:]:
+            complete_table+="<tr>"
+            for col in row:
+                complete_table+=f"<td>{col}</td>"
+            complete_table+="/tr>\n"
+        complete_table =f"<table>\n{complete_table}\n</table>"    
+        return DetectionResult(cursor, state, 0.9, f"{output_text}{complete_table}\n")
+
+    return detect_table        
