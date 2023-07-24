@@ -1,13 +1,12 @@
 """Detectors for blocks"""
 import re
-from typing import Optional
 
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 
 def detect_pre(
         text: str, cursor: int, state: DetectionState, output_text: str
-) -> Optional[DetectionResult]:
+) -> DetectionResult | None:
     """Detects preformatted Braille"""
     brl = ""
     for c in text[cursor:]:
@@ -24,7 +23,7 @@ def create_cell_heading(indent: int, tag_name: str) -> Detector:
 
     def detect_cell_heading(
             text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> Optional[DetectionResult]:
+    ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
         while line := heading_re.match(
@@ -48,7 +47,7 @@ def create_centered_detector(
 
     def detect_centered(
             text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> Optional[DetectionResult]:
+    ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
         while line := heading_re.match(
@@ -77,7 +76,7 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
 
     def detect_paragraph(
             text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> Optional[DetectionResult]:
+    ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
         if line := first_line_re.match(
@@ -112,7 +111,7 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
 
     def detect_list(
         text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> Optional[DetectionResult]:
+    ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
         li_items = []
@@ -139,16 +138,16 @@ def create_table_detector() -> Detector:
     """Creates a detector for finding simple tables more can be added"""
     seperator_re = re.compile("((?:[\u2800-\u28ff]+?\n){1,2})(\u2810\u2812+?(?:\u2800\u2800\u2810\u2812+?)+?)\n")
 
-    def row_column_check(widths,line):
+    def row_column_check(widths: list[int], line: str) -> bool:
         """compares each row to make sure it has the right seperator to see if it is a row"""
         i=0
         for width in widths[:-1]:
             if line[i+width:i+width+2] != '\u2800\u2800':
                 return False
-            i +=width     +2
+            i += width + 2
         return True
 
-    def get_line(brf_text,pos,widths):
+    def get_line(brf_text: str,pos: int,widths: list[int]) -> int | None:
         """Gets each line after table header that matches table columns"""
         pos2 = brf_text[pos:].find('\n')+1
 
@@ -158,7 +157,7 @@ def create_table_detector() -> Detector:
         
     def detect_table(
         text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> Optional[DetectionResult]:
+    ) -> DetectionResult | None:
         match = seperator_re.match(text[cursor:])
         if not match:
             return None
