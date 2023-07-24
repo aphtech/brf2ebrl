@@ -1,5 +1,6 @@
 """Detectors for blocks"""
 import re
+from collections.abc import Iterable
 
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
@@ -154,7 +155,11 @@ def create_table_detector() -> Detector:
         if not row_column_check(widths,brf_text[pos:pos+pos2]):
             return None
         return pos2
-        
+
+    def wrap_and_join(fmt: str, items: Iterable[str]) -> str:
+        """Wraps each element and joins into a single string."""
+        return "".join([fmt.format(s) for s in items])
+
     def detect_table(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
@@ -203,11 +208,7 @@ def create_table_detector() -> Detector:
             cursor+=end_cursor
 
         complete_table=table[0]+"\n"
-        for row in table[1:]:
-            complete_table+="<tr>"
-            for col in row:
-                complete_table+=f"<td>{col}</td>"
-            complete_table+="/tr>\n"
+        complete_table += wrap_and_join("<tr>{}</tr>\n", [wrap_and_join("<td>{}</td>\n", row) for row in table[1:]])
         complete_table =f"<table>\n{complete_table}\n</table>"    
         return DetectionResult(cursor, state, 0.9, f"{output_text}{complete_table}\n")
 
