@@ -184,8 +184,7 @@ def create_table_detector() -> Detector:
                 pos+=width+2
                 table[0] += cell_text
         else:
-            for  cell in header_lines[0].split('\u2800\u2800'):
-                table[0]+="<th>"+cell.strip('\u2800')+"</th>"
+            table[0] += wrap_and_join("<th>{}</th>", [cell.strip("\u2800") for cell in header_lines[0].split('\u2800\u2800')])
         table[0] +='</tr>'
                 #header done
 
@@ -208,7 +207,7 @@ def create_table_detector() -> Detector:
             cursor+=end_cursor
 
         complete_table=table[0]+"\n"
-        complete_table += wrap_and_join("<tr>{}</tr>\n", [wrap_and_join("<td>{}</td>\n", row) for row in table[1:]])
+        complete_table += wrap_and_join("<tr>{}</tr>\n", [wrap_and_join("<td>{}</td>", row) for row in table[1:]])
         complete_table =f"<table>\n{complete_table}\n</table>"    
         return DetectionResult(cursor, state, 0.9, f"{output_text}{complete_table}\n")
 
