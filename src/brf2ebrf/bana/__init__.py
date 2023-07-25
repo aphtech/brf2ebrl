@@ -90,6 +90,11 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
         # Todo implementation
         return False
 
+    print_page_number_line_re = re.compile("\u2824{5,}(?P<ppn>[\u2800-\u28ff]+)")
+    def is_print_page_number_line(line: str) -> str | None:
+        match = print_page_number_line_re.fullmatch(line)
+        return match.group("ppn") if match else None
+
     def detect_print_page_number(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
         if ord(text[cursor]) in range(0x2800, 0x2900):
             page_content = text[cursor:].partition("\f")[0]
@@ -97,6 +102,7 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
             page_content, page_num = _find_page_number(page_content, page_layout.print_page_number, page_layout.cells_per_line, page_layout.lines_per_page, separator)
             result = "" if is_continuation_number(page_num, "", "") else f"<?print_page {page_num}?>"
             result += page_content
+            result += "\n".join([f"<?print-page {ppn}?>" if len(line) == page_layout.cells_per_line and (ppn := is_print_page_number_line(line)) else line for line in page_content.splitlines()])
             return DetectionResult(new_cursor, state, 0.9, f"{output_text}{result}")
         return None
     return detect_print_page_number
