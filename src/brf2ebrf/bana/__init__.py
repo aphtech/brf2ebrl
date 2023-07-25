@@ -86,11 +86,17 @@ def create_braille_page_detector(
 
 def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800"*3) -> Detector:
     """Create a detector for print page numbers."""
+    def is_continuation_number(page_num: str, prev_page_num: str, continuation_letter: str) -> bool:
+        # Todo implementation
+        return False
+
     def detect_print_page_number(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
         if ord(text[cursor]) in range(0x2800, 0x2900):
             page_content = text[cursor:].partition("\f")[0]
             new_cursor = cursor + len(page_content)
             page_content, page_num = _find_page_number(page_content, page_layout.print_page_number, page_layout.cells_per_line, page_layout.lines_per_page, separator)
-            return DetectionResult(new_cursor, state, 0.9, f"{output_text}{page_content}")
+            result = "" if is_continuation_number(page_num, "", "") else f"<?print_page {page_num}?>"
+            result += page_content
+            return DetectionResult(new_cursor, state, 0.9, f"{output_text}{result}")
         return None
     return detect_print_page_number
