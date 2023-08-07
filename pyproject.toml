@@ -1,10 +1,14 @@
 [tool.pdm]
 version = { source = "file", path = "src/brf2ebrf/__init__.py" }
 [tool.pdm.scripts]
+exe_cli = "nuitka --standalone {args} src/brf2ebrf/scripts/brf2ebrf.py"
 test = "pytest"
 [tool.pdm.dev-dependencies]
-dev = [
+test = [
     "pytest>=7.3.1",
+]
+exe = [
+    "nuitka>=1.7.9",
 ]
 
 [tool.pytest.ini_options]
