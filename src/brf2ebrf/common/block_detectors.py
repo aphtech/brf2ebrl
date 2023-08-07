@@ -143,18 +143,18 @@ def create_table_detector() -> Detector:
         """compares each row to make sure it has the right seperator to see if it is a row"""
         i=0
         for width in widths[:-1]:
-            if line[i+width:i+width+2] != '\u2800\u2800':
+            end_of_cell = i + width
+            start_of_next_cell = end_of_cell + 2
+            if line[end_of_cell:start_of_next_cell] != '\u2800\u2800':
                 return False
-            i += width + 2
+            i = start_of_next_cell
         return True
 
     def get_line(brf_text: str,pos: int,widths: list[int]) -> int | None:
         """Gets each line after table header that matches table columns"""
-        pos2 = brf_text[pos:].find('\n')+1
+        pos2 = brf_text[pos:].find('\n') + 1
 
-        if not row_column_check(widths,brf_text[pos:pos+pos2]):
-            return None
-        return pos2
+        return pos2 if row_column_check(widths,brf_text[pos:pos+pos2]) else None
 
     def wrap_and_join(fmt: str, items: Iterable[str]) -> str:
         """Wraps each element and joins into a single string."""
@@ -201,9 +201,8 @@ def create_table_detector() -> Detector:
                 row += 1
             
             for  index, cell in  enumerate(line.split('\u2800\u2800')):
-                if index>=len(col_widths):
-                    continue
-                table[row][index]+=sep+""+cell.strip('\u2800\u2810\n')
+                if index < len(col_widths):
+                    table[row][index] += sep + "" + cell.strip('\u2800\u2810\n')
             cursor+=end_cursor
 
         complete_table=table[0]+"\n"
