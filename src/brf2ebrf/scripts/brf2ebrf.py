@@ -16,7 +16,7 @@ from brf2ebrf.common.detectors import (
     convert_ascii_to_unicode_braille_bulk,
     detect_and_pass_processing_instructions,
     convert_blank_line_to_pi,
-    create_running_head_detector,
+    create_running_head_detector, braille_page_counter_detector,
 )
 from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass, DetectionResult
@@ -34,7 +34,7 @@ _XHTML_FOOTER = """</body>
 
 
 def create_brf2ebrf_parser(
-    page_layout: PageLayout = PageLayout(),
+        page_layout: PageLayout = PageLayout(),
 ) -> Iterable[ParserPass]:
     return [
         # Convert to unicode pass
@@ -66,7 +66,9 @@ def create_brf2ebrf_parser(
         ),
         # Running head pass
         ParserPass(
-            {"brlnum": 1}, [create_running_head_detector(3)], most_confident_detector
+            {},
+            [create_running_head_detector(3), braille_page_counter_detector, detect_and_pass_processing_instructions],
+            most_confident_detector
         ),
         # Remove form feeds pass.
         ParserPass(
@@ -92,7 +94,7 @@ def create_brf2ebrf_parser(
                 create_cell_heading(6, "h3"),
                 create_cell_heading(4, "h2"),
                 create_paragraph_detector(2, 0),
-                create_table_detector(), #might add arguments later
+                create_table_detector(),  # might add arguments later
                 create_list_detector(0, 2),
                 detect_pre,
                 detect_and_pass_processing_instructions,
