@@ -20,7 +20,7 @@ def main():
         brf,
         [
             ParserPass(
-                {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
+                "Unicode Braille", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
             )
         ],
     )

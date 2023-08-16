@@ -1,4 +1,5 @@
 """Main parser framework for the brf2ebrf system."""
+import time
 from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -34,6 +35,7 @@ DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]]
 @dataclass(frozen=True)
 class ParserPass:
     """A configuration for a single step in a multipass parsing."""
+    name: str
     initial_state: DetectionState
     detectors: Iterable[Detector]
     selector: DetectionSelector
@@ -46,7 +48,7 @@ def parse(brf: str, parser_passes: Iterable[ParserPass]) -> str:
         text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
         while cursor < len(text):
             result = selector(text, cursor, state, text_builder, parser_pass.detectors)
-            assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}"
+            assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
             text_builder, cursor, state = result.text, result.cursor, result.state
         text = text_builder
     return text

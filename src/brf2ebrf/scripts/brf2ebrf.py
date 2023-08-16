@@ -39,11 +39,11 @@ def create_brf2ebrf_parser(
     return [
         # Convert to unicode pass
         ParserPass(
-            {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
+            "Convert to unicode Braille", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
         ),
         # Detect Braille pages pass
         ParserPass(
-            {"StartBraillePage": True},
+            "Detect Braille pages", {"StartBraillePage": True},
             [
                 create_braille_page_detector(
                     page_layout=page_layout,
@@ -55,7 +55,7 @@ def create_brf2ebrf_parser(
             most_confident_detector,
         ),
         ParserPass(
-            {},
+            "Detect print pages", {},
             [
                 create_print_page_detector(
                     page_layout=page_layout, separator="\u2800" * 3
@@ -66,29 +66,29 @@ def create_brf2ebrf_parser(
         ),
         # Running head pass
         ParserPass(
-            {},
+            "Detect running head", {},
             [create_running_head_detector(3), braille_page_counter_detector, detect_and_pass_processing_instructions],
             most_confident_detector
         ),
         # Remove form feeds pass.
         ParserPass(
-            {},
+            "Remove form feeds", {},
             [
                 lambda t, c, s, o: DetectionResult(
-                    c + 1, s, 1.0, o + t[c] if t[c] != "\f" else o + "\n"
+                    len(t), s, 1.0, o + t[c:].replace("\f", "\n")
                 )
             ],
             most_confident_detector,
         ),
         # Detect blank lines pass
         ParserPass(
-            {},
+            "Detect blank lines", {},
             [convert_blank_line_to_pi, detect_and_pass_processing_instructions],
             most_confident_detector,
         ),
         # Detect blocks pass
         ParserPass(
-            {},
+            "Detect blocks", {},
             [
                 create_centered_detector(page_layout.cells_per_line, 3, "h1"),
                 create_cell_heading(6, "h3"),
@@ -103,7 +103,7 @@ def create_brf2ebrf_parser(
         ),
         # Make complete XHTML pass
         ParserPass(
-            {},
+            "Make complete XML", {},
             [
                 lambda t, c, s, o: DetectionResult(
                     len(t), s, 1.0, f"{o}{_XHTML_HEADER}{t[c:]}{_XHTML_FOOTER}"

@@ -35,4 +35,4 @@ def test_convert_ascii_to_unicode_braille(text: str, cursor: int, expected_text:
     "TEST\nDOCU;mT\f"
 ])
 def test_conversion_by_character_vs_bulk(text: str):
-    assert parse(text, [ParserPass({}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [ParserPass({}, [convert_ascii_to_unicode_braille], most_confident_detector)])
+    assert parse(text, [ParserPass("Test conversion bulk", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [ParserPass("Test convert by character", {}, [convert_ascii_to_unicode_braille], most_confident_detector)])

@@ -51,11 +51,10 @@ def braille_page_counter_detector(text: str, cursor: int, state: DetectionState,
     return None
 
 
+_BLANK_LINE_RE = re.compile("\n{2,}")
 def convert_blank_line_to_pi(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
     """Convert blank braille lines into pi for later use if needed"""
-    if text.startswith("\n\n", cursor) or text.startswith("\f\n", cursor):
-        return DetectionResult(cursor+1,state, confidence=1.0, text=output_text + "\n<?blank-line?>")
-    return None
+    return DetectionResult(len(text), state, 1.0, output_text + _BLANK_LINE_RE.sub(lambda m: "\n<?blank-line?>" * (len(m.group()) - 1), text[cursor:]))
 
 
 def create_running_head_detector(min_indent: int) -> Detector:
@@ -66,5 +65,6 @@ def create_running_head_detector(min_indent: int) -> Detector:
             running_head = m.group("running_head")
             return DetectionResult(cursor + m.end(), dict(state, new_braille_page=False), 1.0,
                                    f"{output_text}<?running-head {running_head}?>{m.group('eol')}")
-        return None
+        next_page_index = text.find("<?braille-page", cursor)
+        return DetectionResult(next_page_index, dict(state, new_braille_page=False), 1.0, output_text + text[cursor:next_page_index]) if next_page_index > cursor else DetectionResult(len(text), dict(state, new_braille_page=False), 1.0, output_text + text[cursor:]) if next_page_index < 0 else None
     return detect_running_head

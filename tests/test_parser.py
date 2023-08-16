@@ -17,4 +17,4 @@ def _first_detector_selector(text: str, cursor: int, state: DetectionState, outp
     ("TEST BRF", {}, [lambda text, cursor, state, output_text: DetectionResult(cursor + 1, state, 1.0, output_text + text[cursor] * 2)], _first_detector_selector, "TTEESSTT  BBRRFF")
 ])
 def test_single_pass_parser(input_text: str, initial_state: DetectionState, detectors: Iterable[Detector], selector: DetectionSelector, expected_text: str):
-    assert parse(input_text, [ParserPass(initial_state, detectors, selector)]) == expected_text
+    assert parse(input_text, [ParserPass("Test single pass", initial_state, detectors, selector)]) == expected_text
