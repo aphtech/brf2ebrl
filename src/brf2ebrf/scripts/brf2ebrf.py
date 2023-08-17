@@ -1,5 +1,6 @@
 """Script to convert BRF into eBRF."""
 import argparse
+import logging
 from collections.abc import Iterable
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
@@ -115,6 +116,7 @@ def create_brf2ebrf_parser(
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s")
     arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
     arg_parser.add_argument("brf", help="The BRF to convert")
     arg_parser.add_argument("output_file", help="The output file name")

@@ -1,5 +1,5 @@
 """Main parser framework for the brf2ebrf system."""
-import time
+import logging
 from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -43,12 +43,15 @@ class ParserPass:
 
 def parse(brf: str, parser_passes: Iterable[ParserPass]) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
+    logging.info("Starting parsing")
     text = brf
     for parser_pass in parser_passes:
+        logging.info(f"Processing pass {parser_pass.name}")
         text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
         while cursor < len(text):
             result = selector(text, cursor, state, text_builder, parser_pass.detectors)
             assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
             text_builder, cursor, state = result.text, result.cursor, result.state
         text = text_builder
+    logging.info(f"Fiished parsing")
     return text
