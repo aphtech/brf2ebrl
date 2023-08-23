@@ -19,6 +19,7 @@ from brf2ebrf.common.detectors import (
     convert_blank_line_to_pi,
     create_running_head_detector, braille_page_counter_detector,
 )
+from brf2ebrf.common.page_numbers import create_ebrf_print_page_tags
 from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import parse, ParserPass, DetectionResult
 
@@ -102,6 +103,8 @@ def create_brf2ebrf_parser(
             ],
             most_confident_detector,
         ),
+        # Convert print page numbers to ebrf tags
+        ParserPass("Print page numbers to ebrf", {}, [create_ebrf_print_page_tags()], most_confident_detector),
         # Make complete XHTML pass
         ParserPass(
             "Make complete XML", {},
