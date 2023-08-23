@@ -1,6 +1,7 @@
 """Detectors for blocks"""
 import re
 from collections.abc import Iterable
+#import logging
 
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
@@ -72,11 +73,12 @@ def create_centered_detector(
 
 def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding paragraphs with the specified first line indent and run over."""
-    first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
-    run_over_re = re.compile(f"^\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+    first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]")
+    run_over_re = re.compile(f"^\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]")
 
     def detect_paragraph(
             text: str, cursor: int, state: DetectionState, output_text: str
+            
     ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
