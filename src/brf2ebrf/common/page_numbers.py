@@ -14,6 +14,6 @@ def create_ebrf_print_page_tags() -> Detector:
                 return DetectionResult(m.start(), state, 0.9, f"{output_text}{text[cursor:m.start()]}")
             page_number = m.group("page_number")
             return DetectionResult(m.end(), state, 0.9,
-                                   f"{output_text}<span role=\"doc-pagebreak\">{page_number}</span>")
+                                   f"{output_text}<span role=\"doc-pagebreak\" id=\"page{page_number}\">{page_number}</span>")
         return DetectionResult(len(text), state, 0.5, f"{output_text}{text[cursor:]}")
     return convert_to_ebrf_print_page_numbers
