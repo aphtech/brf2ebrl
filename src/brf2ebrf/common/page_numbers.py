@@ -3,7 +3,7 @@ import re
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 _PRINT_PAGE_RE = re.compile("<\\?print-page (?P<page_number>[\u2800-\u28ff]*)\\?>")
-_NON_NESTED_BLOCKS_RE = re.compile("((<\\?blank-line\\?>)|\n)*<(?P<tag_name>(h[1-6])|p)(.|\n)*?</(?P=tag_name)>")
+_NON_NESTED_BLOCKS_RE = re.compile("((<\\?blank-line\\?>)|\n)*<(?P<tag_name>(h[1-6])|p|(pre))(.|\n)*?</(?P=tag_name)>")
 
 
 def create_ebrf_print_page_tags() -> Detector:
