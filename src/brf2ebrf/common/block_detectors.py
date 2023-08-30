@@ -1,7 +1,7 @@
 """Detectors for blocks"""
 import re
 from collections.abc import Iterable
-#import logging
+import logging
 
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
@@ -70,29 +70,35 @@ def create_centered_detector(
 
     return detect_centered
 
+#constants for list and paragraph.
+_PRINT_PAGE_RE = "(?:<\\?print-page.*?\\?>)"
+_RUNNING_HEAD_RE = "(?:<\\?running-head.*?\\?>)"
+_BRAILLE_PAGE_RE = "(?:<\\?braille-page.*?\\?>)"
+_BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
+_PROCESSING_INSTRUCTION_RE = f"{_PRINT_PAGE_RE}|{_BRAILLE_PAGE_RE}|{_RUNNING_HEAD_RE}"
 
 def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding paragraphs with the specified first line indent and run over."""
-    first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n]")
-    run_over_re = re.compile(f"^\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n]")
+    _first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
+    _run_over_re = re.compile(f"\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
 
     def detect_paragraph(
             text: str, cursor: int, state: DetectionState, output_text: str
-            
+
     ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
-        if line := first_line_re.match(
+        if line := _first_line_re.match(
                 text[new_cursor:]
         ):
             lines.append(line.group(1))
             new_cursor += line.end()
-            while line := run_over_re.match(
+            while line := _run_over_re.match(
                     text[new_cursor:]
             ):
                 lines.append(line.group(1))
                 new_cursor += line.end()
-        brl = "\u2800".join(lines)
+        brl = "\u2800".join([x for  x in lines if None != x])
         return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n") if brl else None
 
     return detect_paragraph
@@ -100,8 +106,8 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
 
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
-    first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
-    run_over_re = re.compile(f"^\u2800{{{run_over},}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+    first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
+    run_over_re = re.compile(f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
 
 
     # numbers = "\u283c[\u2801|\u2803|\u2809|\u2819|\u2811|\u280b|\u281b|\u2813|\u280a|\u281a]+\u2832 "
@@ -128,9 +134,9 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
             li_items.append("<li>" + "\u2800".join(lines) + "</li>")
             lines = []
         if li_items:
-            brl ='<ul style="list-style-type: none">'+''.join(li_items) + "</ul>" 
+            brl ='<ul style="list-style-type: none">'+''.join(li_items) + "</ul>"
         return (
-                DetectionResult(new_cursor, state, 0.9, f"{output_text}{brl}\n")
+                DetectionResult(new_cursor, state, 0.89, f"{output_text}{brl}\n")
             if brl
             else None
         )
@@ -168,9 +174,9 @@ def create_table_detector() -> Detector:
         match = seperator_re.match(text[cursor:])
         if not match:
             return None
-        
+
         #code
-        col_widths=[len(l) for l in match.group(2).split('\u2800\u2800')]        
+        col_widths=[len(l) for l in match.group(2).split('\u2800\u2800')]
 
 
         #create header
@@ -182,7 +188,7 @@ def create_table_detector() -> Detector:
                 cell_text = header_lines[0][pos:pos+width+2].strip('\u2800')
                 if cell_text and header_lines[1].strip('\u2800'):
                     cell_text += '\u2800'
-                cell_text = "<th>"+cell_text+""+header_lines[1][pos:pos+width+2].strip('\u2800')+"</th>" 
+                cell_text = "<th>"+cell_text+""+header_lines[1][pos:pos+width+2].strip('\u2800')+"</th>"
                 pos+=width+2
                 table[0] += cell_text
         else:
@@ -201,7 +207,7 @@ def create_table_detector() -> Detector:
                 sep=''
                 table.append(['']*len(col_widths))
                 row += 1
-            
+
             for  index, cell in  enumerate(line.split('\u2800\u2800')):
                 if index < len(col_widths):
                     table[row][index] += sep + "" + cell.strip('\u2800\u2810\n')
@@ -209,7 +215,7 @@ def create_table_detector() -> Detector:
 
         complete_table=table[0]+"\n"
         complete_table += wrap_and_join("<tr>{}</tr>\n", [wrap_and_join("<td>{}</td>", row) for row in table[1:]])
-        complete_table =f"<table>\n{complete_table}\n</table>"    
+        complete_table =f"<table>\n{complete_table}\n</table>"
         return DetectionResult(cursor, state, 0.9, f"{output_text}{complete_table}\n")
 
-    return detect_table        
+    return detect_table
