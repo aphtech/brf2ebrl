@@ -4,6 +4,27 @@ from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 _PRINT_PAGE_RE = re.compile("<\\?print-page (?P<page_number>[\u2800-\u28ff]*)\\?>")
 _NON_NESTED_BLOCKS_RE = re.compile("((<\\?blank-line\\?>)|\n)*<(?P<tag_name>(h[1-6])|p|(pre))(.|\n)*?</(?P=tag_name)>")
+_TAG_NAME_PATTERN = "[_a-zA-Z][-_.a-zA-Z0-9]*"
+_ELEMENT_TAG_RE = re.compile(f"(<(?P<start_tag_name>{_TAG_NAME_PATTERN})\\s*(/>)?)|(</(?P<end_tag_name>{_TAG_NAME_PATTERN})>)")
+
+
+def _find_end_of_element(text: str, start: int = 0) -> int:
+    cursor = start
+    tags = []
+    while m := _ELEMENT_TAG_RE.search(text, cursor):
+        cursor = m.end()
+        if m.group().endswith("/>"):
+            continue
+        else:
+            if m.group().startswith("</"):
+                if len(tags) == 0 or tags.pop() != m.group("end_tag_name"):
+                    cursor = -1
+                    tags.clear()
+            else:
+                tags.append(m.group("start_tag_name"))
+        if len(tags) == 0:
+            break
+    return cursor if len(tags) == 0 else -1
 
 
 def create_ebrf_print_page_tags() -> Detector:
