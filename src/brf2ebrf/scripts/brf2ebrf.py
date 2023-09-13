@@ -123,12 +123,16 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s")
     arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
     arg_parser.add_argument("--no-running-heads", help="Don't detect running heads", dest="running_heads", default=True, action="store_false")
+    arg_parser.add_argument("-cpl, --cells-per-line", help="Number of cells per line", dest="cells_per_line", default=40, type=int)
+    arg_parser.add_argument("-lpp, --lines-per-page", help="Number of lines per page", dest="lines_per_page", default=25, type=int)
     arg_parser.add_argument("brf", help="The BRF to convert")
     arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
     page_layout = PageLayout(
         braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
         print_page_number=PageNumberPosition.TOP_RIGHT,
+        cells_per_line=args.cells_per_line,
+        lines_per_page=args.lines_per_page,
     )
     brf = ""
     with open(args.brf, "r", encoding="utf-8") as in_file:
