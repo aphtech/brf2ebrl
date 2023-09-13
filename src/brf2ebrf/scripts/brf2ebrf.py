@@ -37,8 +37,9 @@ _XHTML_FOOTER = """</body>
 
 def create_brf2ebrf_parser(
         page_layout: PageLayout = PageLayout(),
+        detect_running_heads: bool = True,
 ) -> Iterable[ParserPass]:
-    return [
+    return [x for x in [
         # Convert to unicode pass
         ParserPass(
             "Convert to unicode Braille", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
@@ -71,7 +72,7 @@ def create_brf2ebrf_parser(
             "Detect running head", {},
             [create_running_head_detector(3), braille_page_counter_detector, detect_and_pass_processing_instructions],
             most_confident_detector
-        ),
+        ) if detect_running_heads else None,
         # Remove form feeds pass.
         ParserPass(
             "Remove form feeds", {},
@@ -115,7 +116,7 @@ def create_brf2ebrf_parser(
             ],
             most_confident_detector,
         ),
-    ]
+    ] if x is not None]
 
 
 def main():
