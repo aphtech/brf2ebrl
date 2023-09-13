@@ -122,6 +122,7 @@ def create_brf2ebrf_parser(
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s")
     arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
+    arg_parser.add_argument("--no-running-heads", help="Don't detect running heads", dest="running_heads", default=True, action="store_false")
     arg_parser.add_argument("brf", help="The BRF to convert")
     arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
@@ -132,7 +133,7 @@ def main():
     brf = ""
     with open(args.brf, "r", encoding="utf-8") as in_file:
         brf = in_file.read()
-    output_text = parse(brf, create_brf2ebrf_parser(page_layout))
+    output_text = parse(brf, create_brf2ebrf_parser(page_layout=page_layout, detect_running_heads=args.running_heads))
     with open(args.output_file, "w", encoding="utf-8") as out_file:
         out_file.write(output_text)
 
