@@ -1,13 +1,10 @@
 """Script to convert BRF into eBRF."""
-import os
 import argparse
 import logging
 from collections.abc import Iterable
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
 from brf2ebrf.common import PageNumberPosition, PageLayout
-from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector, create_images_references 
-pdf_filename = "got here"
 from brf2ebrf.common.block_detectors import (
     detect_pre,
     create_cell_heading,
@@ -40,9 +37,9 @@ _XHTML_FOOTER = """</body>
 
 def create_brf2ebrf_parser(
         page_layout: PageLayout = PageLayout(),
-        images_references  =[],
+        detect_running_heads: bool = True,
 ) -> Iterable[ParserPass]:
-    return [
+    return [x for x in [
         # Convert to unicode pass
         ParserPass(
             "Convert to unicode Braille", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
@@ -75,7 +72,7 @@ def create_brf2ebrf_parser(
             "Detect running head", {},
             [create_running_head_detector(3), braille_page_counter_detector, detect_and_pass_processing_instructions],
             most_confident_detector
-        ),
+        ) if detect_running_heads else None,
         # Remove form feeds pass.
         ParserPass(
             "Remove form feeds", {},
@@ -107,8 +104,6 @@ def create_brf2ebrf_parser(
             ],
             most_confident_detector,
         ),
-        # PDF Graphics  
-        ParserPass("Print PDF to Links and single page PDF", {}, [create_pdf_graphic_detector(pdf_filename)], most_confident_detector),
         # Convert print page numbers to ebrf tags
         ParserPass("Print page numbers to ebrf", {}, [create_ebrf_print_page_tags()], most_confident_detector),
         # Make complete XHTML pass
@@ -121,38 +116,28 @@ def create_brf2ebrf_parser(
             ],
             most_confident_detector,
         ),
-    ]
+    ] if x is not None]
 
 
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s")
     arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
+    arg_parser.add_argument("--no-running-heads", help="Don't detect running heads", dest="running_heads", default=True, action="store_false")
+    arg_parser.add_argument("-cpl, --cells-per-line", help="Number of cells per line", dest="cells_per_line", default=40, type=int)
+    arg_parser.add_argument("-lpp, --lines-per-page", help="Number of lines per page", dest="lines_per_page", default=25, type=int)
     arg_parser.add_argument("brf", help="The BRF to convert")
     arg_parser.add_argument("output_file", help="The output file name")
-    arg_parser.add_argument("-i", "--images", type=str, help="The images folder")
     args = arg_parser.parse_args()
-    
-    if not args.brf:
-        logging.error("No input Brf to be converted.")
-        arg_parser.print_help()
-        sys.exit()
-
-    if args.images and not os.path.isdir(args.images):
-        logging.error(f"{args.images} not a folder.")
-        arg_parser.print_help()
-        sys.exit()
-    _images_references      = []
-    if args.images:
-        _images_references = create_images_references(args.brf,args.images)
-            
     page_layout = PageLayout(
         braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
         print_page_number=PageNumberPosition.TOP_RIGHT,
+        cells_per_line=args.cells_per_line,
+        lines_per_page=args.lines_per_page,
     )
     brf = ""
     with open(args.brf, "r", encoding="utf-8") as in_file:
         brf = in_file.read()
-    output_text = parse(brf, create_brf2ebrf_parser(page_layout, images_references = _images_references))
+    output_text = parse(brf, create_brf2ebrf_parser(page_layout=page_layout, detect_running_heads=args.running_heads))
     with open(args.output_file, "w", encoding="utf-8") as out_file:
         out_file.write(output_text)
 
