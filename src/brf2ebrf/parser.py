@@ -7,6 +7,7 @@ from typing import Any
 
 DetectionState = Mapping[str, Any]
 
+
 @dataclass(frozen=True)
 class DetectionResult:
     """A detection result for the current parser position."""
