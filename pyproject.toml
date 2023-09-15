@@ -26,6 +26,7 @@ authors = [
 ]
 dependencies = [
     "pypdf2>=3.0.1",
+    "regex>=2023.8.8",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
