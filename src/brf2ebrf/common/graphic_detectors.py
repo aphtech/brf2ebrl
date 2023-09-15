@@ -55,8 +55,8 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
 
     def write_pdf(bp_page_number, pdf_filename, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
-        
-        if bp_page_trans  in _references.keys():
+
+        if bp_page_trans in _references.keys():
             _references[bp_page_trans].append(pdf_filename)
         else:
             _references[bp_page_trans] = [pdf_filename]
@@ -103,10 +103,10 @@ def create_pdf_graphic_detector(brf_filename: str, images_path: str) -> Detector
 
     # image references
     _images_references = create_images_references(brf_filename, images_path)
-    
-    #auto generated page text
+
+    # auto generated page text
     _auto_gen = "\u2801\u2825\u281e\u2815\u2800\u281b\u2811\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
-    _pdf_text="\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
+    _pdf_text = "\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
     # regular expression matching blanks then a braile page number.
     _blank_lines = "(?:(\n<\\?blank-line\\?>))+"
@@ -121,13 +121,13 @@ def create_pdf_graphic_detector(brf_filename: str, images_path: str) -> Detector
             href = ""
             if braille_page in _images_references:
                 # the for loop takes care of left and right
-                for file_ref  in _images_references[braille_page]:
+                for file_ref in _images_references[braille_page]:
                     href += (
-                        f'<p><a href="{file_ref}" '+
-                        f' alt="{_auto_gen}{braille_page}"> '+
-                        f'{_pdf_text}{braille_page}</a></p>'
+                        f'<p><a href="{file_ref}" '
+                        + f' alt="{_auto_gen}{braille_page}"> '
+                        + f"{_pdf_text}{braille_page}</a></p>"
                     )
-                del _images_references[braille_page]    
+                del _images_references[braille_page]
             new_cursor += line.end()
             return (
                 DetectionResult(
