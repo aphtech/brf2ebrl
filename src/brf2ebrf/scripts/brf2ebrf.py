@@ -128,7 +128,7 @@ def create_brf2ebrf_parser(
             ),
             # PDF Graphics
             ParserPass(
-                "Print PDF to Links and single page PDF",
+                "Convert PDF to single files and links,
                 {},
                 [create_pdf_graphic_detector(brf_filename, images_path)],
                 most_confident_detector,

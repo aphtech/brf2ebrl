@@ -6,6 +6,7 @@ import sys
 import os
 from PyPDF2 import PdfWriter, PdfReader
 
+from brf2ebrf.common.detectors import _ASCII_TO_UNICODE_DICT
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 
@@ -53,18 +54,18 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
             parts.append(text.strip(" \n\r\l\f"))
 
     def write_pdf(bp_page_number, pdf_filename, pdf_page):
-        logging.info(f"page: {bp_page_number} pdf_file ref {pdf_filename}")
-        if bp_page_number in _references.keys():
-            _references[bp_page_number].append(pdf_filename)
+        bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
+        
+        if bp_page_trans  in _references.keys():
+            _references[bp_page_trans].append(pdf_filename)
         else:
-            _references[bp_page_number] = [pdf_filename]
+            _references[bp_page_trans] = [pdf_filename]
 
         output = PdfWriter()
         output.add_page(pdf_page)
         with open(pdf_filename, "wb") as outputStream:
             output.write(outputStream)
 
-    logging.info("log 3")
     inputpdf = PdfReader(open(images_path, "rb"))
     left_page = False
     for page_number in range(len(inputpdf.pages)):
@@ -88,6 +89,7 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
             left_page = False
         else:
             left_page = True
+    logging.info(f" size of dictionary {len(_references)}")
     return _references
 
 
@@ -101,16 +103,38 @@ def create_pdf_graphic_detector(brf_filename: str, images_path: str) -> Detector
 
     # image references
     _images_references = create_images_references(brf_filename, images_path)
+    
+    #auto generated page text
+    _auto_gen = "\u2801\u2825\u281e\u2815\u2800\u281b\u2811\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
+    _pdf_text="\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
     # regular expression matching blanks then a braile page number.
     _blank_lines = "(?:(\n<\\?blank-line\\?>))+"
-    _braille_page_re = re.compile(f"{_blank_lines}(<\\?braille-page.*\\?>)")
+    _braille_page_re = re.compile(f"{_blank_lines}(<\\?braille-page.*?\\?>)")
 
     def detect_pdf(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
-        if cursor % 80000 == 0:
-            print(f"Cursor: {cursor} {_images_references}")
-        return None
+        new_cursor = cursor
+        if line := _braille_page_re.match(text[new_cursor:]):
+            braille_page = line.group(2).split()[1].split("?")[0].strip()
+            href = ""
+            if braille_page in _images_references:
+                # the for loop takes care of left and right
+                for file_ref  in _images_references[braille_page]:
+                    href += (
+                        f'<p><a href="{file_ref}" '+
+                        f' alt="{_auto_gen}{braille_page}"> '+
+                        f'{_pdf_text}{braille_page}</a></p>'
+                    )
+                del _images_references[braille_page]    
+            new_cursor += line.end()
+            return (
+                DetectionResult(
+                    new_cursor, state, 0.9, f"{output_text}{href}{line.group(2)}"
+                )
+                if href
+                else None
+            )
 
     return detect_pdf
