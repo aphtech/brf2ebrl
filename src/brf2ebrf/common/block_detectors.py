@@ -21,7 +21,7 @@ def detect_pre(
 
 def create_cell_heading(indent: int, tag_name: str) -> Detector:
     """Creates a detector for a heading indented by the specified amount."""
-    heading_re = re.compile(f"\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+")
+    heading_re = re.compile(f"\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n]+")
 
     def detect_cell_heading(
             text: str, cursor: int, state: DetectionState, output_text: str
@@ -45,7 +45,7 @@ def create_centered_detector(
         cells_per_line: int, min_indent: int, tag_name: str
 ) -> Detector:
     """Creates a detector for detecting centered text."""
-    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+", )
+    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n]+", )
 
     def detect_centered(
             text: str, cursor: int, state: DetectionState, output_text: str
@@ -84,7 +84,6 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
 
     def detect_paragraph(
             text: str, cursor: int, state: DetectionState, output_text: str
-
     ) -> DetectionResult | None:
         lines = []
         new_cursor = cursor
@@ -109,14 +108,6 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     first_line_re = re.compile(f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
     run_over_re = re.compile(f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
 
-
-    # numbers = "\u283c[\u2801|\u2803|\u2809|\u2819|\u2811|\u280b|\u281b|\u2813|\u280a|\u281a]+\u2832 "
-    # first_line_re = re.compile(
-    #    f"^(\u2800{{{first_line_indent}}})(\u283c[\u2801\u2803\u2809\u2819\u2811\u280b\u281b\u2813\u280a\u281a]+\u2832) ([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+"
-    #)
-    #run_over_re = re.compile(
-    #    f"^\u2800{{{run_over}}}+ ,mbvnhc([\u2801-\u28ff][\u2800-\u28ff]*)[\n\f]+"
-    #)
 
     def detect_list(
         text: str, cursor: int, state: DetectionState, output_text: str
