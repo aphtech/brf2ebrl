@@ -40,7 +40,8 @@ _XHTML_FOOTER = """</body>
 
 def create_brf2ebrf_parser(
     page_layout: PageLayout = PageLayout(),
-    brf_filename: str = "",
+    brf_path: str = "",
+    output_path :str = "",
     images_path: str = "",
     detect_running_heads: bool = True,
 ) -> Iterable[ParserPass]:
@@ -130,7 +131,7 @@ def create_brf2ebrf_parser(
             ParserPass(
                 "Convert PDF to single files and links",
                 {},
-                [create_pdf_graphic_detector(brf_filename, images_path)],
+                [create_pdf_graphic_detector(brf_path, output_path, images_path)],
                 most_confident_detector,
             )
             if images_path
@@ -215,7 +216,8 @@ def main():
         create_brf2ebrf_parser(
             page_layout=page_layout,
             detect_running_heads=args.running_heads,
-            brf_filename=args.brf,
+            brf_path=args.brf,
+            output_path = args.output_file,
             images_path=args.images,
         ),
     )

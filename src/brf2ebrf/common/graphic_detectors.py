@@ -10,27 +10,24 @@ from brf2ebrf.common.detectors import _ASCII_TO_UNICODE_DICT
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 
-def create_images_references(filename_path: str, images_path: str) -> dict:
+def create_images_references(brf_path: str, output_path :str,images_path: str) -> dict:
     """Creates the PDF files and the references dictionary. Returns the Reference dictionary"""
     _braille_page_re = re.compile(r"([a-zA-Z]*#+[a-zA-z]*)$")
     _references = {}
-    in_folder, in_filename_base = os.path.split(filename_path)
-    if not in_folder or not os.path.isdir(in_folder):
-        output_folder = os.getcwd()
-    output_folder = os.path.join(in_folder, "images")
+    ebrf_folder = os.path.split(output_path)[0]
+    in_filename_base = os.path.split(brf_path)[1].split(".")[0]
 
-    if os.path.exists(output_folder) and not os.path.isdir(output_folder):
-        logging.error("Can not create {output_folder} file already exists.")
+    if os.path.exists(ebrf_folder) and not os.path.isdir(ebrf_folder):
+        logging.error("Can not create {ebrf_folder} file already exists.")
         sys.exit()
 
-    if not os.path.exists(output_folder):
+    if not os.path.exists(ebrf_folder):
         try:
-            os.makedirs(output_folder)
+            os.makedirs(os.path.join(ebrf_folder,"images"))
         except:
-            logging.error(f"Failed to create '{output_folder}'.")
+            logging.error(f"Failed to create '{ebrf_folder}'.")
             sys.exit()
-
-    in_filename_base = in_filename_base.split(".")[0]
+            
     if images_path and os.path.isdir(images_path):
         _files = [
             os.path.join(images_path, s)
@@ -41,9 +38,12 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
             images_path = _files[0]
         else:
             images_path = ""
+        
     if not images_path or (images_path and not os.path.exists(images_path)):
         logging.error(f"No images path or folder found {images_path}")
         sys.exit()
+        
+            
     # visitor code for the pdf parser
     _parts = []
 
@@ -53,7 +53,7 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
             text = text.strip("_:")
             parts.append(text.strip(" \n\r\l\f"))
 
-    def write_pdf(bp_page_number, pdf_filename, pdf_page):
+    def write_pdf(bp_page_number, work_path, pdf_filename, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
 
         if bp_page_trans in _references.keys():
@@ -63,7 +63,7 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
 
         output = PdfWriter()
         output.add_page(pdf_page)
-        with open(pdf_filename, "wb") as outputStream:
+        with open(os.path.join(work_path,pdf_filename), "wb") as outputStream:
             output.write(outputStream)
 
     inputpdf = PdfReader(open(images_path, "rb"))
@@ -78,22 +78,25 @@ def create_images_references(filename_path: str, images_path: str) -> dict:
             if left_page:
                 write_pdf(
                     braille_page_number,
-                    f"{output_folder}/{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
+                    ebrf_folder,
+                    f"images/{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
                     inputpdf.pages[page_number - 1],
                 )
             write_pdf(
                 braille_page_number,
-                f"{output_folder}/{in_filename_base}_{braille_page_number.strip('#')}.pdf",
+                ebrf_folder,
+                f"images/{in_filename_base}_{braille_page_number.strip('#')}.pdf",
                 inputpdf.pages[page_number],
             )
             left_page = False
         else:
             left_page = True
-    logging.info(f" size of dictionary {len(_references)}")
+    #logging.info(f" dictionary {_references}")
+    #logging.info(f" size of dictionary {len(_references)}")
     return _references
 
 
-def create_pdf_graphic_detector(brf_filename: str, images_path: str) -> Detector:
+def create_pdf_graphic_detector(brf_path: str , output_path : str, images_path: str) -> Detector:
     """Creates a detector for finding graphic page numbers and matching with PDF pages
     * argument:
     * filename None if no image file or folder
@@ -102,7 +105,7 @@ def create_pdf_graphic_detector(brf_filename: str, images_path: str) -> Detector
     """
 
     # image references
-    _images_references = create_images_references(brf_filename, images_path)
+    _images_references = create_images_references(brf_path,output_path, images_path)
 
     # auto generated page text
     _auto_gen = "\u2801\u2825\u281e\u2815\u2800\u281b\u2811\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
