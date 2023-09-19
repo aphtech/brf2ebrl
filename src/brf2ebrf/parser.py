@@ -42,11 +42,12 @@ class ParserPass:
     selector: DetectionSelector
 
 
-def parse(brf: str, parser_passes: Iterable[ParserPass]) -> str:
+def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Callable[[int], None] = lambda x: None) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
     logging.info("Starting parsing")
     text = brf
-    for parser_pass in parser_passes:
+    for i, parser_pass in enumerate(parser_passes):
+        progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
         text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
         while cursor < len(text):
