@@ -201,7 +201,9 @@ def create_table_detector() -> Detector:
 
             for  index, cell in  enumerate(line.split('\u2800\u2800')):
                 if index < len(col_widths):
-                    table[row][index] += sep + "" + cell.strip('\u2800\u2810\n')
+                    # need this temp var because of backslashes.
+                    cell_strip = cell.strip('\u2800\u2810\n') 
+                    table[row] += f"{sep}{cell_strip}"
             cursor+=end_cursor
 
         complete_table=table[0]+"\n"
