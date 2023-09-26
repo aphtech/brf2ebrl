@@ -196,6 +196,18 @@ def main():
         logging.error("No input Brf to be converted.")
         arg_parser.print_help()
         sys.exit()
+            
+    _output_file_path = os.path.split(args.output_file    )[0]
+    if not os.path.exists(_output_file_path) and  not os.path.isdir(_output_file_path): 
+        try:
+            os.makedirs(_output_file_path)
+        except OSError as error_exception:
+            logging.error (f"Failled to create output path {_output_file_path}")
+            sys.exit()
+
+
+    
+    
 
     if args.images and not os.path.exists(args.images):
         logging.error(f"{args.images} is not a filename or folder.")
@@ -221,6 +233,7 @@ def main():
             images_path=args.images,
         ),
     )
+
     with open(args.output_file, "w", encoding="utf-8") as out_file:
         out_file.write(output_text)
 
