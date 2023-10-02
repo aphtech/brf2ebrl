@@ -2,6 +2,7 @@
 import argparse
 import os
 import logging
+import sys
 from collections.abc import Iterable
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
@@ -39,11 +40,11 @@ _XHTML_FOOTER = """</body>
 
 
 def create_brf2ebrf_parser(
-    page_layout: PageLayout = PageLayout(),
-    brf_path: str = "",
-    output_path :str = "",
-    images_path: str = "",
-    detect_running_heads: bool = True,
+        page_layout: PageLayout = PageLayout(),
+        brf_path: str = "",
+        output_path: str = "",
+        images_path: str = "",
+        detect_running_heads: bool = True,
 ) -> Iterable[ParserPass]:
     return [
         x
@@ -192,25 +193,24 @@ def main():
     arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
 
-    if not args.brf:
+    input_brf = args.brf
+    if not input_brf:
         logging.error("No input Brf to be converted.")
         arg_parser.print_help()
         sys.exit()
-            
-    _output_file_path = os.path.split(args.output_file    )[0]
-    if not os.path.exists(_output_file_path) and  not os.path.isdir(_output_file_path): 
+
+    output_ebrf = args.output_file
+    output_file_path = os.path.split(output_ebrf)[0]
+    if not os.path.exists(output_file_path) and not os.path.isdir(output_file_path):
         try:
-            os.makedirs(_output_file_path)
-        except OSError as error_exception:
-            logging.error (f"Failled to create output path {_output_file_path}")
+            os.makedirs(output_file_path)
+        except OSError:
+            logging.error(f"Failled to create output path {output_file_path}")
             sys.exit()
 
-
-    
-    
-
-    if args.images and not os.path.exists(args.images):
-        logging.error(f"{args.images} is not a filename or folder.")
+    input_images = args.images
+    if input_images and not os.path.exists(input_images):
+        logging.error(f"{input_images} is not a filename or folder.")
         arg_parser.print_help()
         sys.exit()
 
@@ -220,21 +220,25 @@ def main():
         cells_per_line=args.cells_per_line,
         lines_per_page=args.lines_per_page,
     )
+    running_heads = args.running_heads
+    convert_brf2ebrf(input_brf, input_images, output_ebrf, page_layout, running_heads)
+
+
+def convert_brf2ebrf(input_brf, input_images, output_ebrf, page_layout, running_heads):
     brf = ""
-    with open(args.brf, "r", encoding="utf-8") as in_file:
-        brf = in_file.read()
+    with open(input_brf, "r", encoding="utf-8") as in_file:
+        brf += in_file.read()
     output_text = parse(
         brf,
         create_brf2ebrf_parser(
             page_layout=page_layout,
-            detect_running_heads=args.running_heads,
-            brf_path=args.brf,
-            output_path = args.output_file,
-            images_path=args.images,
+            detect_running_heads=running_heads,
+            brf_path=input_brf,
+            output_path=output_ebrf,
+            images_path=input_images,
         ),
     )
-
-    with open(args.output_file, "w", encoding="utf-8") as out_file:
+    with open(output_ebrf, "w", encoding="utf-8") as out_file:
         out_file.write(output_text)
 
 
