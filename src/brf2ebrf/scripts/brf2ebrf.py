@@ -224,7 +224,7 @@ def main():
     convert_brf2ebrf(input_brf, input_images, output_ebrf, page_layout, running_heads)
 
 
-def convert_brf2ebrf(input_brf, input_images, output_ebrf, page_layout, running_heads):
+def convert_brf2ebrf(input_brf: str, input_images: str, output_ebrf: str, page_layout: PageLayout, running_heads: bool):
     brf = ""
     with open(input_brf, "r", encoding="utf-8") as in_file:
         brf += in_file.read()
