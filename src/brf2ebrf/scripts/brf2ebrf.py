@@ -3,7 +3,7 @@ import argparse
 import os
 import logging
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Callable
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
 from brf2ebrf.common import PageNumberPosition, PageLayout
@@ -224,7 +224,8 @@ def main():
     convert_brf2ebrf(input_brf, input_images, output_ebrf, page_layout, running_heads)
 
 
-def convert_brf2ebrf(input_brf: str, input_images: str, output_ebrf: str, page_layout: PageLayout, running_heads: bool):
+def convert_brf2ebrf(input_brf: str, input_images: str, output_ebrf: str, page_layout: PageLayout, running_heads: bool,
+                     progress_callback: Callable[[int], None] = lambda x: None):
     brf = ""
     with open(input_brf, "r", encoding="utf-8") as in_file:
         brf += in_file.read()
@@ -236,7 +237,7 @@ def convert_brf2ebrf(input_brf: str, input_images: str, output_ebrf: str, page_l
             brf_path=input_brf,
             output_path=output_ebrf,
             images_path=input_images,
-        ),
+        ), progress_callback=progress_callback
     )
     with open(output_ebrf, "w", encoding="utf-8") as out_file:
         out_file.write(output_text)
