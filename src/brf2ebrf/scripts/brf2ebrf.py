@@ -222,23 +222,24 @@ def main():
     )
     running_heads = args.running_heads
     parser = create_brf2ebrf_parser(
-            page_layout=page_layout,
-            detect_running_heads=running_heads,
-            brf_path=input_brf,
-            output_path=output_ebrf,
-            images_path=input_images,
-        )
+        page_layout=page_layout,
+        detect_running_heads=running_heads,
+        brf_path=input_brf,
+        output_path=output_ebrf,
+        images_path=input_images,
+    )
     convert_brf2ebrf(input_brf, output_ebrf, parser)
 
 
 def convert_brf2ebrf(input_brf: str, output_ebrf: str, parser: Iterable[ParserPass],
-                     progress_callback: Callable[[int], None] = lambda x: None):
+                     progress_callback: Callable[[int], None] = lambda x: None,
+                     is_cancelled: Callable[[], bool] = lambda: False):
     brf = ""
     with open(input_brf, "r", encoding="utf-8") as in_file:
         brf += in_file.read()
     output_text = parse(
         brf,
-        parser, progress_callback=progress_callback
+        parser, progress_callback=progress_callback, is_cancelled=is_cancelled
     )
     with open(output_ebrf, "w", encoding="utf-8") as out_file:
         out_file.write(output_text)
