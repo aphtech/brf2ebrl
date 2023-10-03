@@ -3,7 +3,7 @@ import argparse
 import os
 import logging
 import sys
-from collections.abc import Iterable, Callable
+from collections.abc import Iterable, Callable, Sequence
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
 from brf2ebrf.common import PageNumberPosition, PageLayout
@@ -45,7 +45,7 @@ def create_brf2ebrf_parser(
         output_path: str = "",
         images_path: str = "",
         detect_running_heads: bool = True,
-) -> Iterable[ParserPass]:
+) -> Sequence[ParserPass]:
     return [
         x
         for x in [
