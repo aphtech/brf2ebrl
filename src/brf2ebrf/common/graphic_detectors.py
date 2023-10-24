@@ -78,13 +78,13 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
                 write_pdf(
                     braille_page_number,
                     ebrf_folder,
-                    f"images/{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
+                    os.path.join("images", f"{in_filename_base}_{braille_page_number.strip('#')}_l.pdf"),
                     inputpdf.pages[page_number - 1],
                 )
             write_pdf(
                 braille_page_number,
                 ebrf_folder,
-                f"images/{in_filename_base}_{braille_page_number.strip('#')}.pdf",
+                os.path.join("images", f"{in_filename_base}_{braille_page_number.strip('#')}.pdf"),
                 inputpdf.pages[page_number],
             )
             left_page = False
