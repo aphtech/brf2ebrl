@@ -129,14 +129,7 @@ def create_brf2ebrf_parser(
                 most_confident_detector,
             ),
             # PDF Graphics
-            ParserPass(
-                "Convert PDF to single files and links",
-                {},
-                [create_pdf_graphic_detector(brf_path, output_path, images_path)],
-                most_confident_detector,
-            )
-            if images_path
-            else None,
+            create_image_detection_parser_pass(brf_path, images_path, output_path),
             # Convert print page numbers to ebrf tags
             ParserPass(
                 "Print page numbers to ebrf",
@@ -158,6 +151,18 @@ def create_brf2ebrf_parser(
         ]
         if x is not None
     ]
+
+
+def create_image_detection_parser_pass(brf_path, images_path, output_path):
+    if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path)):
+        return ParserPass(
+            "Convert PDF to single files and links",
+            {},
+            [image_detector],
+            most_confident_detector,
+        )
+    else:
+        return None
 
 
 def main():
