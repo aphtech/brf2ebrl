@@ -78,13 +78,13 @@ _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
 _PROCESSING_INSTRUCTION_RE = f"{_PRINT_PAGE_RE}|{_BRAILLE_PAGE_RE}|{_RUNNING_HEAD_RE}"
 
 
-def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str, int)]:
+def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str | None, int)]:
     _first_line_re = re.compile(
         f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
     _run_over_re = re.compile(
         f"\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
 
-    def find_paragraph_braille(text: str, cursor: int) -> (str, int):
+    def find_paragraph_braille(text: str, cursor: int) -> (str | None, int):
         if line := _first_line_re.match(
                 text[cursor:]
         ):
@@ -103,7 +103,20 @@ def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Call
     return find_paragraph_braille
 
 
-def create_paragraph_detector(first_line_indent: int, run_over: int, tag_name: str = "p") -> Detector:
+def _no_indicators_block_matcher(brl: str, state: DetectionState, tags: (str, str) = ("<p>", "</p>")) -> (
+str | None, DetectionState):
+    return f"{tags[0]}{brl}{tags[1]}", state
+
+
+def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None, DetectionState):
+    if brl.startswith("\u2808\u2828\u2823") or state.get("tn", False):
+        return f"<div class=\"tn\">{brl}</div>", dict(state, tn=not brl.endswith("\u2808\u2828\u281b"))
+    return None, state
+
+
+def create_paragraph_detector(first_line_indent: int, run_over: int,
+                              indicator_matcher: Callable[[str, DetectionState], (
+                                      str | None, DetectionState)] = _no_indicators_block_matcher) -> Detector:
     """Creates a detector for finding paragraphs with the specified first line indent and run over."""
     find_paragraph_braille = _create_indented_block_finder(first_line_indent, run_over)
 
@@ -111,8 +124,11 @@ def create_paragraph_detector(first_line_indent: int, run_over: int, tag_name: s
             text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
         brl, new_cursor = find_paragraph_braille(text, cursor)
-        return DetectionResult(new_cursor, state, 0.9,
-                               f"{output_text}<{tag_name}>{brl}</{tag_name}>\n") if brl else None
+        if brl:
+            tag, new_state = indicator_matcher(brl, state)
+            if tag:
+                return DetectionResult(new_cursor, state, 0.9, f"{output_text}{tag}\n")
+        return None
 
     return detect_paragraph
 
