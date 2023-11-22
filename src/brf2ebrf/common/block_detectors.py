@@ -1,7 +1,6 @@
 """Detectors for blocks"""
 import re
-from collections.abc import Iterable
-import logging
+from collections.abc import Iterable, Callable
 
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
@@ -79,14 +78,13 @@ _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
 _PROCESSING_INSTRUCTION_RE = f"{_PRINT_PAGE_RE}|{_BRAILLE_PAGE_RE}|{_RUNNING_HEAD_RE}"
 
 
-def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector:
-    """Creates a detector for finding paragraphs with the specified first line indent and run over."""
+def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str, int)]:
     _first_line_re = re.compile(
         f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
     _run_over_re = re.compile(
         f"\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
 
-    def find_paragraph_braille(cursor: int, text: str) -> (str, int):
+    def find_paragraph_braille(text: str, cursor: int) -> (str, int):
         if line := _first_line_re.match(
                 text[cursor:]
         ):
@@ -102,11 +100,19 @@ def create_paragraph_detector(first_line_indent: int, run_over: int) -> Detector
         else:
             return None, cursor
 
+    return find_paragraph_braille
+
+
+def create_paragraph_detector(first_line_indent: int, run_over: int, tag_name: str = "p") -> Detector:
+    """Creates a detector for finding paragraphs with the specified first line indent and run over."""
+    find_paragraph_braille = _create_indented_block_finder(first_line_indent, run_over)
+
     def detect_paragraph(
             text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
-        brl, new_cursor = find_paragraph_braille(cursor, text)
-        return DetectionResult(new_cursor, state, 0.9, f"{output_text}<p>{brl}</p>\n") if brl else None
+        brl, new_cursor = find_paragraph_braille(text, cursor)
+        return DetectionResult(new_cursor, state, 0.9,
+                               f"{output_text}<{tag_name}>{brl}</{tag_name}>\n") if brl else None
 
     return detect_paragraph
 
