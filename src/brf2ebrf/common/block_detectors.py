@@ -1,4 +1,5 @@
 """Detectors for blocks"""
+import logging
 import re
 from collections.abc import Iterable, Callable
 
@@ -110,13 +111,13 @@ str | None, DetectionState):
 
 def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None, DetectionState):
     if brl.startswith("\u2808\u2828\u2823") or state.get("tn", False):
-        return f"<div class=\"tn\">{brl}</div>", dict(state, tn=not brl.endswith("\u2808\u2828\u281b"))
+        return f"<div class=\"tn\">{brl}</div>", dict(state, tn=(not brl.endswith("\u2808\u2828\u281c")))
     return None, state
 
 
 def create_paragraph_detector(first_line_indent: int, run_over: int,
                               indicator_matcher: Callable[[str, DetectionState], (
-                                      str | None, DetectionState)] = _no_indicators_block_matcher) -> Detector:
+                                      str | None, DetectionState)] = _no_indicators_block_matcher, confidence: float = 0.9) -> Detector:
     """Creates a detector for finding paragraphs with the specified first line indent and run over."""
     find_paragraph_braille = _create_indented_block_finder(first_line_indent, run_over)
 
@@ -127,7 +128,7 @@ def create_paragraph_detector(first_line_indent: int, run_over: int,
         if brl:
             tag, new_state = indicator_matcher(brl, state)
             if tag:
-                return DetectionResult(new_cursor, state, 0.9, f"{output_text}{tag}\n")
+                return DetectionResult(new_cursor, new_state, confidence, f"{output_text}{tag}\n")
         return None
 
     return detect_paragraph
