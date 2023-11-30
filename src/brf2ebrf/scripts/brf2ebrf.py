@@ -8,6 +8,7 @@ from collections.abc import Iterable, Callable, Sequence
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
 from brf2ebrf.common import PageNumberPosition, PageLayout
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
+from brf2ebrf.common.box_line_detectors import convert_box_lines  
 from brf2ebrf.common.block_detectors import (
 tn_indicators_block_matcher,
     detect_pre,
@@ -111,6 +112,13 @@ def create_brf2ebrf_parser(
                 "Detect blank lines",
                 {},
                 [convert_blank_line_to_pi, detect_and_pass_processing_instructions],
+                most_confident_detector,
+            ),
+            # convert box lines pass
+            ParserPass(
+                "Convert box lines to div tags",
+                {},
+                [convert_box_lines],
                 most_confident_detector,
             ),
             # Detect blocks pass
