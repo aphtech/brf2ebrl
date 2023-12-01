@@ -58,12 +58,13 @@ def create_braille_page_detector(
     def detect_braille_page_number(
             text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
-        if state.get("StartBraillePage", False):
+        page_count = state.get("page_count", 1)
+        if state.get("start_braille_page", False):
             page_content = text[cursor:].split("\f")[0]
             new_cursor = cursor + len(page_content)
             page_content, page_num = _find_page_number(
                 page_content,
-                page_layout.odd_braille_page_number,
+                page_layout.odd_braille_page_number if page_count % 2 else page_layout.even_braille_page_number,
                 page_layout.cells_per_line,
                 page_layout.lines_per_page,
                 separator,
@@ -71,12 +72,12 @@ def create_braille_page_detector(
             )
             output = format_output(page_content, page_num)
             return DetectionResult(
-                cursor=new_cursor, state=dict(state, StartBraillePage=False), confidence=1.0, text=output_text + output
+                cursor=new_cursor, state=dict(state, start_braille_page=False), confidence=1.0, text=output_text + output
             )
         if text.startswith("\f", cursor):
             return DetectionResult(
                 cursor + 1,
-                dict(state, StartBraillePage=True),
+                dict(state, start_braille_page=True, page_count=page_count+1),
                 confidence=1.0,
                 text=output_text + text[cursor],
             )
@@ -114,10 +115,12 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
 
     def detect_print_page_number(text: str, cursor: int, state: DetectionState,
                                  output_text: str) -> DetectionResult | None:
+        page_count = state.get("page_count", 1)
         if ord(text[cursor]) in range(0x2800, 0x2900):
             page_content = text[cursor:].partition("\f")[0]
             new_cursor = cursor + len(page_content)
-            page_content, page_num = _find_page_number(page_content, page_layout.odd_print_page_number,
+            page_content, page_num = _find_page_number(page_content,
+                                                       page_layout.odd_print_page_number if page_count % 2 else page_layout.even_print_page_number,
                                                        page_layout.cells_per_line, page_layout.lines_per_page,
                                                        separator)
             s_ppn = state.get("ppn", "")
@@ -138,7 +141,7 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
                 else:
                     lines.append(line)
             result += "\n".join(lines)
-            return DetectionResult(new_cursor, dict(state, ppn=s_ppn, continuation=s_cont), 0.9,
+            return DetectionResult(new_cursor, dict(state, ppn=s_ppn, continuation=s_cont, page_count=page_count+1), 0.9,
                                    f"{output_text}{result}")
         return None
 

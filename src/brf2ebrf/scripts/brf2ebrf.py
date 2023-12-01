@@ -60,7 +60,7 @@ def create_brf2ebrf_parser(
             # Detect Braille pages pass
             ParserPass(
                 "Detect Braille pages",
-                {"StartBraillePage": True},
+                {"start_braille_page": True, "page_count": 1},
                 [
                     create_braille_page_detector(
                         page_layout=page_layout,
@@ -73,7 +73,7 @@ def create_brf2ebrf_parser(
             ),
             ParserPass(
                 "Detect print pages",
-                {},
+                {"page_count": 1},
                 [
                     create_print_page_detector(
                         page_layout=page_layout, separator="\u2800" * 3
