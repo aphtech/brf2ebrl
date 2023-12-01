@@ -222,8 +222,8 @@ def main():
         sys.exit()
 
     page_layout = PageLayout(
-        braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
-        print_page_number=PageNumberPosition.TOP_RIGHT,
+        odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+        odd_print_page_number=PageNumberPosition.TOP_RIGHT,
         cells_per_line=args.cells_per_line,
         lines_per_page=args.lines_per_page,
     )

@@ -63,7 +63,7 @@ def create_braille_page_detector(
             new_cursor = cursor + len(page_content)
             page_content, page_num = _find_page_number(
                 page_content,
-                page_layout.braille_page_number,
+                page_layout.odd_braille_page_number,
                 page_layout.cells_per_line,
                 page_layout.lines_per_page,
                 separator,
@@ -117,7 +117,7 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
         if ord(text[cursor]) in range(0x2800, 0x2900):
             page_content = text[cursor:].partition("\f")[0]
             new_cursor = cursor + len(page_content)
-            page_content, page_num = _find_page_number(page_content, page_layout.print_page_number,
+            page_content, page_num = _find_page_number(page_content, page_layout.odd_print_page_number,
                                                        page_layout.cells_per_line, page_layout.lines_per_page,
                                                        separator)
             s_ppn = state.get("ppn", "")

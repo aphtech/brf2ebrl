@@ -44,7 +44,8 @@ def test_detect_braille_page_number():
     expected_brf = "\ue000{\"BraillePage\": {\"Number\": \"\\u283c\\u2801\"}}\ue001" + brf
     brf += ("\u2800" * 30) + "\u283c\u2801"
     expected = DetectionResult(len(brf), {"StartBraillePage": False}, 1.0, expected_brf)
-    actual = create_braille_page_detector(page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800"*3)(
+    actual = create_braille_page_detector(page_layout=PageLayout(
+        odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800" * 3)(
         brf, 0, {"StartBraillePage": True}, "")
     assert actual == expected
 
@@ -53,6 +54,7 @@ def test_avoid_false_positive_when_not_right_form():
     brf = "\n".join(["\u281e\u2811\u280c\u2800\u281e\u2811\u282d\u281e"] * 25) + ("\u2800" * 30) + "\u2803\u2801"
     expected_brf = "\ue000{\"BraillePage\": {}}\ue001" + brf
     expected = DetectionResult(len(brf), {"StartBraillePage": False}, 1.0, expected_brf)
-    actual = create_braille_page_detector(page_layout=PageLayout(braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800"*3)(
+    actual = create_braille_page_detector(page_layout=PageLayout(
+        odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT), separator="\u2800" * 3)(
         brf, 0, {"StartBraillePage": True}, "")
     assert actual == expected

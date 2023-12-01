@@ -32,5 +32,7 @@ class PageNumberPosition(Enum):
 class PageLayout:
     cells_per_line: int = 40
     lines_per_page: int = 25
-    braille_page_number: PageNumberPosition = PageNumberPosition.NONE
-    print_page_number: PageNumberPosition = PageNumberPosition.NONE
+    odd_braille_page_number: PageNumberPosition = PageNumberPosition.NONE
+    even_braille_page_number: PageNumberPosition = PageNumberPosition.NONE
+    odd_print_page_number: PageNumberPosition = PageNumberPosition.NONE
+    even_print_page_number: PageNumberPosition = PageNumberPosition.NONE
