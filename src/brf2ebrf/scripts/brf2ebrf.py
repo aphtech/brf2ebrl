@@ -9,6 +9,8 @@ from brf2ebrf.bana import create_braille_page_detector, create_print_page_detect
 from brf2ebrf.common import PageNumberPosition, PageLayout
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
+from brf2ebrf.common.emphasis_detectors import convert_emphasis
+
 from brf2ebrf.common.block_detectors import (
 tn_indicators_block_matcher,
     detect_pre,
@@ -143,6 +145,13 @@ def create_brf2ebrf_parser(
                 "Remove  box lines processing instructions",
                 {},
                 [remove_box_lines_processing_instructions],
+                most_confident_detector,
+            ),
+# convert Emphasis
+            ParserPass(
+                "Convert Emphasis",
+                {},
+                [convert_emphasis],
                 most_confident_detector,
             ),
             # PDF Graphics
