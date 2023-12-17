@@ -18,11 +18,30 @@ letter = {
     "\u2838\u2806": ('<em class="underline">', "</em>"),
     "\u2808\u2806": ('<em class="script">', "</em>"),
     "\u2808\u283c\u2806": ('<em class="trans1">', "</em>"),
-    "\u2808\u283c\u2806": ('<em class="trans2">', "</em>"),
-    "\u2808\u283c\u2806": ('<em class="trans3">', "</em>"),
-    "\u2808\u283c\u2806": ('<em class="trans4">', "</em>"),
-    "\u2808\u283c\u2806": ('<em class="trans5">', "</em>"),
+    "\u2818\u283c\u2806": ('<em class="trans2">', "</em>"),
+    "\u2838\u283c\u2806": ('<em class="trans3">', "</em>"),
+    "\u2810\u283c\u2806": ('<em class="trans4">', "</em>"),
+    "\u2828\u283c\u2806": ('<em class="trans5">', "</em>"),
 }
+
+
+letter_re = re.compile(
+    "(?:"
+    + "|".join([f"({uni})" for uni in letter.keys()])
+    + ")+([\u2808\u2810\u2820\u2830\u2818\u2828\u2838\u283c]*)([\u2801-\u28ff])"
+)
+
+
+def letter_groups(match):
+    start_tags = "".join(
+        [f"{letter[uni][0]}{uni}" for uni in match.groups()[:-2] if uni is not None]
+    )
+    end_tags = "".join(
+        [letter[uni][1] for uni in match.groups()[:-2] if uni is not None]
+    )
+    if match.groups()[-2] == "":
+        return f"{start_tags}{match.groups()[-1]}{end_tags}"
+    return f"{start_tags}{match.groups()[-2]}{match.groups()[-1]}{end_tags}"
 
 
 word = {
@@ -99,9 +118,26 @@ def phrase_groups(match):
 def convert_emphasis(
     text: str, cursor: int, state: DetectionState, output_text: str
 ) -> DetectionResult | None:
+    """Adds all Emphasis tags by using re.sub
+
+    Args:
+        text (str): full brf in text
+        cursor (int): position in file
+        state (DetectionState): parser state
+        output_text (str): the text that will be returned
+
+    Returns:
+        DetectionResult | None: changed file text
+    """    
+    
+    # Add letter tags
+    text = letter_re.sub(letter_groups, text)    
+
+    # add Word tags
     for word_re in words_re:
         text = word_re.sub(word_groups, text)
 
+    # Add Phrase tags
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
 
