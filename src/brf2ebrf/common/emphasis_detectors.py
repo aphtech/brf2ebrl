@@ -136,6 +136,9 @@ def convert_emphasis(
         DetectionResult | None: changed file text
     """    
     
+    #save the input length
+    input_len = len(text)    
+    
     # Add letter tags
     text = letter_re.sub(letter_groups, text)    
 
@@ -147,4 +150,4 @@ def convert_emphasis(
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
 
-    return DetectionResult(len(text), state, 1.0, text)
+    return DetectionResult(input_len, state, 1.0, output_text +text)
