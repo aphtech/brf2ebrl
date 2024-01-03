@@ -1,3 +1,9 @@
+#  Copyright (c) 2024. American Printing House for the Blind.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 import pytest
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, convert_ascii_to_unicode_braille
 from brf2ebrf.common.selectors import most_confident_detector
