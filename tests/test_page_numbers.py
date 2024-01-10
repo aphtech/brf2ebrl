@@ -5,7 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import pytest
-from brf2ebrf.common.page_numbers import _find_end_of_element
+from brf2ebrf.utils import find_end_of_element
 
 
 @pytest.mark.parametrize("text, start,expected", [
@@ -28,4 +28,4 @@ from brf2ebrf.common.page_numbers import _find_end_of_element
     ("<p/>", 0, 4)
 ])
 def test_find_end_of_element(text: str, start:int, expected: int):
-    assert _find_end_of_element(text, start) == expected
+    assert find_end_of_element(text, start) == expected
