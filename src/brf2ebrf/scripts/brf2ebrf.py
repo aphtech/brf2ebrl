@@ -12,7 +12,7 @@ import sys
 from collections.abc import Iterable, Callable, Sequence
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
-from brf2ebrf.bana.tn_detectors import tn_indicators_block_matcher
+from brf2ebrf.bana.tn_detectors import tn_indicators_block_matcher, detect_symbols_list_tn
 from brf2ebrf.common import PageNumberPosition, PageLayout
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
@@ -152,6 +152,12 @@ def create_brf2ebrf_parser(
                 {},
                 [remove_box_lines_processing_instructions],
                 most_confident_detector,
+            ),
+            ParserPass(
+                "Detect TN symbols lists",
+                {},
+                [detect_symbols_list_tn],
+                most_confident_detector
             ),
             # convert Emphasis
             ParserPass(

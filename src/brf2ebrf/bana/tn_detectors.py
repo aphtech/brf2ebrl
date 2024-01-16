@@ -17,9 +17,8 @@ def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None,
 
 
 _TN_HEADING_START_RE = re.compile("<h3>\u2808\u2828\u2823")
-_TN_HEADING_LIST_SEP_RE = re.compile("((<?blank-line?>)|\\s)*")
+_TN_HEADING_LIST_SEP_RE = re.compile("((<\\?blank-line\\?>)|\\s)*")
 _TN_LIST_START_RE = re.compile("<ul")
-_TN_LIST_END_RE = re.compile("\u2808\u2828\u281c(</[-a-zA-Z0-9])>$")
 
 
 def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
@@ -33,7 +32,8 @@ def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output
                     list_start = m.end()
                     if _TN_LIST_START_RE.match(text, list_start):
                         list_end = find_end_of_element(text, list_start)
-                        if list_end >= 0 and _TN_LIST_END_RE.search(text, position, list_end):
-                            return DetectionResult(position, state, 0.95,
-                                                   f"{output_text}<div class=\"tn\">{text[cursor:list_end]}</div>")
+                        if list_end >= 0 and "".join(c for c in text[cursor:list_end] if "\u2800" <= c <= "\u28ff"):
+                            return DetectionResult(list_end, state, 0.95,
+                                                   f"{output_text}{text[cursor:position]}<div class=\"tn\">{text[position:list_end]}</div>")
+        end += 1
     return DetectionResult(end, state, 0.5, f"{output_text}{text[cursor:end]}")
