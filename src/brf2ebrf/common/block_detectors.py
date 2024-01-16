@@ -114,12 +114,6 @@ def _no_indicators_block_matcher(brl: str, state: DetectionState, tags: (str, st
     return f"{tags[0]}{brl}{tags[1]}", state
 
 
-def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None, DetectionState):
-    if brl.startswith("\u2808\u2828\u2823") and brl.endswith("\u2808\u2828\u281c"):
-        return f"<div class=\"tn\">{brl}</div>", state
-    return None, state
-
-
 def create_paragraph_detector(first_line_indent: int, run_over: int,
                               indicator_matcher: Callable[[str, DetectionState], (
                                       str | None, DetectionState)] = _no_indicators_block_matcher,

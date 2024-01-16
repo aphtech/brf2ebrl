@@ -12,13 +12,13 @@ import sys
 from collections.abc import Iterable, Callable, Sequence
 
 from brf2ebrf.bana import create_braille_page_detector, create_print_page_detector
+from brf2ebrf.bana.tn_detectors import tn_indicators_block_matcher
 from brf2ebrf.common import PageNumberPosition, PageLayout
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
 from brf2ebrf.common.emphasis_detectors import convert_emphasis
 
 from brf2ebrf.common.block_detectors import (
-tn_indicators_block_matcher,
     detect_pre,
     create_cell_heading,
     create_centered_detector,
@@ -137,7 +137,7 @@ def create_brf2ebrf_parser(
                     create_centered_detector(page_layout.cells_per_line, 3, "h1"),
                     create_cell_heading(6, "h3"),
                     create_cell_heading(4, "h2"),
-                    create_paragraph_detector(6,4, tn_indicators_block_matcher, confidence=0.95),
+                    create_paragraph_detector(6, 4, tn_indicators_block_matcher, confidence=0.95),
                     create_paragraph_detector(2, 0),
                     create_table_detector(),  # might add arguments later
                     create_list_detector(0, 2),
@@ -146,14 +146,14 @@ def create_brf2ebrf_parser(
                 ],
                 most_confident_detector,
             ),
-# remove box line processing instructions
+            # remove box line processing instructions
             ParserPass(
                 "Remove  box lines processing instructions",
                 {},
                 [remove_box_lines_processing_instructions],
                 most_confident_detector,
             ),
-# convert Emphasis
+            # convert Emphasis
             ParserPass(
                 "Convert Emphasis",
                 {},
