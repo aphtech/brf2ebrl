@@ -32,7 +32,7 @@ def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output
                     list_start = m.end()
                     if _TN_LIST_START_RE.match(text, list_start):
                         list_end = find_end_of_element(text, list_start)
-                        if list_end >= 0 and "".join(c for c in text[cursor:list_end] if "\u2800" <= c <= "\u28ff"):
+                        if list_end >= 0 and "".join(c for c in text[cursor:list_end] if "\u2800" < c <= "\u28ff").endswith("\u2808\u2828\u281c"):
                             return DetectionResult(list_end, state, 0.95,
                                                    f"{output_text}{text[cursor:position]}<div class=\"tn\">{text[position:list_end]}</div>")
         end += 1
