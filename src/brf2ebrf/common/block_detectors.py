@@ -205,7 +205,7 @@ def create_table_detector() -> Detector:
             return None
 
         # code
-        col_widths = [len(l) for l in match.group(2).split('\u2800\u2800')]
+        col_widths = [len(col) for col in match.group(2).split('\u2800\u2800')]
 
         # create header
         header_lines = match.group(1).split('\n')
