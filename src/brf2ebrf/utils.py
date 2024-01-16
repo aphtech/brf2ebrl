@@ -12,6 +12,7 @@ _ELEMENT_TAG_RE = re.compile(
 
 
 def find_end_of_element(text: str, start: int = 0) -> int:
+    """Finds the index of the end of the element or -1 if not found."""
     cursor = start
     tags = []
     while m := _ELEMENT_TAG_RE.search(text, cursor):
