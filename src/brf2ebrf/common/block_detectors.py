@@ -5,7 +5,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 """Detectors for blocks"""
-import logging
 import re
 from collections.abc import Iterable, Callable
 
@@ -116,8 +115,8 @@ str | None, DetectionState):
 
 
 def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None, DetectionState):
-    if brl.startswith("\u2808\u2828\u2823") or state.get("tn", False):
-        return f"<div class=\"tn\">{brl}</div>", dict(state, tn=(not brl.endswith("\u2808\u2828\u281c")))
+    if brl.startswith("\u2808\u2828\u2823") and brl.endswith("\u2808\u2828\u281c"):
+        return f"<div class=\"tn\">{brl}</div>", state
     return None, state
 
 
