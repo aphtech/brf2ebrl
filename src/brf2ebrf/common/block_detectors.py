@@ -110,7 +110,7 @@ def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Call
 
 
 def _no_indicators_block_matcher(brl: str, state: DetectionState, tags: (str, str) = ("<p>", "</p>")) -> (
-str | None, DetectionState):
+        str | None, DetectionState):
     return f"{tags[0]}{brl}{tags[1]}", state
 
 
@@ -122,7 +122,8 @@ def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None,
 
 def create_paragraph_detector(first_line_indent: int, run_over: int,
                               indicator_matcher: Callable[[str, DetectionState], (
-                                      str | None, DetectionState)] = _no_indicators_block_matcher, confidence: float = 0.9) -> Detector:
+                                      str | None, DetectionState)] = _no_indicators_block_matcher,
+                              confidence: float = 0.9) -> Detector:
     """Creates a detector for finding paragraphs with the specified first line indent and run over."""
     find_paragraph_braille = _create_indented_block_finder(first_line_indent, run_over)
 
