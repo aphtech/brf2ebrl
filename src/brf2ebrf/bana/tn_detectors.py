@@ -34,7 +34,7 @@ def detect_inline_tn(text: str, cursor: int, state: DetectionState, output_text:
     return DetectionResult(len(text), state, 1.0, f"{output_text}{new_text}")
 
 
-_TN_HEADING_START_RE = re.compile("<h3>\u2808\u2828\u2823")
+_TN_HEADING_START_RE = re.compile(f"<h3>{_START_TN_SYMBOL}")
 _TN_HEADING_LIST_SEP_RE = re.compile("((<\\?blank-line\\?>)|\\s)*")
 _TN_LIST_START_RE = re.compile("<ul")
 
@@ -52,7 +52,7 @@ def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output
                         list_end = find_end_of_element(text, list_start)
                         if list_end >= 0 and "".join(
                                 c for c in text[cursor:list_end] if "\u2800" < c <= "\u28ff").endswith(
-                                "\u2808\u2828\u281c"):
+                                _END_TN_SYMBOL):
                             return DetectionResult(list_end, state, 0.95,
                                                    f"{output_text}{text[cursor:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}")
         end += 1
