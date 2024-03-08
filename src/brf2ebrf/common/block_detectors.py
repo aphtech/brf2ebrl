@@ -77,9 +77,9 @@ def create_centered_detector(
 
 
 # constants for list and paragraph.
-_PRINT_PAGE_RE = "(?:<\\?print-page.*?\\?>)"
-_RUNNING_HEAD_RE = "(?:<\\?running-head.*?\\?>)"
-_BRAILLE_PAGE_RE = "(?:<\\?braille-page.*?\\?>)"
+_PRINT_PAGE_RE = "(?:<\\?print-page[ \u2800-\u28ff]*?\\?>)"
+_RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*?\\?>)"
+_BRAILLE_PAGE_RE = "(?:[ ]*?<\\?braille-page[ \u2800-\u28ff]*?\\?>[ ]*?)"
 _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
 _PROCESSING_INSTRUCTION_RE = f"{_PRINT_PAGE_RE}|{_BRAILLE_PAGE_RE}|{_RUNNING_HEAD_RE}"
 
@@ -137,9 +137,9 @@ def create_paragraph_detector(first_line_indent: int, run_over: int,
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
     first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
     run_over_re = re.compile(
-        f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+        f"{_PROCESSING_INSTRUCTION_RE}*?\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
 
     def detect_list(
             text: str, cursor: int, state: DetectionState, output_text: str
@@ -154,7 +154,9 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
             while line := run_over_re.match(text[new_cursor:]):
                 lines.append(line.group(1))
                 new_cursor += line.end()
-            li_items.append("<li>" + "\u2800".join(lines) + "</li>")
+            lines = [x for x in lines if x is not None]
+            if lines:
+                li_items.append("<li>" + "\u2800".join(lines) + "</li>")
             lines = []
         if li_items:
             brl = '<ul style="list-style-type: none">' + ''.join(li_items) + "</ul>"
