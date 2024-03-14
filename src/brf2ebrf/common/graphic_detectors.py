@@ -46,7 +46,7 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
         return {}
 
     # visitor code for the pdf parser
-    _parts = []
+    parts = []
 
     def visitor_body(text, cm, tm, fontDict, fontSize):
         y = tm[5]
