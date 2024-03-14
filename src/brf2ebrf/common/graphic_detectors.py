@@ -39,7 +39,7 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
         for s in os.listdir(images_path)
         if re.match(f"{in_filename_base}.*\.pdf", s, re.IGNORECASE)
     ] if images_path and os.path.isdir(images_path) else [images_path]
-    images_files = [x for x in images_files if not x or not os.path.exists(x)]
+    images_files = [x for x in images_files if x and os.path.exists(x)]
 
     if not images_files:
         logging.error(f"No images path or folder found {images_path}")
