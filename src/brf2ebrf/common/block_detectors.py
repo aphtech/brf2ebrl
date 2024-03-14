@@ -134,10 +134,42 @@ def create_paragraph_detector(first_line_indent: int, run_over: int,
     return detect_paragraph
 
 
+
+def create_nested_list_detector(first_line_indent: int, run_over: int) -> Detector:
+    """Creates a detector for finding lists with the specified first line indent and run over."""
+    first_line_re = re.compile(
+    f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff\n]*){_BLANK_LINE_RE}",re.MULTILINE)
+    run_over_re = re.compile(
+        f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+
+    def detect_nested_list(
+            text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> DetectionResult | None:
+        lines = []
+        new_cursor = cursor
+        li_items = []
+        brl = ''
+        if  line := first_line_re.match(text[new_cursor:]):
+            lines.append(line.group(1))
+            new_cursor += line.end()
+            li_items.append("<li>" + "\u2800".join(lines) + "</li>")
+            lines = []
+        if li_items:
+            brl = '<ul style="list-style-type: none">' + ''.join(li_items) + "</ul>"
+        return (
+            DetectionResult(new_cursor, state, 0.9, f"{output_text}{brl}\n")
+            if brl
+            else None
+        )
+
+    return detect_nested_list
+
+
+
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
     first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
+        f"^{_PROCESSING_INSTRUCTION_RE}*?\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
     run_over_re = re.compile(
         f"{_PROCESSING_INSTRUCTION_RE}*?\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
 
