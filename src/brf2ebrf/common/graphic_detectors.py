@@ -46,13 +46,13 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
         return {}
 
     # visitor code for the pdf parser
-    parts = []
 
-    def visitor_body(text, cm, tm, fontDict, fontSize):
+    def visitor_body(text, tm):
         y = tm[5]
         if y < 50 and text.strip(" \n\r\l\f"):
             text = text.strip("_:")
-            parts.append(text.strip(" \n\r\l\f"))
+            return [text.strip(" \n\r\l\f")]
+        return []
 
     def write_pdf(bp_page_number, work_path, pdf_filename, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
@@ -72,7 +72,8 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
         left_page = False
         for page_number in range(len(inputpdf.pages)):
             parts = []
-            inputpdf.pages[page_number].extract_text(visitor_text=visitor_body)
+            inputpdf.pages[page_number].extract_text(visitor_text=lambda t, cm, tm, fd, fs: parts.extend(visitor_body(t,
+                                                                                                                      tm)))
             braille_page_number = "\n".join(parts)
             parts = braille_page_number.strip(" \n\r\l\f%").split()
             if parts and _braille_page_re.match(parts[-1]):
