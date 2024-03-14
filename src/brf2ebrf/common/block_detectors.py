@@ -26,7 +26,7 @@ def detect_pre(
 
 def create_cell_heading(indent: int, tag_name: str) -> Detector:
     """Creates a detector for a heading indented by the specified amount."""
-    heading_re = re.compile(f"\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)[\n]+")
+    heading_re = re.compile(f"\u2800{{{indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n+")
 
     def detect_cell_heading(
             text: str, cursor: int, state: DetectionState, output_text: str
@@ -50,7 +50,7 @@ def create_centered_detector(
         cells_per_line: int, min_indent: int, tag_name: str
 ) -> Detector:
     """Creates a detector for detecting centered text."""
-    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)[\n]+", )
+    heading_re = re.compile(f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)\n+", )
 
     def detect_centered(
             text: str, cursor: int, state: DetectionState, output_text: str
@@ -77,18 +77,18 @@ def create_centered_detector(
 
 
 # constants for list and paragraph.
-_PRINT_PAGE_RE = "(?:<\\?print-page.*?\\?>)"
-_RUNNING_HEAD_RE = "(?:<\\?running-head.*?\\?>)"
-_BRAILLE_PAGE_RE = "(?:<\\?braille-page.*?\\?>)"
+_PRINT_PAGE_RE = "(?:<\\?print-page[ \u2800-\u28ff]*?\\?>)"
+_RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*?\\?>)"
+_BRAILLE_PAGE_RE = "(?:[ ]*?<\\?braille-page[ \u2800-\u28ff]*?\\?>[ ]*?)"
 _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
 _PROCESSING_INSTRUCTION_RE = f"{_PRINT_PAGE_RE}|{_BRAILLE_PAGE_RE}|{_RUNNING_HEAD_RE}"
 
 
 def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str | None, int)]:
     _first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
+        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n|{_BLANK_LINE_RE})")
     _run_over_re = re.compile(
-        f"\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
+        f"\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n|{_BLANK_LINE_RE})")
 
     def find_paragraph_braille(text: str, cursor: int) -> (str | None, int):
         if line := _first_line_re.match(
@@ -134,12 +134,44 @@ def create_paragraph_detector(first_line_indent: int, run_over: int,
     return detect_paragraph
 
 
+
+def create_nested_list_detector(first_line_indent: int, run_over: int) -> Detector:
+    """Creates a detector for finding lists with the specified first line indent and run over."""
+    first_line_re = re.compile(
+    f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff\n]*){_BLANK_LINE_RE}",re.MULTILINE)
+    run_over_re = re.compile(
+        f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+
+    def detect_nested_list(
+            text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> DetectionResult | None:
+        lines = []
+        new_cursor = cursor
+        li_items = []
+        brl = ''
+        if  line := first_line_re.match(text[new_cursor:]):
+            lines.append(line.group(1))
+            new_cursor += line.end()
+            li_items.append("<li>" + "\u2800".join(lines) + "</li>")
+            lines = []
+        if li_items:
+            brl = '<ul style="list-style-type: none">' + ''.join(li_items) + "</ul>"
+        return (
+            DetectionResult(new_cursor, state, 0.9, f"{output_text}{brl}\n")
+            if brl
+            else None
+        )
+
+    return detect_nested_list
+
+
+
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
     first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
+        f"^{_PROCESSING_INSTRUCTION_RE}*?\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
     run_over_re = re.compile(
-        f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:[\n]|{_BLANK_LINE_RE})")
+        f"{_PROCESSING_INSTRUCTION_RE}*?\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)*?(?:\n)")
 
     def detect_list(
             text: str, cursor: int, state: DetectionState, output_text: str
@@ -154,7 +186,9 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
             while line := run_over_re.match(text[new_cursor:]):
                 lines.append(line.group(1))
                 new_cursor += line.end()
-            li_items.append("<li>" + "\u2800".join(lines) + "</li>")
+            lines = [x for x in lines if x is not None]
+            if lines:
+                li_items.append("<li>" + "\u2800".join(lines) + "</li>")
             lines = []
         if li_items:
             brl = '<ul style="list-style-type: none">' + ''.join(li_items) + "</ul>"
