@@ -6,16 +6,14 @@
 
 """Detectors for Emphasis
 
-Currently the regular expressions are built when the module loads.  
-I think I might change this after it is working so that all 
+Currently the regular expressions are built when the module loads.
+I think I might change this after it is working so that all
 the regular expressions are pre-built  and I might remove the for loops that create them.
 """
 
 import re
-from collections.abc import Iterable
-import logging
 
-from brf2ebrf.parser import DetectionState, DetectionResult, Detector
+from brf2ebrf.parser import DetectionState, DetectionResult
 
 
 letter = {
@@ -33,21 +31,22 @@ letter = {
 
 letter_re = re.compile(
     "(?:"
-    + "|".join([f"({uni})" for uni in letter.keys()])
+    + "|".join([f"({uni})" for uni in letter])
     + ")+([\u2808\u2810\u2820\u2830\u2818\u2828\u2838\u283c]*)([\u2801-\u28ff])"
 )
 
 
 def letter_groups(match):
+    """CREATES LETTER SUBSTITUTION"""
     start_tags = "".join(
         [f"{letter[uni][0]}{uni}" for uni in match.groups()[:-2] if uni is not None]
     )
-    end_tags = "".join(
+    _end_tags = "".join(
         [letter[uni][1] for uni in match.groups()[:-2] if uni is not None]
     )
     if match.groups()[-2] == "":
-        return f"{start_tags}{match.groups()[-1]}{end_tags}"
-    return f"{start_tags}{match.groups()[-2]}{match.groups()[-1]}{end_tags}"
+        return f"{start_tags}{match.groups()[-1]}{_end_tags}"
+    return f"{start_tags}{match.groups()[-2]}{match.groups()[-1]}{_end_tags}"
 
 
 word = {
@@ -62,17 +61,24 @@ word = {
     "\u2828\u283c\u2802": ("\u2828\u283c\u2804", '<em class="trans5">', "</em>"),
 }
 
-end_tags = r"\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>|</strong>|</em"
+_end_tags = r"\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>|</strong>|</em"
 words_re = []
 for key, value in word.items():
-    end_re = f"{value[0]}|{end_tags}"
+    end_re = f"{value[0]}|{_end_tags}"
     words_re.append(re.compile(f"({key})(.*?)({end_re})"))
 
 
 def word_groups(match):
+    """create the word substitution"""
     if match.group(3).startswith("<") or match.group(3) == "\u2800":
-        return f"{word[match.group(1)][1]}{match.group(1)}{match.group(2)}{word[match.group(1)][2]}{match.group(3)}"
-    return f"{word[match.group(1)][1]}{match.group(1)}{match.group(2)}{match.group(3)}{word[match.group(1)][2]}"
+        return (
+            f"{word[match.group(1)][1]}{match.group(1)}"
+            + f"{match.group(2)}{word[match.group(1)][2]}{match.group(3)}"
+        )
+    return (
+        f"{word[match.group(1)][1]}{match.group(1)}"
+        + f"{match.group(2)}{match.group(3)}{word[match.group(1)][2]}"
+    )
 
 
 phrase = {
@@ -108,21 +114,28 @@ phrase = {
 }
 
 
-end_tags = r"</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
+_end_tags = r"</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
 phrases_re = []
 for key, value in phrase.items():
-    end_re = f"{value[0]}|{end_tags}"
+    end_re = f"{value[0]}|{_end_tags}"
     phrases_re.append(re.compile(f"({key})(.*?)({end_re})"))
 
 
 def phrase_groups(match):
+    """Create the phrase substitution"""
     if match.group(3).startswith("<"):
-        return f"{phrase[match.group(1)][1]}{match.group(1)}{match.group(2)}{phrase[match.group(1)][2]}{match.group(3)}"
-    return f"{phrase[match.group(1)][1]}{match.group(1)}{match.group(2)}{match.group(3)}{phrase[match.group(1)][2]}"
+        return (
+            f"{phrase[match.group(1)][1]}{match.group(1)}"
+            +f"{match.group(2)}{phrase[match.group(1)][2]}{match.group(3)}"
+        )
+    return (
+        f"{phrase[match.group(1)][1]}{match.group(1)}"
+        +f"{match.group(2)}{match.group(3)}{phrase[match.group(1)][2]}"
+    )
 
 
 def convert_emphasis(
-    text: str, cursor: int, state: DetectionState, output_text: str
+    text: str, _: int, state: DetectionState, output_text: str
 ) -> DetectionResult | None:
     """Adds all Emphasis tags by using re.sub
 
@@ -134,13 +147,13 @@ def convert_emphasis(
 
     Returns:
         DetectionResult | None: changed file text
-    """    
-    
-    #save the input length
-    input_len = len(text)    
-    
+    """
+
+    # save the input length
+    input_len = len(text)
+
     # Add letter tags
-    text = letter_re.sub(letter_groups, text)    
+    text = letter_re.sub(letter_groups, text)
 
     # add Word tags
     for word_re in words_re:
@@ -150,4 +163,4 @@ def convert_emphasis(
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
 
-    return DetectionResult(input_len, state, 1.0, output_text +text)
+    return DetectionResult(input_len, state, 1.0, output_text + text)
