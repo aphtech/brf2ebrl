@@ -126,9 +126,9 @@ def create_pdf_graphic_detector(brf_path: str, output_path: str, images_path: st
             text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
         new_cursor = cursor
+        href = ""
         if line := _braille_page_re.match(text[new_cursor:]):
             braille_page = line.group(2).split()[1].split("?")[0].strip()
-            href = ""
             if braille_page in _images_references:
                 # the for loop takes care of left and right
                 for file_ref in _images_references[braille_page]:
@@ -139,12 +139,12 @@ def create_pdf_graphic_detector(brf_path: str, output_path: str, images_path: st
                     )
                 del _images_references[braille_page]
             new_cursor += line.end()
-            return (
-                DetectionResult(
-                    new_cursor, state, 0.9, f"{output_text}{href}{line.group(2)}"
-                )
-                if href
-                else None
+        return (
+            DetectionResult(
+                new_cursor, state, 0.9, f"{output_text}{href}{line.group(2)}"
             )
+            if href
+            else None
+        )
 
     return detect_pdf
