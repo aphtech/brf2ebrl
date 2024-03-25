@@ -34,11 +34,15 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
             logging.error(f"Failed to create '{ebrf_folder}'.")
             sys.exit()
 
-    images_files = [
-        os.path.join(images_path, s)
-        for s in os.listdir(images_path)
-        if re.match(f"{in_filename_base}.*\\.pdf", s, re.IGNORECASE)
-    ] if images_path and os.path.isdir(images_path) else [images_path]
+    images_files = (
+        [
+            os.path.join(images_path, s)
+            for s in os.listdir(images_path)
+            if re.match(f"{in_filename_base}.*\\.pdf", s, re.IGNORECASE)
+        ]
+        if images_path and os.path.isdir(images_path)
+        else [images_path]
+    )
     images_files = [x for x in images_files if x and os.path.exists(x)]
 
     if not images_files:
@@ -57,7 +61,7 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
     def write_pdf(bp_page_number, work_path, pdf_filename, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
 
-        if bp_page_trans in _references.keys():
+        if bp_page_trans in _references:
             _references[bp_page_trans].append(pdf_filename)
         else:
             _references[bp_page_trans] = [pdf_filename]
@@ -72,8 +76,9 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
         left_page = False
         for page_number in range(len(inputpdf.pages)):
             parts = []
-            inputpdf.pages[page_number].extract_text(visitor_text=lambda t, cm, tm, fd, fs: parts.extend(visitor_body(t,
-                                                                                                                      tm)))
+            inputpdf.pages[page_number].extract_text(
+                visitor_text=lambda t, cm, tm, fd, fs: parts.extend(visitor_body(t, tm))
+            )
             braille_page_number = "\n".join(parts)
             parts = braille_page_number.strip(" \n\r\f%").split()
             if parts and _braille_page_re.match(parts[-1]):
@@ -82,13 +87,19 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
                     write_pdf(
                         braille_page_number,
                         ebrf_folder,
-                        os.path.join("images", f"{in_filename_base}_{braille_page_number.strip('#')}_l.pdf"),
+                        os.path.join(
+                            "images",
+                            f"{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
+                        ),
                         inputpdf.pages[page_number - 1],
                     )
                 write_pdf(
                     braille_page_number,
                     ebrf_folder,
-                    os.path.join("images", f"{in_filename_base}_{braille_page_number.strip('#')}.pdf"),
+                    os.path.join(
+                        "images",
+                        f"{in_filename_base}_{braille_page_number.strip('#')}.pdf",
+                    ),
                     inputpdf.pages[page_number],
                 )
                 left_page = False
@@ -101,7 +112,9 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
     return _references
 
 
-def create_pdf_graphic_detector(brf_path: str, output_path: str, images_path: str) -> Detector | None:
+def create_pdf_graphic_detector(
+    brf_path: str, output_path: str, images_path: str
+) -> Detector | None:
     """Creates a detector for finding graphic page numbers and matching with PDF pages
     * argument:
     * filename None if no image file or folder
@@ -123,7 +136,7 @@ def create_pdf_graphic_detector(brf_path: str, output_path: str, images_path: st
     _braille_page_re = re.compile(f"{_blank_lines}(<\\?braille-page.*?\\?>)")
 
     def detect_pdf(
-            text: str, cursor: int, state: DetectionState, output_text: str
+        text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
         new_cursor = cursor
         href = ""
@@ -133,9 +146,9 @@ def create_pdf_graphic_detector(brf_path: str, output_path: str, images_path: st
                 # the for loop takes care of left and right
                 for file_ref in _images_references[braille_page]:
                     href += (
-                            f'<p><a href="{file_ref}" '
-                            + f' alt="{_auto_gen}{braille_page}"> '
-                            + f"{_pdf_text}{braille_page}</a></p>"
+                        f'<p><a href="{file_ref}" '
+                        + f' alt="{_auto_gen}{braille_page}"> '
+                        + f"{_pdf_text}{braille_page}</a></p>"
                     )
                 del _images_references[braille_page]
             new_cursor += line.end()
