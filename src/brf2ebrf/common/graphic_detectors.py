@@ -49,9 +49,9 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
 
     def visitor_body(text, tm):
         y = tm[5]
-        if y < 50 and text.strip(" \n\r\l\f"):
+        if y < 50 and text.strip(" \n\r\f"):
             text = text.strip("_:")
-            return [text.strip(" \n\r\l\f")]
+            return [text.strip(" \n\r\f")]
         return []
 
     def write_pdf(bp_page_number, work_path, pdf_filename, pdf_page):
@@ -75,7 +75,7 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
             inputpdf.pages[page_number].extract_text(visitor_text=lambda t, cm, tm, fd, fs: parts.extend(visitor_body(t,
                                                                                                                       tm)))
             braille_page_number = "\n".join(parts)
-            parts = braille_page_number.strip(" \n\r\l\f%").split()
+            parts = braille_page_number.strip(" \n\r\f%").split()
             if parts and _braille_page_re.match(parts[-1]):
                 braille_page_number = parts[-1].strip()
                 if left_page:
