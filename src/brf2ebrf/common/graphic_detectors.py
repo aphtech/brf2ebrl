@@ -74,7 +74,7 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
     for image_file in images_files:
         inputpdf = PdfReader(open(image_file, "rb"))
         left_page = False
-        for page_number,_  in enumerate(inputpdf.pages):
+        for page_number, _ in enumerate(inputpdf.pages):
             parts = []
             inputpdf.pages[page_number].extract_text(
                 visitor_text=lambda t, cm, tm, fd, fs: parts.extend(visitor_body(t, tm))
