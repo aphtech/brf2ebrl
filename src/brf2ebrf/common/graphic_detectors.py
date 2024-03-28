@@ -16,7 +16,7 @@ from brf2ebrf.common.detectors import _ASCII_TO_UNICODE_DICT
 from brf2ebrf.parser import DetectionState, DetectionResult, Detector
 
 
-def create_images_references(brf_path: str, output_path: str, images_path: str) -> dict:
+def create_images_references(brf_path: str, output_path: str, images_path: str) -> dict[str, str]:
     """Creates the PDF files and the references dictionary. Returns the Reference dictionary"""
     _braille_page_re = re.compile(r"([a-zA-Z]*#+[a-zA-z]*)$")
     _references = {}
@@ -58,7 +58,7 @@ def create_images_references(brf_path: str, output_path: str, images_path: str) 
             return [text.strip(" \n\r\f")]
         return []
 
-    def write_pdf(bp_page_number, work_path, pdf_filename, pdf_page):
+    def write_pdf(bp_page_number: str, work_path: str, pdf_filename: str, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
 
         if bp_page_trans in _references:
