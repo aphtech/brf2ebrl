@@ -35,6 +35,31 @@ class LazyDetectionResult(DetectionResult):
     text: str = field(init=False, default=cached_property(_create_text))
 
 
+@dataclass(frozen=True)
+class NamedDetectionResult(DetectionResult):
+    """Give a name and description to a DetectionResult"""
+    detection_result: DetectionResult
+    name: str
+    description: str = ""
+
+    def _get_cursor(self) -> int:
+        return self.detection_result.cursor
+
+    def _get_state(self) -> DetectionState:
+        return self.detection_result.state
+
+    def _get_confidence(self) -> float:
+        return self.detection_result.confidence
+
+    def _get_text(self) -> str:
+        return self.detection_result.text
+
+    cursor: int = field(init=False, default_factory=_get_cursor)
+    state: DetectionState = field(init=False, default_factory=_get_state)
+    confidence: float = field(init=False, default_factory=_get_confidence)
+    text: str = field(init=False, default_factory=_get_text)
+
+
 Detector = Callable[[str, int, DetectionState, str], DetectionResult | None]
 DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]], DetectionResult]
 
@@ -52,7 +77,8 @@ class ParsingCancelledException(Exception):
     pass
 
 
-def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Callable[[int], None] = lambda x: None, is_cancelled: Callable[[], bool] = lambda: False) -> str:
+def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Callable[[int], None] = lambda x: None,
+          is_cancelled: Callable[[], bool] = lambda: False) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
     logging.info("Starting parsing")
     text = brf
