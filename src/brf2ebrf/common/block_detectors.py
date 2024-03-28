@@ -86,9 +86,9 @@ _PROCESSING_INSTRUCTION_RE = f"{_PRINT_PAGE_RE}|{_BRAILLE_PAGE_RE}|{_RUNNING_HEA
 
 def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str | None, int)]:
     _first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n|{_BLANK_LINE_RE})")
+        f"{_PROCESSING_INSTRUCTION_RE}*\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n|{_BLANK_LINE_RE})")
     _run_over_re = re.compile(
-        f"\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n|{_BLANK_LINE_RE})")
+        f"{_PROCESSING_INSTRUCTION_RE}*\u2800{{{run_over}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n|{_BLANK_LINE_RE})")
 
     def find_paragraph_braille(text: str, cursor: int) -> (str | None, int):
         if line := _first_line_re.match(
