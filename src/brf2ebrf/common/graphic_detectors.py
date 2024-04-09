@@ -32,8 +32,8 @@ def create_images_references(
     if not os.path.exists(ebrf_folder):
         try:
             os.makedirs(os.path.join(ebrf_folder, "images"))
-        except:
-            logging.error("Failed to create '%s'.",ebrf_folder)
+        except OSError:
+            logging.error("Failed to create '%s'.", ebrf_folder)
             sys.exit()
 
     images_files = (
@@ -48,7 +48,7 @@ def create_images_references(
     images_files = [x for x in images_files if x and os.path.exists(x)]
 
     if not images_files:
-        logging.error("No images path or folder found %s",images_path)
+        logging.error("No images path or folder found %s", images_path)
         return {}
 
     # visitor code for the pdf parser
@@ -74,39 +74,43 @@ def create_images_references(
             output.write(output_stream)
 
     for image_file in images_files:
-        inputpdf = PdfReader(open(image_file, "rb"))
-        left_page = False
-        for page_number, _ in enumerate(inputpdf.pages):
-            parts = []
-            inputpdf.pages[page_number].extract_text(
-                visitor_text=lambda t, cm, tm, fd, fs: parts.extend(visitor_body(t, tm))
-            )
-            braille_page_number = "\n".join(parts)
-            parts = braille_page_number.strip(" \n\r\f%").split()
-            if parts and _braille_page_re.match(parts[-1]):
-                braille_page_number = parts[-1].strip()
-                if left_page:
+        with open(image_file, "rb") as input_file:
+            inputpdf = PdfReader(input_file)
+            left_page = False
+            for page_number, _ in enumerate(inputpdf.pages):
+                parts = []
+                inputpdf.pages[page_number].extract_text(
+                    visitor_text=lambda t, cm, tm, fd, fs: parts.extend(
+                        visitor_body(t, tm)
+                    )
+                )
+                braille_page_number = "\n".join(parts)
+                parts = braille_page_number.strip(" \n\r\f%").split()
+                if parts and _braille_page_re.match(parts[-1]):
+                    braille_page_number = parts[-1].strip()
+                    if left_page:
+                        write_pdf(
+                            braille_page_number,
+                            ebrf_folder,
+                            os.path.join(
+                                "images",
+                                f"{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
+                            ),
+                            inputpdf.pages[page_number - 1],
+                        )
                     write_pdf(
                         braille_page_number,
                         ebrf_folder,
                         os.path.join(
                             "images",
-                            f"{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
+                            f"{in_filename_base}_{braille_page_number.strip('#')}.pdf",
                         ),
-                        inputpdf.pages[page_number - 1],
+                        inputpdf.pages[page_number],
                     )
-                write_pdf(
-                    braille_page_number,
-                    ebrf_folder,
-                    os.path.join(
-                        "images",
-                        f"{in_filename_base}_{braille_page_number.strip('#')}.pdf",
-                    ),
-                    inputpdf.pages[page_number],
-                )
-                left_page = False
-            else:
-                left_page = True
+                    left_page = False
+                else:
+                    left_page = True
+
         if _references:
             break
     # logging.info(f" dictionary {_references}")
