@@ -78,8 +78,8 @@ def create_centered_detector(
 
 # constants for list and paragraph.
 _PRINT_PAGE_RE = "(?:<\\?print-page[ \u2800-\u28ff]*?\\?>)"
-_RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*?\\?>)"
-_BRAILLE_PAGE_RE = "(?:[ ]*?<\\?braille-page[ \u2800-\u28ff]*?\\?>[ ]*?)"
+_RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*\\?>)"
+_BRAILLE_PAGE_RE = "(?:<\\?braille-page[ \u2800-\u28ff]*\\?>)"
 _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
 _PROCESSING_INSTRUCTION_RE = f"(?:\n*(?:{_BRAILLE_PAGE_RE}{_PRINT_PAGE_RE}{{0,1}}{_RUNNING_HEAD_RE}{{0,1}})|{_PRINT_PAGE_RE}\n*)"
 
