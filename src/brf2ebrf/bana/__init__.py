@@ -142,7 +142,7 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
                     s_ppn = page_num
                     result += f"<?print-page {page_num}?>\n"
             lines = []
-            for line in page_content.splitlines():
+            for line in page_content.split("\n"):
                 if len(line) == page_layout.cells_per_line and (ppn := _is_print_page_number_line(line)):
                     s_ppn = ppn
                     s_cont = 0
