@@ -74,7 +74,7 @@ def create_brf2ebrf_parser(
                     create_braille_page_detector(
                         page_layout=page_layout,
                         separator="\u2800" * 3,
-                        format_output=lambda pc, pn: f"<?braille-page {pn}?>{pc}",
+                        format_output=lambda pc, pn: f"<?braille-page {pn}?>\n{pc}",
                     ),
                     detect_and_pass_processing_instructions,
                 ],

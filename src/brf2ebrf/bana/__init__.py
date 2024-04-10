@@ -140,7 +140,7 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
                 if not _is_continuation_number(page_num, s_ppn, s_cont):
                     s_cont = 0
                     s_ppn = page_num
-                    result += f"<?print-page {page_num}?>"
+                    result += f"<?print-page {page_num}?>\n"
             lines = []
             for line in page_content.splitlines():
                 if len(line) == page_layout.cells_per_line and (ppn := _is_print_page_number_line(line)):
