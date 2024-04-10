@@ -70,7 +70,7 @@ _BLANK_LINE_RE = re.compile("\n{2,}")
 def convert_blank_line_to_pi(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
     """Convert blank braille lines into pi for later use if needed"""
     return DetectionResult(len(text), state, 1.0,
-                           output_text + _BLANK_LINE_RE.sub(lambda m: "\n<?blank-line?>" * (len(m.group()) - 1),
+                           output_text + _BLANK_LINE_RE.sub(lambda m: "<?blank-line?>".join(["\n"] * len(m.group())),
                                                             text[cursor:]))
 
 
