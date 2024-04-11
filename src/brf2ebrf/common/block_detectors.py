@@ -86,9 +86,9 @@ _PROCESSING_INSTRUCTION_RE = f"(?:(?:(?:{_BLANK_LINE_RE}\n)?{_BRAILLE_PAGE_RE}\n
 
 def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str | None, int)]:
     _first_line_re = re.compile(
-        f" {{{first_line_indent}}}([\u2801-\u28ff][ \u2800-\u28ff]*\n)")
+        f"\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*\n)")
     _run_over_re = re.compile(
-        f"({_PROCESSING_INSTRUCTION_RE}*) {{{run_over}}}([\u2801-\u28ff][ \u2800-\u28ff]*\n)")
+        f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*\n)")
 
     def find_paragraph_braille(text: str, cursor: int) -> (str | None, int):
         if line := _first_line_re.match(
