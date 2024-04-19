@@ -151,13 +151,10 @@ def create_pdf_graphic_detector(
         start_page = end_page = 0
         href = ""
         if line := _detect_braille_page_re.match(text[new_cursor:]):
-            print(f"Ken: matched {line.group(1)}")
             new_cursor += line.end()
             start_page = new_cursor
             braille_page = line.group(1).split()[1].split("?")[0].strip()
-            print("Ken: page {brialle_page}")
             if braille_page in _images_references:
-                print("ken found an image")
                 if end_page := _detect_braille_page_re.match(text[new_cursor:]):
                     end_page = new_cursor + end_page.start()
                 else:
