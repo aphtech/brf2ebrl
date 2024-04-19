@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 
-import regex as re
+import re
 from PyPDF2 import PdfWriter, PdfReader
 
 from brf2ebrf.common.detectors import _ASCII_TO_UNICODE_DICT
@@ -140,18 +140,31 @@ def create_pdf_graphic_detector(
     )
     _pdf_text = "\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
-    # regular expression matching blanks then a braile page number.
-    _blank_lines = "(?:(\n<\\?blank-line\\?>))+"
-    _braille_page_re = re.compile(f"{_blank_lines}(<\\?braille-page.*?\\?>)")
+    # regular expression matching braille page and one for search
+    _detect_braille_page_re = re.compile("(<\\?braille-page [\u2801-\u28ff]+\\?>)")
+    _search_blank_re = re.compile("(?:<\\?blank-line\\?>\n){3,}")
 
     def detect_pdf(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
         new_cursor = cursor
+        start_page = end_page = 0
         href = ""
-        if line := _braille_page_re.match(text[new_cursor:]):
-            braille_page = line.group(2).split()[1].split("?")[0].strip()
+        if line := _detect_braille_page_re.match(text[new_cursor:]):
+            print(f"Ken: matched {line.group(1)}")
+            new_cursor += line.end()
+            start_page = new_cursor
+            braille_page = line.group(1).split()[1].split("?")[0].strip()
+            print("Ken: page {brialle_page}")
             if braille_page in _images_references:
+                print("ken found an image")
+                if end_page := _detect_braille_page_re.match(text[new_cursor:]):
+                    end_page = new_cursor + end_page.start()
+                else:
+                    end_page = len(text)
+                if search_blank := _search_blank_re.search(text[start_page:end_page]):
+                    end_page = new_cursor + search_blank.start()
+                    new_cursor += search_blank.end()
                 # the for loop takes care of left and right
                 for file_ref in _images_references[braille_page]:
                     href += (
@@ -160,10 +173,9 @@ def create_pdf_graphic_detector(
                         + f"{_pdf_text}{braille_page}</a></p>"
                     )
                 del _images_references[braille_page]
-            new_cursor += line.end()
         return (
             DetectionResult(
-                new_cursor, state, 0.9, f"{output_text}{href}{line.group(2)}"
+                new_cursor, state, 0.9, f"{output_text}{text[cursor:end_page]}{href}"
             )
             if href
             else None
