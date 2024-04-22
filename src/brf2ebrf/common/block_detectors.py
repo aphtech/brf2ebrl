@@ -168,7 +168,7 @@ def create_nested_list_detector(first_line_indent: int, run_over: int) -> Detect
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
     first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+        f"^({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
         f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{run_over},}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
 
