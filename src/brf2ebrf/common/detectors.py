@@ -45,7 +45,8 @@ def detect_and_pass_processing_instructions(text: str, cursor: int, state: Detec
     return None
 
 
-_BRAILLE_PAGE_PI_RE = re.compile("<\\?braille-page (?P<braille_page_num>[\u2800-\u28ff]*)\\?>")
+_BRAILLE_PAGE_PI_RE = re.compile("<\\?braille-page (?P<braille_page_num>[\u2800-\u28ff]*)\\?>\n")
+_PRINT_PAGE_RE = re.compile("<\\?print-page[ \u2800-\u28ff]*\\?>")
 
 
 def braille_page_counter_detector(text: str, cursor: int, state: DetectionState,
@@ -61,6 +62,9 @@ def braille_page_counter_detector(text: str, cursor: int, state: DetectionState,
         return DetectionResult(cursor + len(m.group()),
                                dict(state, braille_page_type=braille_page_type, braille_page_count=page_count,
                                     new_braille_page=True), 1.0, f"{output_text}{m.group()}")
+    elif m := _PRINT_PAGE_RE.match(text[cursor:]):
+        return DetectionResult(cursor=cursor + len(m.group()), state=state, confidence=1.0,
+                               text=f"{output_text}{m.group()}")
     return None
 
 
