@@ -23,7 +23,7 @@ def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None,
     return None, state
 
 
-_INLINE_TN_RE = re.compile(f"((?<!{_START_TN_BLOCK}){_START_TN_SYMBOL}[\u2800-\u28ff\\s]+{_END_TN_SYMBOL})")
+_INLINE_TN_RE = re.compile(f"((?<!{_START_TN_BLOCK})|(?<!\"){_START_TN_SYMBOL}[\u2800-\u28ff\\s]+{_END_TN_SYMBOL})")
 
 
 def detect_inline_tn(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
