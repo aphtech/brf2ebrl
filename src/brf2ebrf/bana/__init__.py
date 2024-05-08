@@ -42,7 +42,6 @@ def _find_page_number(
                     if left
                     else (parted[0].rstrip(_BRL_WHITESPACE), parted[2])
                 )
-                print(f"Lines on page {len(lines)}")
                 if parted[1] and page_num and number_filter(page_num):
                     lines[line_index] = line
                     return "\n".join(lines) + "\n", page_num
