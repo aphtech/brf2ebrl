@@ -28,7 +28,7 @@ def _find_page_number(
     logging.info(f"Finding page number for position {number_position}")
     if number_position != PageNumberPosition.NONE:
         logging.info("Actually looking for page number")
-        lines = page_content.split("\n")
+        lines = page_content.splitlines()
         line_index = 0 if number_position.is_top() else (lines_per_page - 1)
         if len(lines) > line_index:
             line = lines[line_index]
@@ -42,9 +42,10 @@ def _find_page_number(
                     if left
                     else (parted[0].rstrip(_BRL_WHITESPACE), parted[2])
                 )
+                print(f"Lines on page {len(lines)}")
                 if parted[1] and page_num and number_filter(page_num):
                     lines[line_index] = line
-                    return "\n".join(lines), page_num
+                    return "\n".join(lines) + "\n", page_num
     return page_content, ""
 
 
