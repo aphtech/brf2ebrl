@@ -80,16 +80,20 @@ class ParsingCancelledException(Exception):
 def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Callable[[int], None] = lambda x: None,
           is_cancelled: Callable[[], bool] = lambda: False) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
+
+    def check_cancelled():
+        if is_cancelled():
+            logging.warn("Parsing cancelled.")
+            raise ParsingCancelledException()
     logging.info("Starting parsing")
     text = brf
     for i, parser_pass in enumerate(parser_passes):
+        check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
         text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
         while cursor < len(text):
-            if is_cancelled():
-                logging.warn("Parsing cancelled.")
-                raise ParsingCancelledException()
+            check_cancelled()
             result = selector(text, cursor, state, text_builder, parser_pass.detectors)
             assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
             text_builder, cursor, state = result.text, result.cursor, result.state
