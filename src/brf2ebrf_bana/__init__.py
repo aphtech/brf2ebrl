@@ -7,10 +7,10 @@
 
 from typing import Sequence
 
-from brf2ebrf.bana.pages import _find_page_number, _create_braille_page_command, create_braille_page_detector, \
-    _convert_int_to_continuation_letter, _is_continuation_number, _is_print_page_number_line, create_print_page_detector
+from brf2ebrf_bana.pages import create_braille_page_detector, \
+    create_print_page_detector
 
-from brf2ebrf.bana.tn_detectors import tn_indicators_block_matcher, detect_inline_tn, detect_symbols_list_tn
+from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, detect_inline_tn, detect_symbols_list_tn
 from brf2ebrf.common import PageLayout
 from brf2ebrf.common.block_detectors import create_centered_detector, create_cell_heading, create_paragraph_detector, \
     create_table_detector, create_list_detector, detect_pre

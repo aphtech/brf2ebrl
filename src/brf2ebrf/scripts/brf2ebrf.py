@@ -11,7 +11,7 @@ import logging
 import sys
 from collections.abc import Iterable, Callable
 
-from brf2ebrf.bana import create_brf2ebrf_parser
+from brf2ebrf_bana import create_brf2ebrf_parser
 from brf2ebrf.common import PageNumberPosition, PageLayout
 
 from brf2ebrf.parser import parse, ParserPass
