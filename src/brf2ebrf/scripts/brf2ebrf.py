@@ -26,13 +26,22 @@ DISCOVERED_PARSER_PLUGINS = {
     if name.startswith("brf2ebrf_")
 }
 
+class _ListPluginsAction(argparse.Action):
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
+        super().__init__(option_strings=option_strings, dest=dest, nargs=0, default=default, help=help)
+    def __call__(self, parser, namespace, values, option_string=None):
+        available_plugins_msg = "Available parser plugins:\n"
+        available_plugins_msg += "\n".join(
+            [f"  {plugin.PLUGIN_ID} - {plugin.PLUGIN_NAME}" for plugin in DISCOVERED_PARSER_PLUGINS.values()])
+        print(available_plugins_msg)
+        parser.exit()
+
 def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s"
     )
-    available_plugins_msg = "Available parser plugins:\n"
-    available_plugins_msg += "\n".join([f"  {plugin.PLUGIN_ID} - {plugin.PLUGIN_NAME}" for plugin in DISCOVERED_PARSER_PLUGINS.values()])
-    arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF", epilog=available_plugins_msg, formatter_class=argparse.RawDescriptionHelpFormatter)
+    arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
+    arg_parser.add_argument("--list-plugins", action=_ListPluginsAction, help="List parser plugins and exit")
     arg_parser.add_argument(
         "--no-running-heads",
         help="Don't detect running heads",
