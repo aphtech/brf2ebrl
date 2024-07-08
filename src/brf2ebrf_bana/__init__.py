@@ -21,7 +21,10 @@ from brf2ebrf.common.emphasis_detectors import convert_emphasis
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.page_numbers import create_ebrf_print_page_tags
 from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import DetectionResult, ParserPass
+from brf2ebrf.parser import DetectionResult, ParserPass, DetectionState
+
+PLUGIN_ID = "BANA"
+PLUGIN_NAME = "BANA"
 
 _XHTML_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -172,15 +175,19 @@ def create_brf2ebrf_parser(
                 "Make complete XML",
                 {},
                 [
-                    lambda t, c, s, o: DetectionResult(
-                        len(t), s, 1.0, f"{o}{_XHTML_HEADER}{t[c:]}{_XHTML_FOOTER}"
-                    )
+                    xhtml_fixup_detector
                 ],
                 most_confident_detector,
             ),
         ]
         if x is not None
     ]
+
+
+def xhtml_fixup_detector(input_text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
+    return DetectionResult(
+        len(input_text), state, 1.0, f"{output_text}{_XHTML_HEADER}{input_text[cursor:]}{_XHTML_FOOTER}"
+    )
 
 
 def create_image_detection_parser_pass(brf_path, images_path, output_path):
