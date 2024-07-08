@@ -30,8 +30,9 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s:%(asctime)s:%(module)s:%(message)s"
     )
-    arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
-    arg_parser.add_argument("--list-plugins", help="List the parser plugins", dest="list_plugins", default=False, action="store_true")
+    available_plugins_msg = "Available parser plugins:\n"
+    available_plugins_msg += "\n".join([f"  {plugin.PLUGIN_ID} - {plugin.PLUGIN_NAME}" for plugin in DISCOVERED_PARSER_PLUGINS.values()])
+    arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF", epilog=available_plugins_msg, formatter_class=argparse.RawDescriptionHelpFormatter)
     arg_parser.add_argument(
         "--no-running-heads",
         help="Don't detect running heads",
@@ -59,11 +60,6 @@ def main():
     arg_parser.add_argument("brf", help="The BRF to convert")
     arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
-
-    if args.list_plugins:
-        for plugin in DISCOVERED_PARSER_PLUGINS.values():
-            print(plugin.PLUGIN_NAME)
-        sys.exit(0)
 
     input_brf = args.brf
     if not input_brf:
