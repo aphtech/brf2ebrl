@@ -7,35 +7,23 @@
 
 from typing import Sequence
 
-from brf2ebrf_bana.pages import create_braille_page_detector, \
-    create_print_page_detector
-
-from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, detect_inline_tn, detect_symbols_list_tn
 from brf2ebrf.common import PageLayout
 from brf2ebrf.common.block_detectors import create_centered_detector, create_cell_heading, create_paragraph_detector, \
     create_table_detector, create_list_detector, detect_pre
 from brf2ebrf.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, detect_and_pass_processing_instructions, \
-    create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi
+    create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector
 from brf2ebrf.common.emphasis_detectors import convert_emphasis
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.page_numbers import create_ebrf_print_page_tags
 from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import DetectionResult, ParserPass, DetectionState
+from brf2ebrf.parser import DetectionResult, ParserPass
+from brf2ebrf_bana.pages import create_braille_page_detector, \
+    create_print_page_detector
+from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, detect_inline_tn, detect_symbols_list_tn
 
 PLUGIN_ID = "BANA"
 PLUGIN_NAME = "BANA"
-
-_XHTML_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/strict.dtd">
-<html xmlns="http://www.w3.org/TR/xhtml1/strict" >
-<body>
-"""
-
-_XHTML_FOOTER = """</body>
-</html>
-"""
 
 
 def create_brf2ebrf_parser(
@@ -182,12 +170,6 @@ def create_brf2ebrf_parser(
         ]
         if x is not None
     ]
-
-
-def xhtml_fixup_detector(input_text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
-    return DetectionResult(
-        len(input_text), state, 1.0, f"{output_text}{_XHTML_HEADER}{input_text[cursor:]}{_XHTML_FOOTER}"
-    )
 
 
 def create_image_detection_parser_pass(brf_path, images_path, output_path):
