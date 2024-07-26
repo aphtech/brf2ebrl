@@ -72,6 +72,15 @@ class ParserPass:
     detectors: Iterable[Detector]
     selector: DetectionSelector
 
+    def __call__(self, text: str, check_cancelled: Callable[[], None]) -> str:
+        text_builder, cursor, state, selector = "", 0, self.initial_state, self.selector
+        while cursor < len(text):
+            check_cancelled()
+            result = selector(text, cursor, state, text_builder, self.detectors)
+            assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
+            text_builder, cursor, state = result.text, result.cursor, result.state
+        return text_builder
+
 
 class ParsingCancelledException(Exception):
     pass
@@ -83,20 +92,15 @@ def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Call
 
     def check_cancelled():
         if is_cancelled():
-            logging.warn("Parsing cancelled.")
+            logging.warning("Parsing cancelled.")
             raise ParsingCancelledException()
+
     logging.info("Starting parsing")
     text = brf
     for i, parser_pass in enumerate(parser_passes):
         check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
-        text_builder, cursor, state, selector = "", 0, parser_pass.initial_state, parser_pass.selector
-        while cursor < len(text):
-            check_cancelled()
-            result = selector(text, cursor, state, text_builder, parser_pass.detectors)
-            assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
-            text_builder, cursor, state = result.text, result.cursor, result.state
-        text = text_builder
+        text = parser_pass(text, check_cancelled)
     logging.info(f"Finished parsing")
     return text
