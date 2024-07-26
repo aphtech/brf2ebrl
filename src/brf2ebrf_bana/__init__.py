@@ -17,7 +17,7 @@ from brf2ebrf.common.emphasis_detectors import convert_emphasis
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.page_numbers import create_ebrf_print_page_tags
 from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import DetectionResult, ParserPass
+from brf2ebrf.parser import DetectionResult, detector_parser, Parser
 from brf2ebrf_bana.pages import create_braille_page_detector, \
     create_print_page_detector
 from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, detect_inline_tn, detect_symbols_list_tn
@@ -32,19 +32,19 @@ def create_brf2ebrf_parser(
         output_path: str = "",
         images_path: str = "",
         detect_running_heads: bool = True,
-) -> Sequence[ParserPass]:
+) -> Sequence[Parser]:
     return [
         x
         for x in [
             # Convert to unicode pass
-            ParserPass(
+            detector_parser(
                 "Convert to unicode Braille",
                 {},
                 [convert_ascii_to_unicode_braille_bulk],
                 most_confident_detector,
             ),
             # Detect Braille pages pass
-            ParserPass(
+            detector_parser(
                 "Detect Braille pages",
                 {"start_braille_page": True, "page_count": 1},
                 [
@@ -57,7 +57,7 @@ def create_brf2ebrf_parser(
                 ],
                 most_confident_detector,
             ),
-            ParserPass(
+            detector_parser(
                 "Detect print pages",
                 {"page_count": 1},
                 [
@@ -69,7 +69,7 @@ def create_brf2ebrf_parser(
                 most_confident_detector,
             ),
             # Running head pass
-            ParserPass(
+            detector_parser(
                 "Detect running head",
                 {},
                 [
@@ -82,7 +82,7 @@ def create_brf2ebrf_parser(
             if detect_running_heads
             else None,
             # Remove form feeds pass.
-            ParserPass(
+            detector_parser(
                 "Remove form feeds",
                 {},
                 [
@@ -93,21 +93,21 @@ def create_brf2ebrf_parser(
                 most_confident_detector,
             ),
             # Detect blank lines pass
-            ParserPass(
+            detector_parser(
                 "Detect blank lines",
                 {},
                 [convert_blank_line_to_pi, detect_and_pass_processing_instructions],
                 most_confident_detector,
             ),
             # convert box lines pass
-            ParserPass(
+            detector_parser(
                 "Convert box lines to div tags",
                 {},
                 [convert_box_lines],
                 most_confident_detector,
             ),
             # Detect blocks pass
-            ParserPass(
+            detector_parser(
                 "Detect blocks",
                 {},
                 [
@@ -124,26 +124,26 @@ def create_brf2ebrf_parser(
                 most_confident_detector,
             ),
             # remove box line processing instructions
-            ParserPass(
+            detector_parser(
                 "Remove  box lines processing instructions",
                 {},
                 [remove_box_lines_processing_instructions],
                 most_confident_detector,
             ),
-            ParserPass(
+            detector_parser(
                 "Detecting inline TNs",
                 {},
                 [detect_inline_tn],
                 most_confident_detector
             ),
-            ParserPass(
+            detector_parser(
                 "Detect TN symbols lists",
                 {},
                 [detect_symbols_list_tn],
                 most_confident_detector
             ),
             # convert Emphasis
-            ParserPass(
+            detector_parser(
                 "Convert Emphasis",
                 {},
                 [convert_emphasis],
@@ -152,14 +152,14 @@ def create_brf2ebrf_parser(
             # PDF Graphics
             create_image_detection_parser_pass(brf_path, images_path, output_path),
             # Convert print page numbers to ebrf tags
-            ParserPass(
+            detector_parser(
                 "Print page numbers to ebrf",
                 {},
                 [create_ebrf_print_page_tags()],
                 most_confident_detector,
             ),
             # Make complete XHTML pass
-            ParserPass(
+            detector_parser(
                 "Make complete XML",
                 {},
                 [
@@ -174,7 +174,7 @@ def create_brf2ebrf_parser(
 
 def create_image_detection_parser_pass(brf_path, images_path, output_path):
     if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path)):
-        return ParserPass(
+        return detector_parser(
             "Convert PDF to single files and links",
             {},
             [image_detector],

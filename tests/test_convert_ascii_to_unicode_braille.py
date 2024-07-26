@@ -7,7 +7,7 @@
 import pytest
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, convert_ascii_to_unicode_braille
 from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import DetectionResult, parse, ParserPass
+from brf2ebrf.parser import DetectionResult, parse, detector_parser
 
 
 @pytest.mark.parametrize("text,cursor,expected_text", [
@@ -41,4 +41,4 @@ def test_convert_ascii_to_unicode_braille(text: str, cursor: int, expected_text:
     "TEST\nDOCU;mT\f"
 ])
 def test_conversion_by_character_vs_bulk(text: str):
-    assert parse(text, [ParserPass("Test conversion bulk", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [ParserPass("Test convert by character", {}, [convert_ascii_to_unicode_braille], most_confident_detector)])
+    assert parse(text, [detector_parser("Test conversion bulk", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [detector_parser("Test convert by character", {}, [convert_ascii_to_unicode_braille], most_confident_detector)])

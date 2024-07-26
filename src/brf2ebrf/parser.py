@@ -11,6 +11,13 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Any
 
+
+@dataclass(frozen=True)
+class Parser:
+    name: str
+    parse: Callable[[str, Callable[[], None]], str]
+
+
 DetectionState = Mapping[str, Any]
 
 
@@ -64,29 +71,25 @@ Detector = Callable[[str, int, DetectionState, str], DetectionResult | None]
 DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]], DetectionResult]
 
 
-@dataclass(frozen=True)
-class ParserPass:
+def detector_parser(name: str, initial_state: DetectionState, detectors: Iterable[Detector], selector: DetectionSelector) -> Parser:
     """A configuration for a single step in a multipass parsing."""
-    name: str
-    initial_state: DetectionState
-    detectors: Iterable[Detector]
-    selector: DetectionSelector
 
-    def __call__(self, text: str, check_cancelled: Callable[[], None]) -> str:
-        text_builder, cursor, state, selector = "", 0, self.initial_state, self.selector
+    def run_detectors(text: str, check_cancelled: Callable[[], None]) -> str:
+        text_builder, cursor, state = "", 0, initial_state
         while cursor < len(text):
             check_cancelled()
-            result = selector(text, cursor, state, text_builder, self.detectors)
+            result = selector(text, cursor, state, text_builder, detectors)
             assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
             text_builder, cursor, state = result.text, result.cursor, result.state
         return text_builder
+    return Parser(name=name, parse=run_detectors)
 
 
 class ParsingCancelledException(Exception):
     pass
 
 
-def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Callable[[int], None] = lambda x: None,
+def parse(brf: str, parser_passes: Iterable[Parser], progress_callback: Callable[[int], None] = lambda x: None,
           is_cancelled: Callable[[], bool] = lambda: False) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
 
@@ -101,6 +104,6 @@ def parse(brf: str, parser_passes: Iterable[ParserPass], progress_callback: Call
         check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
-        text = parser_pass(text, check_cancelled)
+        text = parser_pass.parse(text, check_cancelled)
     logging.info(f"Finished parsing")
     return text

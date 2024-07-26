@@ -13,7 +13,7 @@ import pkgutil
 from collections.abc import Iterable, Callable
 
 from brf2ebrf.common import PageNumberPosition, PageLayout
-from brf2ebrf.parser import parse, ParserPass
+from brf2ebrf.parser import parse, detector_parser
 
 DISCOVERED_PARSER_PLUGINS = {
     name: importlib.import_module(name)
@@ -115,7 +115,7 @@ def main():
     convert_brf2ebrf(input_brf, output_ebrf, parser)
 
 
-def convert_brf2ebrf(input_brf: str, output_ebrf: str, parser: Iterable[ParserPass],
+def convert_brf2ebrf(input_brf: str, output_ebrf: str, parser: Iterable[detector_parser],
                      progress_callback: Callable[[int], None] = lambda x: None,
                      is_cancelled: Callable[[], bool] = lambda: False):
     brf = ""

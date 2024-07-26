@@ -9,7 +9,7 @@ import argparse
 
 from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk
 from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import parse, ParserPass
+from brf2ebrf.parser import parse, detector_parser
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     output_text = parse(
         brf,
         [
-            ParserPass(
+            detector_parser(
                 "Unicode Braille", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
             )
         ],
