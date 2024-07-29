@@ -47,11 +47,6 @@ _TN_HEADING_LIST_SEP_RE = re.compile("((<\\?blank-line\\?>)|\\s)*")
 _TN_LIST_START_RE = re.compile("<ul")
 
 
-def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
-    new_text = output_text + tag_symbols_list_tn(text, cursor=cursor)
-    return DetectionResult(len(text), state, 0.5, new_text)
-
-
 def tag_symbols_list_tn(text: str, check_cancelled: Callable[[], None] = lambda: None, cursor: int = 0) -> str:
     new_text = ""
     start = cursor
