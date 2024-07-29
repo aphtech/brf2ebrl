@@ -21,18 +21,19 @@ def create_ebrf_print_page_tags() -> Detector:
 
     def convert_to_ebrf_print_page_numbers(text: str, cursor: int, state: DetectionState,
                                            output_text: str) -> DetectionResult | None:
+        new_text = output_text
         if m := _PRINT_PAGE_RE.search(text, cursor):
             if m.start() > cursor:
-                return DetectionResult(m.start(), state, 0.9, f"{output_text}{text[cursor:m.start()]}")
+                new_text += text[cursor:m.start()]
             page_number = m.group("page_number")
             tag_start = m.end()
             if _FIND_FOLLOWING_BLOCK_RE.match(text, tag_start):
                 end_index = find_end_of_element(text, tag_start)
                 if end_index > tag_start:
                     return DetectionResult(end_index, state, 0.9,
-                                           f"{output_text}<div class=\"keeptgr\"><span role=\"doc-pagebreak\" id=\"page{page_number}\" class=\"keepwithnext\">{page_number}</span>{text[tag_start:end_index]}</div>")
+                                           f"{new_text}<div class=\"keeptgr\"><span role=\"doc-pagebreak\" id=\"page{page_number}\" class=\"keepwithnext\">{page_number}</span>{text[tag_start:end_index]}</div>")
             return DetectionResult(tag_start, state, 0.9,
-                                   f"{output_text}<span role=\"doc-pagebreak\" id=\"page{page_number}\">{page_number}</span>")
-        return DetectionResult(len(text), state, 0.5, f"{output_text}{text[cursor:]}")
+                                   f"{new_text}<span role=\"doc-pagebreak\" id=\"page{page_number}\">{page_number}</span>")
+        return DetectionResult(len(text), state, 0.5, f"{new_text}{text[cursor:]}")
 
     return convert_to_ebrf_print_page_numbers
