@@ -48,7 +48,12 @@ _TN_LIST_START_RE = re.compile("<ul")
 
 
 def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
-    new_text = output_text
+    new_text = output_text + tag_symbols_list_tn(text, cursor)
+    return DetectionResult(len(text), state, 0.5, new_text)
+
+
+def tag_symbols_list_tn(text: str, cursor: int = 0) -> str:
+    new_text = ""
     start = cursor
     while start < len(text):
         if m := _TN_HEADING_START_RE.search(text, pos=start):
@@ -60,9 +65,10 @@ def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output
                     list_end = find_end_of_element(text, list_start)
                     if list_end >= 0 and "".join(
                             c for c in text[cursor:list_end] if "\u2800" < c <= "\u28ff").endswith(
-                        _END_TN_SYMBOL):
-                        return DetectionResult(list_end, state, 0.95,
-                                               f"{output_text}{text[start:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}")
+                            _END_TN_SYMBOL):
+                        new_text = f"{new_text}{text[start:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}"
+                        start = list_end
+                        continue
         new_text += text[start:]
         start = len(text)
-    return DetectionResult(start, state, 0.5, new_text)
+    return new_text
