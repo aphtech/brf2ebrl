@@ -14,7 +14,7 @@ from brf2ebrf.common.box_line_detectors import remove_box_lines_processing_instr
 from brf2ebrf.common.detectors import detect_and_pass_processing_instructions, \
     create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector, \
     translate_ascii_to_unicode_braille
-from brf2ebrf.common.emphasis_detectors import convert_emphasis
+from brf2ebrf.common.emphasis_detectors import tag_emphasis
 from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrf.common.page_numbers import create_ebrf_print_page_tags
 from brf2ebrf.common.selectors import most_confident_detector
@@ -131,11 +131,9 @@ def create_brf2ebrf_parser(
                 tag_symbols_list_tn
             ),
             # convert Emphasis
-            detector_parser(
+            Parser(
                 "Convert Emphasis",
-                {},
-                [convert_emphasis],
-                most_confident_detector,
+                tag_emphasis
             ),
             # PDF Graphics
             create_image_detection_parser_pass(brf_path, images_path, output_path),

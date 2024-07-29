@@ -12,9 +12,9 @@ the regular expressions are pre-built  and I might remove the for loops that cre
 """
 
 import re
+from typing import Callable
 
 from brf2ebrf.parser import DetectionState, DetectionResult
-
 
 letter = {
     "\u2828\u2806": ("<em>", "</em>"),
@@ -27,7 +27,6 @@ letter = {
     "\u2810\u283c\u2806": ('<em class="trans4">', "</em>"),
     "\u2828\u283c\u2806": ('<em class="trans5">', "</em>"),
 }
-
 
 letter_re = re.compile(
     "(?:"
@@ -72,12 +71,12 @@ def word_groups(match):
     """create the word substitution"""
     if match.group(3).startswith("<") or match.group(3) == "\u2800":
         return (
-            f"{word[match.group(1)][1]}{match.group(1)}"
-            + f"{match.group(2)}{word[match.group(1)][2]}{match.group(3)}"
+                f"{word[match.group(1)][1]}{match.group(1)}"
+                + f"{match.group(2)}{word[match.group(1)][2]}{match.group(3)}"
         )
     return (
-        f"{word[match.group(1)][1]}{match.group(1)}"
-        + f"{match.group(2)}{match.group(3)}{word[match.group(1)][2]}"
+            f"{word[match.group(1)][1]}{match.group(1)}"
+            + f"{match.group(2)}{match.group(3)}{word[match.group(1)][2]}"
     )
 
 
@@ -113,7 +112,6 @@ phrase = {
     ),  # phrase start
 }
 
-
 _end_tags = r"</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
 phrases_re = []
 for key, value in phrase.items():
@@ -125,23 +123,23 @@ def phrase_groups(match):
     """Create the phrase substitution"""
     if match.group(3).startswith("<"):
         return (
-            f"{phrase[match.group(1)][1]}{match.group(1)}"
-            +f"{match.group(2)}{phrase[match.group(1)][2]}{match.group(3)}"
+                f"{phrase[match.group(1)][1]}{match.group(1)}"
+                + f"{match.group(2)}{phrase[match.group(1)][2]}{match.group(3)}"
         )
     return (
-        f"{phrase[match.group(1)][1]}{match.group(1)}"
-        +f"{match.group(2)}{match.group(3)}{phrase[match.group(1)][2]}"
+            f"{phrase[match.group(1)][1]}{match.group(1)}"
+            + f"{match.group(2)}{match.group(3)}{phrase[match.group(1)][2]}"
     )
 
 
 def convert_emphasis(
-    text: str, _: int, state: DetectionState, output_text: str
+        text: str, _: int, state: DetectionState, output_text: str
 ) -> DetectionResult | None:
     """Adds all Emphasis tags by using re.sub
 
     Args:
         text (str): full brf in text
-        cursor (int): position in file
+        _ (int): position in file
         state (DetectionState): parser state
         output_text (str): the text that will be returned
 
@@ -152,15 +150,18 @@ def convert_emphasis(
     # save the input length
     input_len = len(text)
 
+    text = tag_emphasis(text)
+
+    return DetectionResult(input_len, state, 1.0, output_text + text)
+
+
+def tag_emphasis(text: str, _: Callable[[], None] = lambda: None) -> str:
     # Add letter tags
     text = letter_re.sub(letter_groups, text)
-
     # add Word tags
     for word_re in words_re:
         text = word_re.sub(word_groups, text)
-
     # Add Phrase tags
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
-
-    return DetectionResult(input_len, state, 1.0, output_text + text)
+    return text
