@@ -7,6 +7,7 @@
 """Some detectors common to multiple Braille codes/standards."""
 import re
 from enum import Enum, auto
+from typing import Callable
 
 from brf2ebrf.parser import DetectionResult, DetectionState, Detector
 
@@ -26,7 +27,11 @@ class BraillePageType(Enum):
 def convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, state: DetectionState,
                                           output_text: str) -> DetectionResult:
     """Convert the entire BRF into unicode Braille in a single step."""
-    return DetectionResult(len(text), state, 1.0, output_text + text[cursor:].translate(_ASCII_TO_UNICODE_DICT))
+    return DetectionResult(len(text), state, 1.0, output_text + translate_ascii_to_unicode_braille(text[cursor:]))
+
+
+def translate_ascii_to_unicode_braille(text: str, check_cancelled: Callable[[], None] = lambda: None) -> str:
+    return text.translate(_ASCII_TO_UNICODE_DICT)
 
 
 def convert_ascii_to_unicode_braille(text: str, cursor: int, state: DetectionState,
