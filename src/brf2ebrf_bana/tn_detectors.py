@@ -27,22 +27,17 @@ _INLINE_TN_RE = re.compile(f"{_START_TN_SYMBOL}[\u2800-\u28ff\\s]+{_END_TN_SYMBO
 _INLINE_EXCLUDES_RE = re.compile(f"(?:\"|{_START_TN_BLOCK})$")
 
 
-def detect_inline_tn(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
-    """Detect inline TNs.
-
-    This detector will process the entire text until the end."""
-    # new_text = _INLINE_TN_RE.subn(f"{_START_TN_SPAN}\\1{_END_TN_SPAN}", text[cursor:])[0]
-    prev_cursor = cursor
+def tag_inline_tn(text, start=0):
+    prev_cursor = start
     new_text = ""
-    while m := _INLINE_TN_RE.search(text, pos=cursor):
-        cursor = m.start()
-        new_text += text[prev_cursor:cursor]
-        if not _INLINE_EXCLUDES_RE.search(text, pos=prev_cursor, endpos=cursor):
+    while m := _INLINE_TN_RE.search(text, pos=start):
+        start = m.start()
+        new_text += text[prev_cursor:start]
+        if not _INLINE_EXCLUDES_RE.search(text, pos=prev_cursor, endpos=start):
             new_text += f"{_START_TN_SPAN}{m.group()}{_END_TN_SPAN}"
-        prev_cursor = cursor
-        cursor = m.end()
-    new_text += text[cursor:]
-    return DetectionResult(len(text), state, 1.0, f"{output_text}{new_text}")
+        prev_cursor = start
+        start = m.end()
+    return new_text + text[start:]
 
 
 _TN_HEADING_START_RE = re.compile(f"<h3>{_START_TN_SYMBOL}")

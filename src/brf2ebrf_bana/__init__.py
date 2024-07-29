@@ -20,7 +20,8 @@ from brf2ebrf.common.selectors import most_confident_detector
 from brf2ebrf.parser import DetectionResult, detector_parser, Parser
 from brf2ebrf_bana.pages import create_braille_page_detector, \
     create_print_page_detector
-from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, detect_inline_tn, detect_symbols_list_tn
+from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, detect_symbols_list_tn, \
+    tag_inline_tn
 
 PLUGIN_ID = "BANA"
 PLUGIN_NAME = "BANA"
@@ -130,11 +131,9 @@ def create_brf2ebrf_parser(
                 [remove_box_lines_processing_instructions],
                 most_confident_detector,
             ),
-            detector_parser(
+            Parser(
                 "Detecting inline TNs",
-                {},
-                [detect_inline_tn],
-                most_confident_detector
+                tag_inline_tn
             ),
             detector_parser(
                 "Detect TN symbols lists",
