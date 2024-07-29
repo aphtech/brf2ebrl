@@ -83,15 +83,9 @@ def create_brf2ebrf_parser(
             if detect_running_heads
             else None,
             # Remove form feeds pass.
-            detector_parser(
+            Parser(
                 "Remove form feeds",
-                {},
-                [
-                    lambda t, c, s, o: DetectionResult(
-                        len(t), s, 1.0, o + t[c:].replace("\f", "")
-                    )
-                ],
-                most_confident_detector,
+                lambda text, check_cancellation: text.replace("\f", "")
             ),
             # Detect blank lines pass
             detector_parser(
