@@ -6,6 +6,7 @@
 
 """Detectors for Box lines"""
 import re
+from typing import Callable
 
 from brf2ebrf.parser import DetectionState, DetectionResult
 
@@ -23,14 +24,14 @@ def _convert_groups(match):
     """regular expression group substitution function"""
     if match.group(1):
         return (
-            f'<div screen_type="<?box {match.group(1)}?>" type="<?box '
-            +f'{match.group(2)[0]}?>">{match.group(3)}</div>'
+                f'<div screen_type="<?box {match.group(1)}?>" type="<?box '
+                + f'{match.group(2)[0]}?>">{match.group(3)}</div>'
         )
     return f'<div type="<?box {match.group(2)[0]}?>">{match.group(3)}</div>'
 
 
 def convert_box_lines(
-    text: str, _: int, state: DetectionState, output_text: str
+        text: str, _: int, state: DetectionState, output_text: str
 ) -> DetectionResult | None:
     """
     converts all box and screen material to their div equivlant or returns None if not a box line
@@ -47,12 +48,16 @@ def convert_box_lines(
         state,
         1.0,
         output_text
-        + _ENCLOSING_RE.sub(_convert_groups, _BOX_RE.sub(_convert_groups, text)),
+        + tag_boxlines(text)
     )
 
 
+def tag_boxlines(text: str, _: Callable[[], None] = lambda: None) -> str:
+    return _ENCLOSING_RE.sub(_convert_groups, _BOX_RE.sub(_convert_groups, text))
+
+
 def remove_box_lines_processing_instructions(
-    text: str, _: int, state: DetectionState, output_text: str
+        text: str, _: int, state: DetectionState, output_text: str
 ) -> DetectionResult | None:
     """Remove box processing instructions. This was to stop the pre problem."""
 

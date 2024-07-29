@@ -10,7 +10,7 @@ from typing import Sequence
 from brf2ebrf.common import PageLayout
 from brf2ebrf.common.block_detectors import create_centered_detector, create_cell_heading, create_paragraph_detector, \
     create_table_detector, create_list_detector, detect_pre
-from brf2ebrf.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
+from brf2ebrf.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
 from brf2ebrf.common.detectors import detect_and_pass_processing_instructions, \
     create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector, \
     translate_ascii_to_unicode_braille
@@ -94,11 +94,9 @@ def create_brf2ebrf_parser(
                 most_confident_detector,
             ),
             # convert box lines pass
-            detector_parser(
+            Parser(
                 "Convert box lines to div tags",
-                {},
-                [convert_box_lines],
-                most_confident_detector,
+                tag_boxlines
             ),
             # Detect blocks pass
             detector_parser(

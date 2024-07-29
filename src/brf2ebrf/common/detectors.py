@@ -30,7 +30,7 @@ def convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, state: Detecti
     return DetectionResult(len(text), state, 1.0, output_text + translate_ascii_to_unicode_braille(text[cursor:]))
 
 
-def translate_ascii_to_unicode_braille(text: str, check_cancelled: Callable[[], None] = lambda: None) -> str:
+def translate_ascii_to_unicode_braille(text: str, _: Callable[[], None] = lambda: None) -> str:
     return text.translate(_ASCII_TO_UNICODE_DICT)
 
 
