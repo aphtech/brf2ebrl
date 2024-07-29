@@ -5,6 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Detectors for transcriber notes according to BANA formats"""
 import re
+from typing import Callable
 
 from brf2ebrf.parser import DetectionState, DetectionResult
 from brf2ebrf.utils import find_end_of_element
@@ -27,7 +28,7 @@ _INLINE_TN_RE = re.compile(f"{_START_TN_SYMBOL}[\u2800-\u28ff\\s]+{_END_TN_SYMBO
 _INLINE_EXCLUDES_RE = re.compile(f"(?:\"|{_START_TN_BLOCK})$")
 
 
-def tag_inline_tn(text, start=0):
+def tag_inline_tn(text: str, check_cancelled: Callable[[], None], start: int=0):
     prev_cursor = start
     new_text = ""
     while m := _INLINE_TN_RE.search(text, pos=start):
@@ -36,6 +37,7 @@ def tag_inline_tn(text, start=0):
         if not _INLINE_EXCLUDES_RE.search(text, pos=prev_cursor, endpos=start):
             new_text += f"{_START_TN_SPAN}{m.group()}{_END_TN_SPAN}"
         prev_cursor = start
+        check_cancelled()
         start = m.end()
     return new_text + text[start:]
 
