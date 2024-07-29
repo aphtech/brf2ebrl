@@ -53,16 +53,15 @@ def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output
         position = start
         if m := _TN_HEADING_START_RE.search(text, position):
             position = m.start()
-            if m.start() == position:
-                heading_end = find_end_of_element(text, m.start())
-                if heading_end >= 0 and (m := _TN_HEADING_LIST_SEP_RE.match(text, heading_end)):
-                    list_start = m.end()
-                    if _TN_LIST_START_RE.match(text, list_start):
-                        list_end = find_end_of_element(text, list_start)
-                        if list_end >= 0 and "".join(
-                                c for c in text[cursor:list_end] if "\u2800" < c <= "\u28ff").endswith(
-                                _END_TN_SYMBOL):
-                            return DetectionResult(list_end, state, 0.95,
-                                                   f"{output_text}{text[start:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}")
+            heading_end = find_end_of_element(text, m.start())
+            if heading_end >= 0 and (m := _TN_HEADING_LIST_SEP_RE.match(text, heading_end)):
+                list_start = m.end()
+                if _TN_LIST_START_RE.match(text, list_start):
+                    list_end = find_end_of_element(text, list_start)
+                    if list_end >= 0 and "".join(
+                            c for c in text[cursor:list_end] if "\u2800" < c <= "\u28ff").endswith(
+                        _END_TN_SYMBOL):
+                        return DetectionResult(list_end, state, 0.95,
+                                               f"{output_text}{text[start:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}")
         start = len(text)
     return DetectionResult(start, state, 0.5, f"{output_text}{text[cursor:start]}")
