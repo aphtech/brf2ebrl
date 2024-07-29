@@ -48,9 +48,10 @@ _TN_LIST_START_RE = re.compile("<ul")
 
 
 def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
+    new_text = output_text
     start = cursor
     while start < len(text):
-        if m := _TN_HEADING_START_RE.search(text, position):
+        if m := _TN_HEADING_START_RE.search(text, pos=start):
             position = m.start()
             heading_end = find_end_of_element(text, m.start())
             if heading_end >= 0 and (m := _TN_HEADING_LIST_SEP_RE.match(text, heading_end)):
@@ -62,5 +63,6 @@ def detect_symbols_list_tn(text: str, cursor: int, state: DetectionState, output
                         _END_TN_SYMBOL):
                         return DetectionResult(list_end, state, 0.95,
                                                f"{output_text}{text[start:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}")
+        new_text += text[start:]
         start = len(text)
-    return DetectionResult(start, state, 0.5, f"{output_text}{text[cursor:start]}")
+    return DetectionResult(start, state, 0.5, new_text)
