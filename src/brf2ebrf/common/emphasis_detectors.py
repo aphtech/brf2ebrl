@@ -14,8 +14,6 @@ the regular expressions are pre-built  and I might remove the for loops that cre
 import re
 from typing import Callable
 
-from brf2ebrf.parser import DetectionState, DetectionResult
-
 letter = {
     "\u2828\u2806": ("<em>", "</em>"),
     "\u2818\u2806": ("<strong>", "</strong>"),
@@ -130,29 +128,6 @@ def phrase_groups(match):
             f"{phrase[match.group(1)][1]}{match.group(1)}"
             + f"{match.group(2)}{match.group(3)}{phrase[match.group(1)][2]}"
     )
-
-
-def convert_emphasis(
-        text: str, _: int, state: DetectionState, output_text: str
-) -> DetectionResult | None:
-    """Adds all Emphasis tags by using re.sub
-
-    Args:
-        text (str): full brf in text
-        _ (int): position in file
-        state (DetectionState): parser state
-        output_text (str): the text that will be returned
-
-    Returns:
-        DetectionResult | None: changed file text
-    """
-
-    # save the input length
-    input_len = len(text)
-
-    text = tag_emphasis(text)
-
-    return DetectionResult(input_len, state, 1.0, output_text + text)
 
 
 def tag_emphasis(text: str, _: Callable[[], None] = lambda: None) -> str:
