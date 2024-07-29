@@ -7,7 +7,7 @@
 import re
 from typing import Callable
 
-from brf2ebrf.parser import DetectionState, DetectionResult
+from brf2ebrf.parser import DetectionState
 from brf2ebrf.utils import find_end_of_element
 
 _START_TN_BLOCK = "<div class=\"tn\">"
@@ -54,6 +54,7 @@ def tag_symbols_list_tn(text: str, check_cancelled: Callable[[], None] = lambda:
         check_cancelled()
         if m := _TN_HEADING_START_RE.search(text, pos=start):
             position = m.start()
+            m_end = m.end()
             heading_end = find_end_of_element(text, m.start())
             if heading_end >= 0 and (m := _TN_HEADING_LIST_SEP_RE.match(text, heading_end)):
                 list_start = m.end()
@@ -64,6 +65,9 @@ def tag_symbols_list_tn(text: str, check_cancelled: Callable[[], None] = lambda:
                         new_text = f"{new_text}{text[start:position]}{_START_TN_BLOCK}{text[position:list_end]}{_END_TN_BLOCK}"
                         start = list_end
                         continue
-        new_text += text[start:]
-        start = len(text)
+            new_text += text[start:m_end]
+            start = m_end
+        else:
+            new_text += text[start:]
+            start = len(text)
     return new_text
