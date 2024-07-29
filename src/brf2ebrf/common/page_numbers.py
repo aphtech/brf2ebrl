@@ -18,6 +18,7 @@ _NON_NESTED_BLOCKS_RE = re.compile("((<\\?blank-line\\?>)|\n)*<(?P<tag_name>(h[1
 
 def create_ebrf_print_page_tags() -> Detector:
     """Create detector to convert print page numbers to ebrf tags."""
+
     def convert_to_ebrf_print_page_numbers(text: str, cursor: int, state: DetectionState,
                                            output_text: str) -> DetectionResult | None:
         if m := _PRINT_PAGE_RE.search(text, cursor):
@@ -28,8 +29,10 @@ def create_ebrf_print_page_tags() -> Detector:
             if _FIND_FOLLOWING_BLOCK_RE.match(text, tag_start):
                 end_index = find_end_of_element(text, tag_start)
                 if end_index > tag_start:
-                    return DetectionResult(end_index, state, 0.9, f"{output_text}<div class=\"keeptgr\"><span role=\"doc-pagebreak\" id=\"page{page_number}\" class=\"keepwithnext\">{page_number}</span>{text[tag_start:end_index]}</div>")
+                    return DetectionResult(end_index, state, 0.9,
+                                           f"{output_text}<div class=\"keeptgr\"><span role=\"doc-pagebreak\" id=\"page{page_number}\" class=\"keepwithnext\">{page_number}</span>{text[tag_start:end_index]}</div>")
             return DetectionResult(tag_start, state, 0.9,
                                    f"{output_text}<span role=\"doc-pagebreak\" id=\"page{page_number}\">{page_number}</span>")
         return DetectionResult(len(text), state, 0.5, f"{output_text}{text[cursor:]}")
+
     return convert_to_ebrf_print_page_numbers
