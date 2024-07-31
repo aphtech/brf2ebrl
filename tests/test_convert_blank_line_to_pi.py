@@ -4,8 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from brf2ebrf.common.detectors import convert_blank_line_to_pi
-from brf2ebrf.parser import DetectionResult
+from brf2ebrl.common.detectors import convert_blank_line_to_pi
+from brf2ebrl.parser import DetectionResult
 
 
 def test_convert_blank_line_to_pi():

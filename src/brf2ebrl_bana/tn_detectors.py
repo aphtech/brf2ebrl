@@ -7,8 +7,8 @@
 import re
 from typing import Callable
 
-from brf2ebrf.parser import DetectionState
-from brf2ebrf.utils import find_end_of_element
+from brf2ebrl.parser import DetectionState
+from brf2ebrl.utils import find_end_of_element
 
 _START_TN_BLOCK = "<div class=\"tn\">"
 _END_TN_BLOCK = "</div>"

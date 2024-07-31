@@ -7,21 +7,21 @@
 
 from typing import Sequence
 
-from brf2ebrf.common import PageLayout
-from brf2ebrf.common.block_detectors import create_centered_detector, create_cell_heading, create_paragraph_detector, \
+from brf2ebrl.common import PageLayout
+from brf2ebrl.common.block_detectors import create_centered_detector, create_cell_heading, create_paragraph_detector, \
     create_table_detector, create_list_detector, detect_pre
-from brf2ebrf.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
-from brf2ebrf.common.detectors import detect_and_pass_processing_instructions, \
+from brf2ebrl.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
+from brf2ebrl.common.detectors import detect_and_pass_processing_instructions, \
     create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector, \
     translate_ascii_to_unicode_braille
-from brf2ebrf.common.emphasis_detectors import tag_emphasis
-from brf2ebrf.common.graphic_detectors import create_pdf_graphic_detector
-from brf2ebrf.common.page_numbers import create_ebrf_print_page_tags
-from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import detector_parser, Parser
-from brf2ebrf_bana.pages import create_braille_page_detector, \
+from brf2ebrl.common.emphasis_detectors import tag_emphasis
+from brf2ebrl.common.graphic_detectors import create_pdf_graphic_detector
+from brf2ebrl.common.page_numbers import create_ebrf_print_page_tags
+from brf2ebrl.common.selectors import most_confident_detector
+from brf2ebrl.parser import detector_parser, Parser
+from brf2ebrl_bana.pages import create_braille_page_detector, \
     create_print_page_detector
-from brf2ebrf_bana.tn_detectors import tn_indicators_block_matcher, \
+from brf2ebrl_bana.tn_detectors import tn_indicators_block_matcher, \
     tag_inline_tn, tag_symbols_list_tn
 
 PLUGIN_ID = "BANA"

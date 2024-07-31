@@ -5,7 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import pytest
-from brf2ebrf.utils import find_end_of_element
+from brf2ebrl.utils import find_end_of_element
 
 
 @pytest.mark.parametrize("text, start,expected", [

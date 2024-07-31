@@ -4,8 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import brf2ebrf
+import brf2ebrl
 
 
 def test_version():
-    assert brf2ebrf.__version__ == "0.1.0"
+    assert brf2ebrl.__version__ == "0.1.0"

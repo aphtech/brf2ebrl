@@ -3,8 +3,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-from brf2ebrf.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
-from brf2ebrf.parser import DetectionResult
+from brf2ebrl.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
+from brf2ebrl.parser import DetectionResult
 
 
 def test_convert_g_box():

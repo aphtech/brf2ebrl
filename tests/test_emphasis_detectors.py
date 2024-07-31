@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from brf2ebrf.common.emphasis_detectors import tag_emphasis
+from brf2ebrl.common.emphasis_detectors import tag_emphasis
 
 
 def test_convert_phrase_emphasis():

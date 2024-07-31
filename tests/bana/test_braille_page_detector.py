@@ -4,9 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from brf2ebrf_bana import create_braille_page_detector
-from brf2ebrf.common import PageNumberPosition, PageLayout
-from brf2ebrf.parser import DetectionResult
+from brf2ebrl_bana import create_braille_page_detector
+from brf2ebrl.common import PageNumberPosition, PageLayout
+from brf2ebrl.parser import DetectionResult
 
 
 def test_find_first_page():

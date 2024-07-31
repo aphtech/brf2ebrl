@@ -12,14 +12,14 @@ import os
 import pkgutil
 from collections.abc import Iterable, Callable
 
-from brf2ebrf.common import PageNumberPosition, PageLayout
-from brf2ebrf.parser import parse, detector_parser
+from brf2ebrl.common import PageNumberPosition, PageLayout
+from brf2ebrl.parser import parse, detector_parser
 
 DISCOVERED_PARSER_PLUGINS = {
     name: importlib.import_module(name)
     for finder, name, ispkg
     in pkgutil.iter_modules()
-    if name.startswith("brf2ebrf_")
+    if name.startswith("brf2ebrl_")
 }
 
 

@@ -5,8 +5,8 @@ import re
 import string
 from typing import Callable
 
-from brf2ebrf.common import PageNumberPosition, PageLayout
-from brf2ebrf.parser import Detector, DetectionState, DetectionResult
+from brf2ebrl.common import PageNumberPosition, PageLayout
+from brf2ebrl.parser import Detector, DetectionState, DetectionResult
 
 _BRL_WHITESPACE = string.whitespace + "\u2800"
 

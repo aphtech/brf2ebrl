@@ -4,8 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from brf2ebrf.common.detectors import detect_and_pass_processing_instructions
-from brf2ebrf.parser import DetectionResult
+from brf2ebrl.common.detectors import detect_and_pass_processing_instructions
+from brf2ebrl.parser import DetectionResult
 
 
 def test_insert_processing_instruction_in_output():

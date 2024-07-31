@@ -8,7 +8,7 @@
 import re
 from typing import Callable
 
-from brf2ebrf.parser import DetectionState, DetectionResult
+from brf2ebrl.parser import DetectionState, DetectionResult
 
 # Define the regular expression patterns
 _ENCLOSING_RE = re.compile(

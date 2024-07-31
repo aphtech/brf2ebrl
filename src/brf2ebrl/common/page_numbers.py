@@ -8,8 +8,8 @@
 
 import re
 
-from brf2ebrf.parser import DetectionState, DetectionResult, Detector
-from brf2ebrf.utils import find_end_of_element
+from brf2ebrl.parser import DetectionState, DetectionResult, Detector
+from brf2ebrl.utils import find_end_of_element
 
 _PRINT_PAGE_RE = re.compile("<\\?print-page (?P<page_number>[\u2800-\u28ff]*)\\?>")
 _FIND_FOLLOWING_BLOCK_RE = re.compile("((<\\?blank-line\\?>)|\n)*<((h[1-6])|p|(pre)|(table)|(ul)|(div))(\\s|>)")

@@ -4,10 +4,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Some common selectors for brf2ebrf."""
+"""Some common selectors for brf2ebrl."""
 from collections.abc import Iterable
 
-from brf2ebrf.parser import Detector, DetectionResult, DetectionState
+from brf2ebrl.parser import Detector, DetectionResult, DetectionState
 
 
 def most_confident_detector(text: str, cursor: int, state: DetectionState, output_text: str,

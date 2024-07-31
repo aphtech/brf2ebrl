@@ -5,9 +5,9 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import pytest
-from brf2ebrf.common.detectors import convert_ascii_to_unicode_braille_bulk, convert_ascii_to_unicode_braille
-from brf2ebrf.common.selectors import most_confident_detector
-from brf2ebrf.parser import DetectionResult, parse, detector_parser
+from brf2ebrl.common.detectors import convert_ascii_to_unicode_braille_bulk, convert_ascii_to_unicode_braille
+from brf2ebrl.common.selectors import most_confident_detector
+from brf2ebrl.parser import DetectionResult, parse, detector_parser
 
 
 @pytest.mark.parametrize("text,cursor,expected_text", [

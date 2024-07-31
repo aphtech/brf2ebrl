@@ -7,7 +7,7 @@
 from collections.abc import Iterable
 
 import pytest
-from brf2ebrf.parser import parse, detector_parser, Detector, DetectionResult, DetectionSelector, DetectionState
+from brf2ebrl.parser import parse, detector_parser, Detector, DetectionResult, DetectionSelector, DetectionState
 
 
 def _remove_detector(_: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
