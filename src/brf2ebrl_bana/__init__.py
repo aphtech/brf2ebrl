@@ -28,7 +28,7 @@ PLUGIN_ID = "BANA"
 PLUGIN_NAME = "BANA"
 
 
-def create_brf2ebrf_parser(
+def create_brf2ebrl_parser(
         page_layout: PageLayout = PageLayout(),
         brf_path: str = "",
         output_path: str = "",

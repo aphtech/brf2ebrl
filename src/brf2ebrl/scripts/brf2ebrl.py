@@ -41,7 +41,7 @@ def main():
     )
     parser_modules = [plugin for plugin in DISCOVERED_PARSER_PLUGINS.values()]
     default_plugin_id: str = parser_modules[0].PLUGIN_ID
-    arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBRF")
+    arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBraille")
     arg_parser.add_argument("--list-parsers", action=_ListPluginsAction, help="List parser plugins and exit")
     arg_parser.add_argument("--parser", dest="parser_plugin", default=default_plugin_id,
                             help="Specify the parser plugin")
@@ -105,7 +105,7 @@ def main():
         lines_per_page=args.lines_per_page,
     )
     running_heads = args.running_heads
-    parser = parser_plugin[0].create_brf2ebrf_parser(
+    parser = parser_plugin[0].create_brf2ebrl_parser(
         page_layout=page_layout,
         detect_running_heads=running_heads,
         brf_path=input_brf,
