@@ -4,11 +4,25 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Module used when defining a plugin."""
+import importlib
+import pkgutil
 from abc import abstractmethod, ABC
 from typing import Sequence
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
+
+
+def find_plugins():
+    return {
+        k: v.PLUGIN
+        for k, v in {
+            name: importlib.import_module(name)
+            for finder, name, ispkg in pkgutil.iter_modules()
+            if name.startswith("brf2ebrl_")
+        }.items()
+        if hasattr(v, "PLUGIN") and isinstance(v.PLUGIN, Brf2EbrlPlugin)
+    }
 
 
 class Brf2EbrlPlugin(ABC):
