@@ -25,9 +25,6 @@ from brf2ebrl_bana.pages import create_braille_page_detector, \
 from brf2ebrl_bana.tn_detectors import tn_indicators_block_matcher, \
     tag_inline_tn, tag_symbols_list_tn
 
-PLUGIN_ID = "BANA"
-PLUGIN_NAME = "BANA"
-
 
 def create_brf2ebrl_parser(
         page_layout: PageLayout = PageLayout(),
