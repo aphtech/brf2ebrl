@@ -57,7 +57,7 @@ class Plugin(ABC):
         return []
 
 
-class _Brf2EbrlPluginImpl(Plugin):
+class _DelegatingPluginImpl(Plugin):
     def __init__(self, plugin_id: str, name: str, brf_parser_factory):
         super().__init__(plugin_id, name)
         self._brf_parser_factory = brf_parser_factory
@@ -77,6 +77,6 @@ class _Brf2EbrlPluginImpl(Plugin):
                                         **kwargs)
 
 
-def create_brf2ebrl_plugin(plugin_id: str, name: str, brf_parser_factory) -> Plugin:
+def create_plugin(plugin_id: str, name: str, brf_parser_factory) -> Plugin:
     """Create a plugin by providing the information required"""
-    return _Brf2EbrlPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory)
+    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory)

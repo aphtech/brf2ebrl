@@ -19,7 +19,7 @@ from brf2ebrl.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrl.common.page_numbers import create_ebrf_print_page_tags
 from brf2ebrl.common.selectors import most_confident_detector
 from brf2ebrl.parser import detector_parser, Parser
-from brf2ebrl.plugin import create_brf2ebrl_plugin
+from brf2ebrl.plugin import create_plugin
 from brf2ebrl_bana.pages import create_braille_page_detector, \
     create_print_page_detector
 from brf2ebrl_bana.tn_detectors import tn_indicators_block_matcher, \
@@ -156,7 +156,7 @@ def create_brf2ebrl_parser(
     ]
 
 
-PLUGIN = create_brf2ebrl_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", brf_parser_factory=create_brf2ebrl_parser)
+PLUGIN = create_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", brf_parser_factory=create_brf2ebrl_parser)
 
 
 def create_image_detection_parser_pass(brf_path, images_path, output_path):
