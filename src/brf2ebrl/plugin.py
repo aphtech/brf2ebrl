@@ -21,11 +21,11 @@ def find_plugins():
             for finder, name, ispkg in pkgutil.iter_modules()
             if name.startswith("brf2ebrl_")
         }.items()
-        if hasattr(v, "PLUGIN") and isinstance(v.PLUGIN, Brf2EbrlPlugin)
+        if hasattr(v, "PLUGIN") and isinstance(v.PLUGIN, Plugin)
     }
 
 
-class Brf2EbrlPlugin(ABC):
+class Plugin(ABC):
     """Base class for plugins to convert a BRF to eBraille."""
 
     def __init__(self, plugin_id: str, name: str):
@@ -41,7 +41,7 @@ class Brf2EbrlPlugin(ABC):
         return self._name
 
     @abstractmethod
-    def create_brf2ebrl_parser(
+    def create_brf_parser(
             self,
             page_layout: PageLayout = PageLayout(),
             brf_path: str = "",
@@ -54,12 +54,12 @@ class Brf2EbrlPlugin(ABC):
         return []
 
 
-class _Brf2EbrlPluginImpl(Brf2EbrlPlugin):
-    def __init__(self, plugin_id: str, name: str, brf2ebrl_parser_factory):
+class _Brf2EbrlPluginImpl(Plugin):
+    def __init__(self, plugin_id: str, name: str, brf_parser_factory):
         super().__init__(plugin_id, name)
-        self._brf2ebrl_parser_factory = brf2ebrl_parser_factory
+        self._brf_parser_factory = brf_parser_factory
 
-    def create_brf2ebrl_parser(
+    def create_brf_parser(
             self,
             page_layout: PageLayout = PageLayout(),
             brf_path: str = "",
@@ -69,10 +69,10 @@ class _Brf2EbrlPluginImpl(Brf2EbrlPlugin):
             *args,
             **kwargs
     ) -> Sequence[Parser]:
-        return self._brf2ebrl_parser_factory(page_layout=page_layout, brf_path=brf_path, output_path=output_path,
-                                             images_path=images_path, detect_running_heads=detect_running_heads, *args,
-                                             **kwargs)
+        return self._brf_parser_factory(page_layout=page_layout, brf_path=brf_path, output_path=output_path,
+                                        images_path=images_path, detect_running_heads=detect_running_heads, *args,
+                                        **kwargs)
 
 
-def create_brf2ebrl_plugin(plugin_id: str, name: str, brf2ebrl_parser_factory) -> Brf2EbrlPlugin:
-    return _Brf2EbrlPluginImpl(plugin_id, name, brf2ebrl_parser_factory=brf2ebrl_parser_factory)
+def create_brf2ebrl_plugin(plugin_id: str, name: str, brf_parser_factory) -> Plugin:
+    return _Brf2EbrlPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory)

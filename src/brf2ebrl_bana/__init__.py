@@ -156,7 +156,7 @@ def create_brf2ebrl_parser(
     ]
 
 
-PLUGIN = create_brf2ebrl_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", brf2ebrl_parser_factory=create_brf2ebrl_parser)
+PLUGIN = create_brf2ebrl_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", brf_parser_factory=create_brf2ebrl_parser)
 
 
 def create_image_detection_parser_pass(brf_path, images_path, output_path):

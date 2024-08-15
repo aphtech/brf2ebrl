@@ -99,7 +99,7 @@ def main():
         lines_per_page=args.lines_per_page,
     )
     running_heads = args.running_heads
-    parser = parser_plugin[0].create_brf2ebrl_parser(
+    parser = parser_plugin[0].create_brf_parser(
         page_layout=page_layout,
         detect_running_heads=running_heads,
         brf_path=input_brf,
