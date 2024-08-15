@@ -34,10 +34,12 @@ class Plugin(ABC):
 
     @property
     def id(self) -> str:
+        """A unique identifier for the plugin"""
         return self._id
 
     @property
     def name(self) -> str:
+        """A name which will be displayed to users"""
         return self._name
 
     @abstractmethod
@@ -51,6 +53,7 @@ class Plugin(ABC):
             *args,
             **kwargs
     ) -> Sequence[Parser]:
+        """Create the parser for converting BRFs into another format"""
         return []
 
 
@@ -75,4 +78,5 @@ class _Brf2EbrlPluginImpl(Plugin):
 
 
 def create_brf2ebrl_plugin(plugin_id: str, name: str, brf_parser_factory) -> Plugin:
+    """Create a plugin by providing the information required"""
     return _Brf2EbrlPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory)
