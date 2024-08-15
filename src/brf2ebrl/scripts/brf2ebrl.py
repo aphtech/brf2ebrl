@@ -8,10 +8,9 @@
 import argparse
 import logging
 import os
-from collections.abc import Iterable, Callable
 
+from brf2ebrl import convert_brf2ebrf
 from brf2ebrl.common import PageNumberPosition, PageLayout
-from brf2ebrl.parser import parse, detector_parser
 from brf2ebrl.plugin import find_plugins
 
 DISCOVERED_PARSER_PLUGINS = find_plugins()
@@ -107,20 +106,6 @@ def main():
         images_path=input_images,
     )
     convert_brf2ebrf(input_brf, output_ebrf, parser)
-
-
-def convert_brf2ebrf(input_brf: str, output_ebrf: str, parser: Iterable[detector_parser],
-                     progress_callback: Callable[[int], None] = lambda x: None,
-                     is_cancelled: Callable[[], bool] = lambda: False):
-    brf = ""
-    with open(input_brf, "r", encoding="utf-8") as in_file:
-        brf += in_file.read()
-    output_text = parse(
-        brf,
-        parser, progress_callback=progress_callback, is_cancelled=is_cancelled
-    )
-    with open(output_ebrf, "w", encoding="utf-8") as out_file:
-        out_file.write(output_text)
 
 
 if __name__ == "__main__":
