@@ -5,6 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Module used when defining a plugin."""
 import importlib
+import os
 import pkgutil
 from abc import abstractmethod, ABC
 from typing import Sequence
@@ -56,11 +57,17 @@ class Plugin(ABC):
         """Create the parser for converting BRFs into another format"""
         return []
 
+    @abstractmethod
+    def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
+        """Maps the input file name to the output file name."""
+        return os.path.basename(input_file)
+
 
 class _DelegatingPluginImpl(Plugin):
-    def __init__(self, plugin_id: str, name: str, brf_parser_factory):
+    def __init__(self, plugin_id: str, name: str, brf_parser_factory, file_mapper):
         super().__init__(plugin_id, name)
         self._brf_parser_factory = brf_parser_factory
+        self._file_mapper = file_mapper
 
     def create_brf_parser(
             self,
@@ -76,7 +83,11 @@ class _DelegatingPluginImpl(Plugin):
                                         images_path=images_path, detect_running_heads=detect_running_heads, *args,
                                         **kwargs)
 
+    def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
+        return self._file_mapper(input_file=input_file, index=index, *args, **kwargs)
 
-def create_plugin(plugin_id: str, name: str, brf_parser_factory) -> Plugin:
+
+def create_plugin(plugin_id: str, name: str, brf_parser_factory,
+                  file_mapper=lambda f, i: os.path.basename(f)) -> Plugin:
     """Create a plugin by providing the information required"""
-    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory)
+    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory, file_mapper=file_mapper)
