@@ -10,7 +10,7 @@ import os
 import sys
 
 import re
-from PyPDF2 import PdfWriter, PdfReader
+from pypdf import PdfWriter, PdfReader
 
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
 from brf2ebrl.parser import DetectionState, DetectionResult, Detector
