@@ -278,3 +278,33 @@ def create_table_detector() -> Detector:
         return DetectionResult(cursor, state, 0.9, f"{output_text}{complete_table}\n")
 
     return detect_table
+
+
+#detect block aligned paragraphs
+def create_block_paragraph_detector() -> Detector:
+    """Creates a detector for finding blokc paragraphs"""
+    first_line_re = re.compile(
+        f"({_PROCESSING_INSTRUCTION_RE}?)([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+    
+
+    def detect_block_paragraph(
+            text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> DetectionResult | None:
+        lines = []
+        new_cursor = cursor
+        brl = ''
+        while line := first_line_re.match(text[new_cursor:]):
+            lines.append(line.group(1) + line.group(2))
+            new_cursor += line.end()
+        lines = [x for x in lines if x is not None]
+        if lines and [elem for elem in lines[1:] if elem[0]==lines[0][0]]:
+            brl = '<p class="left-justified">' + ''.join(lines) + '</p>'
+        return (
+            DetectionResult(new_cursor, state, 0.89, f"{output_text}{brl}\n")
+            if brl
+            else None
+        )
+
+    return detect_block_paragraph
+
+ 
