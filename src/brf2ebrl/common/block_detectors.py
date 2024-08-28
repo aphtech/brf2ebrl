@@ -285,6 +285,10 @@ def create_block_paragraph_detector() -> Detector:
     """Creates a detector for finding blokc paragraphs"""
     first_line_re = re.compile(
         f"({_PROCESSING_INSTRUCTION_RE}?)([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+    run_over_re = re.compile(
+        f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{1},}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+
+    
     
 
     def detect_block_paragraph(
@@ -296,6 +300,10 @@ def create_block_paragraph_detector() -> Detector:
         while line := first_line_re.match(text[new_cursor:]):
             lines.append(line.group(1) + line.group(2))
             new_cursor += line.end()
+            if  line := run_over_re.match(text[new_cursor:]):
+                lines =[]
+                break
+
         lines = [x for x in lines if x is not None]
         if lines and [elem for elem in lines[1:] if elem[0]==lines[0][0]]:
             brl = '<p class="left-justified">' + ''.join(lines) + '</p>'
