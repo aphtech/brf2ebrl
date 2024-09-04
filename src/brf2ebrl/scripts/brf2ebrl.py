@@ -93,7 +93,7 @@ def main():
     page_standard_name = args.page_layout
     page_standard = [x for x in PAGE_LAYOUT_STANDARDS if x.name == page_standard_name]
     if not page_standard:
-        arg_parser.exit(status=-3, message="Standard not found")
+        arg_parser.exit(status=-3, message=f"Standard not found, available standards: {', '.join(x.name for x in PAGE_LAYOUT_STANDARDS)}")
     page_standard = page_standard[0]
 
     input_brf = args.brf
