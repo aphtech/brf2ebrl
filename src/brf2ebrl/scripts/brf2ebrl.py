@@ -8,6 +8,7 @@
 import argparse
 import logging
 import os
+from dataclasses import dataclass
 
 from brf2ebrl import convert_brf2ebrf
 from brf2ebrl.common import PageNumberPosition, PageLayout
@@ -15,6 +16,18 @@ from brf2ebrl.plugin import find_plugins
 
 DISCOVERED_PARSER_PLUGINS = find_plugins()
 
+@dataclass(frozen=True)
+class PageStandard:
+    name: str
+    obpn: PageNumberPosition
+    ebpn: PageNumberPosition
+    oppn: PageNumberPosition
+    eppn: PageNumberPosition
+
+PAGE_LAYOUT_STANDARDS = [
+    PageStandard(name="interpoint", obpn=PageNumberPosition.BOTTOM_RIGHT, ebpn=PageNumberPosition.NONE, oppn=PageNumberPosition.TOP_RIGHT, eppn=PageNumberPosition.TOP_RIGHT),
+    PageStandard(name="single-side", obpn=PageNumberPosition.BOTTOM_RIGHT, ebpn=PageNumberPosition.BOTTOM_RIGHT, oppn=PageNumberPosition.TOP_RIGHT, eppn=PageNumberPosition.TOP_RIGHT)
+]
 
 class _ListPluginsAction(argparse.Action):
     def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
@@ -46,6 +59,13 @@ def main():
         action="store_false",
     )
     arg_parser.add_argument(
+        "-pl, --page-layout",
+        help="The page layout standard used for detecting page numbers",
+        dest="page_layout",
+        type=str,
+        default=PAGE_LAYOUT_STANDARDS[0].name
+    )
+    arg_parser.add_argument(
         "-cpl, --cells-per-line",
         help="Number of cells per line",
         dest="cells_per_line",
@@ -70,6 +90,12 @@ def main():
     if not parser_plugin:
         arg_parser.exit(status=-2, message="Parser not found")
 
+    page_standard_name = args.page_layout
+    page_standard = [x for x in PAGE_LAYOUT_STANDARDS if x.name == page_standard_name]
+    if not page_standard:
+        arg_parser.exit(status=-3, message="Standard not found")
+    page_standard = page_standard[0]
+
     input_brf = args.brf
     if not input_brf:
         logging.error("No input Brf to be converted.")
@@ -92,10 +118,10 @@ def main():
         arg_parser.exit()
 
     page_layout = PageLayout(
-        odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
-        even_braille_page_number=PageNumberPosition.NONE,
-        odd_print_page_number=PageNumberPosition.TOP_RIGHT,
-        even_print_page_number=PageNumberPosition.TOP_RIGHT,
+        odd_braille_page_number=page_standard.obpn,
+        even_braille_page_number=page_standard.ebpn,
+        odd_print_page_number=page_standard.oppn,
+        even_print_page_number=page_standard.eppn,
         cells_per_line=args.cells_per_line,
         lines_per_page=args.lines_per_page,
     )
