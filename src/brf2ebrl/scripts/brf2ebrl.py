@@ -93,7 +93,9 @@ def main():
 
     page_layout = PageLayout(
         odd_braille_page_number=PageNumberPosition.BOTTOM_RIGHT,
+        even_braille_page_number=PageNumberPosition.NONE,
         odd_print_page_number=PageNumberPosition.TOP_RIGHT,
+        even_print_page_number=PageNumberPosition.TOP_RIGHT,
         cells_per_line=args.cells_per_line,
         lines_per_page=args.lines_per_page,
     )
