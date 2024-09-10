@@ -10,7 +10,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-from brf2ebrl import convert_brf2ebrf
+from brf2ebrl import convert_brf2ebrl
 from brf2ebrl.common import PageNumberPosition, PageLayout
 from brf2ebrl.plugin import find_plugins
 
@@ -133,7 +133,7 @@ def main():
         output_path=output_ebrf,
         images_path=input_images,
     )
-    convert_brf2ebrf(input_brf, output_ebrf, parser)
+    convert_brf2ebrl(input_brf, output_ebrf, parser)
 
 
 if __name__ == "__main__":

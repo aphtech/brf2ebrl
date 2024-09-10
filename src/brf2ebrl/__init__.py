@@ -3,9 +3,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
 """Module for converting BRF to eBRF"""
-__version__ = "0.1.0"
 
 import os
 import shutil
@@ -16,6 +14,8 @@ from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import detector_parser, parse
 from brf2ebrl.plugin import Plugin
 
+
+__version__ = "0.1.0"
 
 def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images: str, output_ebrf: str,
             detect_running_heads: bool, page_layout: PageLayout, is_cancelled: Callable[[], bool],
@@ -33,7 +33,7 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images
                     images_path=input_images
                 )
                 parser_steps = len(selected_parser)
-                convert_brf2ebrf(brf, temp_file, selected_parser,
+                convert_brf2ebrl(brf, temp_file, selected_parser,
                                  progress_callback=lambda x: progress_callback(index, x / parser_steps),
                                  is_cancelled=is_cancelled)
             bundle_as_zip(temp_dir, out_file)
@@ -46,7 +46,7 @@ def bundle_as_zip(input_dir, out_file):
             shutil.copyfileobj(temp_ebrf_file, out_file)
 
 
-def convert_brf2ebrf(input_brf: str, output_ebrf: str, brf_parser: Iterable[detector_parser],
+def convert_brf2ebrl(input_brf: str, output_ebrf: str, brf_parser: Iterable[detector_parser],
                      progress_callback: Callable[[int], None] = lambda x: None,
                      is_cancelled: Callable[[], bool] = lambda: False):
     brf = ""
