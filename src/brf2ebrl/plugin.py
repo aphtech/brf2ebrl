@@ -8,7 +8,7 @@ import importlib
 import os
 import pkgutil
 from abc import abstractmethod, ABC
-from typing import Sequence
+from typing import Sequence, AnyStr
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
 from brf2ebrl.common import PageLayout
@@ -38,7 +38,7 @@ class Bundler(ABC):
         """Write an existing file to the bundle."""
         pass
     @abstractmethod
-    def write_str(self, name: str, src: str):
+    def write_str(self, name: str, data: AnyStr):
         """Write a file containing the content to the bundle."""
         pass
     @abstractmethod
@@ -53,8 +53,8 @@ class EBrlZippedBundler(Bundler):
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
     def write_file(self, name: str, filename: str):
         self._zipfile.write(filename, name)
-    def write_str(self, name: str, src: str):
-        self._zipfile.writestr(name, src)
+    def write_str(self, name: str, data: AnyStr):
+        self._zipfile.writestr(name, data)
     def close(self):
         self._zipfile.close()
 

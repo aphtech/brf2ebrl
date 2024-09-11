@@ -6,7 +6,6 @@
 """Module for converting BRF to eBRF"""
 
 import os
-import shutil
 from tempfile import TemporaryDirectory
 from typing import Iterable, Callable
 
@@ -40,13 +39,6 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images
                 for f in files:
                     arch_name = os.path.join(arch_path, f)
                     out_bundle.write_file(arch_name, os.path.join(root, f))
-
-
-def bundle_as_zip(input_dir, out_file):
-    with TemporaryDirectory() as out_temp_dir:
-        temp_ebrf = shutil.make_archive(os.path.join(out_temp_dir, "output_ebrf"), "zip", input_dir)
-        with open(temp_ebrf, "rb") as temp_ebrf_file:
-            shutil.copyfileobj(temp_ebrf_file, out_file)
 
 
 def convert_brf2ebrl(input_brf: str, output_ebrf: str, brf_parser: Iterable[detector_parser],
