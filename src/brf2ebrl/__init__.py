@@ -12,15 +12,14 @@ from typing import Iterable, Callable
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import detector_parser, parse
-from brf2ebrl.plugin import Plugin
-
+from brf2ebrl.plugin import Plugin, EBrlZippedBundler
 
 __version__ = "0.1.0"
 
 def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images: str, output_ebrf: str,
             detect_running_heads: bool, page_layout: PageLayout, is_cancelled: Callable[[], bool],
             progress_callback: Callable[[int, float], None]):
-    with open(output_ebrf, "wb") as out_file:
+    with EBrlZippedBundler(output_ebrf) as out_bundle:
         with TemporaryDirectory() as temp_dir:
             os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
             for index, brf in enumerate(input_brf_list):
@@ -36,7 +35,11 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images
                 convert_brf2ebrl(brf, temp_file, selected_parser,
                                  progress_callback=lambda x: progress_callback(index, x / parser_steps),
                                  is_cancelled=is_cancelled)
-            bundle_as_zip(temp_dir, out_file)
+            for root, dirs, files in os.walk(temp_dir):
+                arch_path = os.path.relpath(root, start=temp_dir)
+                for f in files:
+                    arch_name = os.path.join(arch_path, f)
+                    out_bundle.write_file(arch_name, os.path.join(root, f))
 
 
 def bundle_as_zip(input_dir, out_file):

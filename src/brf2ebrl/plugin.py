@@ -9,6 +9,7 @@ import os
 import pkgutil
 from abc import abstractmethod, ABC
 from typing import Sequence
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
@@ -24,6 +25,38 @@ def find_plugins():
         }.items()
         if hasattr(v, "PLUGIN") and isinstance(v.PLUGIN, Plugin)
     }
+
+
+class Bundler(ABC):
+    """Base class for bundlers"""
+    def __enter__(self):
+        return self
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+    @abstractmethod
+    def write_file(self, name: str, filename: str):
+        """Write an existing file to the bundle."""
+        pass
+    @abstractmethod
+    def write_str(self, name: str, src: str):
+        """Write a file containing the content to the bundle."""
+        pass
+    @abstractmethod
+    def close(self):
+        """Close the bundle."""
+        pass
+
+
+class EBrlZippedBundler(Bundler):
+    def __init__(self, name: str):
+        self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
+        self._zipfile.writestr("Mimetype", "application/epub+zip")
+    def write_file(self, name: str, filename: str):
+        self._zipfile.write(name, filename)
+    def write_str(self, name: str, src: str):
+        self._zipfile.writestr(name, src)
+    def close(self):
+        self._zipfile.close()
 
 
 class Plugin(ABC):
