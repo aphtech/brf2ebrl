@@ -50,7 +50,7 @@ class Bundler(ABC):
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
-        self._zipfile.writestr("Mimetype", "application/epub+zip", compress_type=ZIP_STORED)
+        self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
     def write_file(self, name: str, filename: str):
         self._zipfile.write(filename, name)
     def write_str(self, name: str, src: str):
