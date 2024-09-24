@@ -34,8 +34,7 @@ def tag_inline_tn(text: str, check_cancelled: Callable[[], None], start: int = 0
     while m := _INLINE_TN_RE.search(text, pos=start):
         start = m.start()
         new_text += text[prev_cursor:start]
-        if not _INLINE_EXCLUDES_RE.search(text, pos=prev_cursor, endpos=start):
-            new_text += f"{_START_TN_SPAN}{m.group()}{_END_TN_SPAN}"
+        new_text += m.group() if _INLINE_EXCLUDES_RE.search(text, pos=prev_cursor, endpos=start) else f"{_START_TN_SPAN}{m.group()}{_END_TN_SPAN}"
         prev_cursor = start
         check_cancelled()
         start = m.end()
