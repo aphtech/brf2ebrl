@@ -1,7 +1,7 @@
 [tool.pdm]
 version = { source = "file", path = "src/brf2ebrl/__init__.py" }
 [tool.pdm.scripts]
-exe_cli = "python -m nuitka --standalone {args} src/brf2ebrl/scripts/brf2ebrl.py"
+build_exe = "python -m nuitka --standalone {args} src/brf2ebrl/scripts/brf2ebrl.py"
 test = "pytest"
 [tool.pdm.dev-dependencies]
 test = [
