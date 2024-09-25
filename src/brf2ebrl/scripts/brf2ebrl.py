@@ -82,8 +82,8 @@ def main():
     arg_parser.add_argument(
         "-i", "--images", type=str, help="The images folder or file."
     )
+    arg_parser.add_argument("-o", "--output", dest="output_file", help="The output file name", required=True)
     arg_parser.add_argument("brf", help="The BRF to convert")
-    arg_parser.add_argument("output_file", help="The output file name")
     args = arg_parser.parse_args()
 
     parser_plugin = [plugin for plugin in parser_modules if plugin.id == args.parser_plugin]
