@@ -83,7 +83,7 @@ def main():
         "-i", "--images", type=str, help="The images folder or file."
     )
     arg_parser.add_argument("-o", "--output", dest="output_file", help="The output file name", required=True)
-    arg_parser.add_argument("brf", help="The BRF to convert", nargs="+")
+    arg_parser.add_argument("brfs", help="The input BRFs to convert", nargs="+")
     args = arg_parser.parse_args()
 
     parser_plugin = [plugin for plugin in parser_modules if plugin.id == args.parser_plugin]
@@ -96,7 +96,7 @@ def main():
         arg_parser.exit(status=-3, message=f"Standard not found, available standards: {', '.join(x.name for x in PAGE_LAYOUT_STANDARDS)}")
     page_standard = page_standard[0]
 
-    input_brf = args.brf
+    input_brf = args.brfs
     if not input_brf:
         logging.error("No input Brf to be converted.")
         arg_parser.print_help()
