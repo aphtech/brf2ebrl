@@ -10,7 +10,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-from brf2ebrl import convert_brf2ebrl
+from brf2ebrl import convert_brf2ebrl, convert
 from brf2ebrl.common import PageNumberPosition, PageLayout
 from brf2ebrl.plugin import find_plugins
 
@@ -126,14 +126,7 @@ def main():
         lines_per_page=args.lines_per_page,
     )
     running_heads = args.running_heads
-    parser = parser_plugin[0].create_brf_parser(
-        page_layout=page_layout,
-        detect_running_heads=running_heads,
-        brf_path=input_brf,
-        output_path=output_ebrf,
-        images_path=input_images,
-    )
-    convert_brf2ebrl(input_brf, output_ebrf, parser)
+    convert(parser_plugin[0], input_brf_list=[input_brf], output_ebrf=output_ebrf, input_images=input_images, detect_running_heads=running_heads, page_layout=page_layout)
 
 
 if __name__ == "__main__":
