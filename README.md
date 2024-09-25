@@ -23,9 +23,14 @@ pdm install
 ```
 Then you can run:
 ```command line
-pdm run brf2ebrl <brf> <output_file>
+pdm run brf2ebrl -o  <output_file> <brf>
 ```
 For details of using the brf2ebrl command, do the following:
 ```command line
 pdm run brf2ebrl --help
 ```
+To create a stand alone executable of the command line tool run:
+```command line
+pdm exe_cli
+```
+You will find a subdirectory named brf2ebrl.dist will be created containing the executable.
