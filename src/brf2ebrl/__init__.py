@@ -19,7 +19,7 @@ __version__ = "0.1.0"
 def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images: str, output_ebrf: str,
             detect_running_heads: bool, page_layout: PageLayout, is_cancelled: Callable[[], bool],
             progress_callback: Callable[[int, float], None]):
-    with EBrlZippedBundler(output_ebrf) as out_bundle:
+    with selected_plugin.create_bundler(output_ebrf) as out_bundle:
         with TemporaryDirectory() as temp_dir:
             os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
             for index, brf in enumerate(input_brf_list):

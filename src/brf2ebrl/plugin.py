@@ -94,13 +94,18 @@ class Plugin(ABC):
     def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
         """Maps the input file name to the output file name."""
         return os.path.basename(input_file)
+    @abstractmethod
+    def create_bundler(self, output_file: str) -> Bundler:
+        """Creates a bundler for bundling the output"""
+        pass
 
 
 class _DelegatingPluginImpl(Plugin):
-    def __init__(self, plugin_id: str, name: str, brf_parser_factory, file_mapper):
+    def __init__(self, plugin_id: str, name: str, brf_parser_factory, file_mapper, bundler_factory):
         super().__init__(plugin_id, name)
         self._brf_parser_factory = brf_parser_factory
         self._file_mapper = file_mapper
+        self._bundler_factory = bundler_factory
 
     def create_brf_parser(
             self,
@@ -118,9 +123,11 @@ class _DelegatingPluginImpl(Plugin):
 
     def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
         return self._file_mapper(input_file=input_file, index=index, *args, **kwargs)
+    def create_bundler(self, output_file: str) -> Bundler:
+        return self._bundler_factory(output_file)
 
 
 def create_plugin(plugin_id: str, name: str, brf_parser_factory,
-                  file_mapper=lambda f, i: os.path.basename(f)) -> Plugin:
+                  file_mapper=lambda f, i: os.path.basename(f), bundler_factory=lambda x: EBrlZippedBundler(x)) -> Plugin:
     """Create a plugin by providing the information required"""
-    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory, file_mapper=file_mapper)
+    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory, file_mapper=file_mapper, bundler_factory=bundler_factory)
