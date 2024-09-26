@@ -25,7 +25,6 @@ authors = [
     {name = "Michael Whapples", email = "mwhapples@aph.org"},
 ]
 dependencies = [
-    "pypdf2>=3.0.1",
     "regex>=2023.8.8",
     "pypdf>=4.3.1",
 ]
