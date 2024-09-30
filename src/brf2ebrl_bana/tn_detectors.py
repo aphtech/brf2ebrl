@@ -20,7 +20,7 @@ _END_TN_SYMBOL = "\u2808\u2828\u281c"
 
 def tn_indicators_block_matcher(brl: str, state: DetectionState) -> (str | None, DetectionState):
     if brl.startswith(_START_TN_SYMBOL) and brl.endswith(_END_TN_SYMBOL):
-        return f"{_START_TN_BLOCK}{brl}{_END_TN_BLOCK}>", state
+        return f"{_START_TN_BLOCK}{brl}{_END_TN_BLOCK}", state
     return None, state
 
 
