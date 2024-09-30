@@ -103,8 +103,7 @@ def create_running_head_detector(min_indent: int) -> Detector:
     return detect_running_head
 
 
-_HTML5_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
+_HTML5_HEADER = """<!DOCTYPE html>
 <html>
 <body>
 """
