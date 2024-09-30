@@ -143,7 +143,7 @@ def create_brf2ebrl_parser(
                 [create_ebrf_print_page_tags()],
                 most_confident_detector,
             ),
-            # Make complete XHTML pass
+            # Make complete HTML5 pass
             detector_parser(
                 "Make complete XML",
                 {},

@@ -103,19 +103,18 @@ def create_running_head_detector(min_indent: int) -> Detector:
     return detect_running_head
 
 
-_XHTML_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/strict.dtd">
-<html xmlns="http://www.w3.org/TR/xhtml1/strict" >
+_HTML5_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
 <body>
 """
 
-_XHTML_FOOTER = """</body>
+_HTML5_FOOTER = """</body>
 </html>
 """
 
 
 def xhtml_fixup_detector(input_text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
     return DetectionResult(
-        len(input_text), state, 1.0, f"{output_text}{_XHTML_HEADER}{input_text[cursor:]}{_XHTML_FOOTER}"
+        len(input_text), state, 1.0, f"{output_text}{_HTML5_HEADER}{input_text[cursor:]}{_HTML5_FOOTER}"
     )
