@@ -60,9 +60,9 @@ class EBrlZippedBundler(Bundler):
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
     def write_file(self, name: str, filename: str):
-        self._zipfile.write(filename, name)
+        self._zipfile.write(filename, f"ebraille/{name}")
     def write_str(self, name: str, data: AnyStr):
-        self._zipfile.writestr(name, data)
+        self._zipfile.writestr(f"ebraille/{name}", data)
     def close(self):
         try:
             self._zipfile.writestr(_OPF_NAME, "")
