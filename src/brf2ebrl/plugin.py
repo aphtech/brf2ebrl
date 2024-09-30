@@ -47,6 +47,14 @@ class Bundler(ABC):
         pass
 
 
+_OPF_NAME = "package.opf"
+_CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
+    <rootfiles>
+        <rootfile full-path="%s" media-type="application/oebps-package+xml"/>
+    </rootfiles>
+</container>"""
+
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
@@ -56,7 +64,11 @@ class EBrlZippedBundler(Bundler):
     def write_str(self, name: str, data: AnyStr):
         self._zipfile.writestr(name, data)
     def close(self):
-        self._zipfile.close()
+        try:
+            self._zipfile.writestr(_OPF_NAME, "")
+            self._zipfile.writestr("META-INF/container.xml", _CONTAINER_XML_template.format(_OPF_NAME))
+        finally:
+            self._zipfile.close()
 
 
 class Plugin(ABC):
