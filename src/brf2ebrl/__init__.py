@@ -33,14 +33,14 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images
                     images_path=input_images
                 )
                 parser_steps = len(selected_parser)
-                out_bundle.write_str(out_name, convert_brf2ebrl_str(brf, selected_parser,
+                out_bundle.write_volume(out_name, convert_brf2ebrl_str(brf, selected_parser,
                                      progress_callback=lambda x: progress_callback(index, x / parser_steps),
                                      is_cancelled=is_cancelled))
             for root, dirs, files in os.walk(temp_dir):
                 arch_path = os.path.relpath(root, start=temp_dir)
                 for f in files:
                     arch_name = os.path.join(arch_path, f)
-                    out_bundle.write_file(arch_name, os.path.join(root, f))
+                    out_bundle.write_image(arch_name, os.path.join(root, f))
 
 
 def convert_brf2ebrl(input_brf: str, output_ebrf: str, brf_parser: Iterable[detector_parser],
