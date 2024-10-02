@@ -36,6 +36,10 @@ def create_brf2ebrl_parser(
     return [
         x
         for x in [
+            Parser(
+                "Transform to uppercase ASCII",
+                lambda x,_: x.upper()
+            ),
             # Convert to unicode pass
             Parser(
                 "Convert to unicode Braille",
