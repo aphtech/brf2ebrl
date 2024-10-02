@@ -156,6 +156,10 @@ def create_brf2ebrl_parser(
                 ],
                 most_confident_detector,
             ),
+            Parser(
+                "Convert u+2800 to regular space as per ebraille standard",
+                lambda x,_: x.replace("\u2800", " ")
+            )
         ]
         if x is not None
     ]
