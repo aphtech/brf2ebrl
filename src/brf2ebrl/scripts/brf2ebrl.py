@@ -48,6 +48,7 @@ def main():
     parser_modules = [plugin for plugin in DISCOVERED_PARSER_PLUGINS.values()]
     default_plugin_id: str = parser_modules[0].id
     arg_parser = argparse.ArgumentParser(description="Converts a BRF to eBraille")
+    arg_parser.add_argument("--logging", default="INFO", help="Set the logging level, should be one of the standard Python logging levels.")
     arg_parser.add_argument("--list-parsers", action=_ListPluginsAction, help="List parser plugins and exit")
     arg_parser.add_argument("--parser", dest="parser_plugin", default=default_plugin_id,
                             help="Specify the parser plugin")
@@ -86,6 +87,10 @@ def main():
     arg_parser.add_argument("brfs", help="The input BRFs to convert", nargs="+")
     args = arg_parser.parse_args()
 
+    try:
+        logging.root.setLevel(args.logging)
+    except ValueError:
+        logging.warning(f"Unable to set logging level to {args.logging}, using {logging.getLevelName(logging.root.level)} instead.")
     parser_plugin = [plugin for plugin in parser_modules if plugin.id == args.parser_plugin]
     if not parser_plugin:
         arg_parser.exit(status=-2, message="Parser not found")
