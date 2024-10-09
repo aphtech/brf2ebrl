@@ -68,7 +68,7 @@ _CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
 
 def _create_opf_str() -> bytes:
     root = Element(str(QName(_OPF_NAMESPACE, tag="package")), attrib={str(QName(_OPF_NAMESPACE, tag="version")): "3.0", str(QName(_OPF_NAMESPACE, tag="unique-identifier")): "bookid"})
-    return ElementTree.tostring(root, default_namespace=_OPF_NAMESPACE)
+    return ElementTree.tostring(root, xml_declaration=True, encoding="UTF-8", default_namespace=_OPF_NAMESPACE)
 
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
