@@ -8,7 +8,10 @@ import importlib
 import os
 import pkgutil
 from abc import abstractmethod, ABC
+from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
+from xml.etree import ElementTree
+from xml.etree.ElementTree import QName, Element
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
 from brf2ebrl.common import PageLayout
@@ -53,6 +56,8 @@ class Bundler(ABC):
         pass
 
 
+_MIMETYPES = MimeTypes()
+_OPF_NAMESPACE = "http://www.idpf.org/2007/opf"
 _OPF_NAME = "package.opf"
 _CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
 <container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
@@ -60,6 +65,10 @@ _CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
         <rootfile full-path="%s" media-type="application/oebps-package+xml"/>
     </rootfiles>
 </container>"""
+
+def _create_opf_str() -> bytes:
+    root = Element(str(QName(_OPF_NAMESPACE, tag="package")), attrib={str(QName(_OPF_NAMESPACE, tag="version")): "3.0", str(QName(_OPF_NAMESPACE, tag="unique-identifier")): "bookid"})
+    return ElementTree.tostring(root, default_namespace=_OPF_NAMESPACE)
 
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
@@ -75,7 +84,7 @@ class EBrlZippedBundler(Bundler):
         self.write_str(f"ebraille/{name}", data)
     def close(self):
         try:
-            self._zipfile.writestr(_OPF_NAME, "")
+            self._zipfile.writestr(_OPF_NAME, _create_opf_str())
             self._zipfile.writestr("META-INF/container.xml", _CONTAINER_XML_template.format(_OPF_NAME))
         finally:
             self._zipfile.close()
