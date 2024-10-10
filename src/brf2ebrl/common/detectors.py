@@ -5,7 +5,9 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 """Some detectors common to multiple Braille codes/standards."""
+import logging
 import re
+from collections.abc import Iterable
 from enum import Enum, auto
 from typing import Callable
 
@@ -51,7 +53,7 @@ def detect_and_pass_processing_instructions(text: str, cursor: int, state: Detec
 
 
 _BRAILLE_PAGE_PI_RE = re.compile("<\\?braille-page (?P<braille_page_num>[\u2800-\u28ff]*)\\?>\n")
-_PRINT_PAGE_RE = re.compile("<\\?print-page[ \u2800-\u28ff]*\\?>")
+_PRINT_PAGE_RE = re.compile("<\\?print-page[ \u2800-\u28ff]*\\?>\n")
 
 
 def braille_page_counter_detector(text: str, cursor: int, state: DetectionState,
@@ -117,3 +119,12 @@ def xhtml_fixup_detector(input_text: str, cursor: int, state: DetectionState, ou
     return DetectionResult(
         len(input_text), state, 1.0, f"{output_text}{_HTML5_HEADER}{input_text[cursor:]}{_HTML5_FOOTER}"
     )
+
+def combine_detectors(detectors: Iterable[Detector]) -> Detector:
+    def apply(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
+        for i, detector in enumerate(detectors):
+            if result := detector(text, cursor, state, output_text):
+                logging.debug("Selected index=%s detector=%s", i, detector)
+                return result
+        return None
+    return apply
