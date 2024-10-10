@@ -13,7 +13,7 @@ from brf2ebrl.common.block_detectors import create_centered_detector, create_cel
 from brf2ebrl.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
 from brf2ebrl.common.detectors import detect_and_pass_processing_instructions, \
     create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector, \
-    translate_ascii_to_unicode_braille
+    translate_ascii_to_unicode_braille, combine_detectors
 from brf2ebrl.common.emphasis_detectors import tag_emphasis
 from brf2ebrl.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrl.common.page_numbers import create_ebrf_print_page_tags
@@ -75,8 +75,7 @@ def create_brf2ebrl_parser(
                 "Detect running head",
                 {},
                 [
-                    create_running_head_detector(3),
-                    braille_page_counter_detector,
+                    combine_detectors([braille_page_counter_detector, create_running_head_detector(3)]),
                     detect_and_pass_processing_instructions,
                 ],
                 most_confident_detector,
