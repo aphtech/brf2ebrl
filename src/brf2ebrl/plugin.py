@@ -8,6 +8,7 @@ import importlib
 import os
 import pkgutil
 from abc import abstractmethod, ABC
+from dataclasses import dataclass
 from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
 from xml.etree import ElementTree
@@ -85,9 +86,8 @@ class EBrlZippedBundler(Bundler):
         self._zipfile.write(filename, name)
     def write_str(self, name: str, data: AnyStr, add_to_spine: bool):
         self._zipfile.writestr(name, data)
-
-        def write_image(self, name: str, filename: str):
-            self.write_file(f"ebraille/{name}", filename, False)
+    def write_image(self, name: str, filename: str):
+        self.write_file(f"ebraille/{name}", filename, False)
     def write_volume(self, name: str, data: AnyStr):
         self.write_str(f"ebraille/{name}", data, True)
     def close(self):
