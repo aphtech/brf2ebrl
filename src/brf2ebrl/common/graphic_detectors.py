@@ -15,6 +15,10 @@ from pypdf import PdfWriter, PdfReader
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
 from brf2ebrl.parser import DetectionState, DetectionResult, Detector
 
+_page_number_pattern = re.compile(
+    r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
+)
+
 
 def create_images_references(
     brf_path: str, output_path: str, images_path: str
@@ -51,18 +55,36 @@ def create_images_references(
         logging.error("No images path or folder found %s", images_path)
         return {}
 
-    # visitor code for the pdf parser
+    def match_page_number(text):
+        page_number_pattern = re.compile(
+            r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
+        )
+        lines = text.split("\n")
 
-    def visitor_body(text, tm):
-        y = tm[5]
-        if y < 50 and text.strip(" \n\r\f"):
-            text = text.strip("_:")
-            return [text.strip(" \n\r\f")]
-        return []
+        for line in lines:
+            match = page_number_pattern.search(line.strip())
+            if match:
+                return match.group(0)
+
+        return ""
+
+    def extract_page_number(page):
+        text_elements = []
+
+        def visitor(text, cm, tm, font_dict, font_size):
+            x, y = tm[4], tm[5]
+            text_elements.append((y, text))
+
+        page.extract_text(visitor_text=visitor)
+        text_elements.sort(reverse=True, key=lambda element: element[0])
+        text = "\n".join([element[1] for element in text_elements])
+        if text:
+            page_number = match_page_number(text)
+            return page_number
+        return ""
 
     def write_pdf(bp_page_number: str, work_path: str, pdf_filename: str, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
-
         if bp_page_trans in _references:
             _references[bp_page_trans].append(pdf_filename)
         else:
@@ -76,40 +98,18 @@ def create_images_references(
     for image_file in images_files:
         with open(image_file, "rb") as input_file:
             inputpdf = PdfReader(input_file)
-            left_page = False
             for page_number, _ in enumerate(inputpdf.pages):
-                parts = []
-                inputpdf.pages[page_number].extract_text(
-                    visitor_text=lambda t, cm, tm, fd, fs: parts.extend(
-                        visitor_body(t, tm)
-                    )
+                page = inputpdf.pages[page_number]
+                braille_page_number = extract_page_number(page)
+                write_pdf(
+                    braille_page_number,
+                    ebrf_folder,
+                    os.path.join(
+                        "images",
+                        f"{in_filename_base}_{braille_page_number.strip('#')}.pdf",
+                    ),
+                    inputpdf.pages[page_number],
                 )
-                braille_page_number = "\n".join(parts)
-                parts = braille_page_number.strip(" \n\r\f%").split()
-                if parts and _braille_page_re.match(parts[-1]):
-                    braille_page_number = parts[-1].strip()
-                    if left_page:
-                        write_pdf(
-                            braille_page_number,
-                            ebrf_folder,
-                            os.path.join(
-                                "images",
-                                f"{in_filename_base}_{braille_page_number.strip('#')}_l.pdf",
-                            ),
-                            inputpdf.pages[page_number - 1],
-                        )
-                    write_pdf(
-                        braille_page_number,
-                        ebrf_folder,
-                        os.path.join(
-                            "images",
-                            f"{in_filename_base}_{braille_page_number.strip('#')}.pdf",
-                        ),
-                        inputpdf.pages[page_number],
-                    )
-                    left_page = False
-                else:
-                    left_page = True
 
         if _references:
             break
@@ -141,7 +141,7 @@ def create_pdf_graphic_detector(
     _pdf_text = "\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
     # regular expression matching braille page and one for search
-    _detect_braille_page_re = re.compile("(<\\?braille-page [\u2801-\u28ff]+\\?>)")
+    _detect_braille_page_re = re.compile("(<\\?braille-ppn [\u2801-\u28ff]+\\?>)")
     _search_blank_re = re.compile("(?:<\\?blank-line\\?>\n){3,}")
 
     def detect_pdf(
