@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
 from xml.etree import ElementTree
-from xml.etree.ElementTree import QName, Element
+from xml.etree.ElementTree import QName, Element, SubElement
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
 from brf2ebrl.common import PageLayout
@@ -67,32 +67,50 @@ _CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
     </rootfiles>
 </container>"""
 
-def _create_opf_str() -> bytes:
+@dataclass(frozen=True)
+class OpfFileEntry:
+    media_type: str
+    in_spine: bool
+
+def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
+    files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
     root = Element(str(QName(_OPF_NAMESPACE, tag="package")), attrib={str(QName(_OPF_NAMESPACE, tag="version")): "3.0", str(QName(_OPF_NAMESPACE, tag="unique-identifier")): "bookid"})
     metadata = Element(str(QName(_OPF_NAMESPACE, tag="metadata")))
     root.append(metadata)
     manifest = Element(str(QName(_OPF_NAMESPACE, "manifest")))
+    for i,n,t,s in files_list:
+        SubElement(manifest, str(QName(_OPF_NAMESPACE, tag="item")), attrib={str(QName(_OPF_NAMESPACE, "id")): i, str(QName(_OPF_NAMESPACE, "href")): n, str(QName(_OPF_NAMESPACE,  "media-type")): t})
     root.append(manifest)
     spine = Element(str(QName(_OPF_NAMESPACE, "spine")))
+    for i,_,_,s in files_list:
+        if s:
+            SubElement(spine, str(QName(_OPF_NAMESPACE, tag="itemref")), attrib={str(QName(_OPF_NAMESPACE, "idref")): i})
     root.append(spine)
     ElementTree.indent(root)
     return ElementTree.tostring(root, xml_declaration=True, encoding="UTF-8", default_namespace=_OPF_NAMESPACE)
 
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
+        self._files: dict[str, OpfFileEntry] = {}
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
+    def _add_to_files(self, name, add_to_spine):
+        media_type = _MIMETYPES.guess_type(name)[0]
+        self._files[name] = OpfFileEntry(media_type=media_type if media_type else "application/octet-stream",
+                                         in_spine=add_to_spine)
     def write_file(self, name: str, filename: str, add_to_spine: bool):
         self._zipfile.write(filename, name)
+        self._add_to_files(name, add_to_spine)
     def write_str(self, name: str, data: AnyStr, add_to_spine: bool):
         self._zipfile.writestr(name, data)
+        self._add_to_files(name, add_to_spine)
     def write_image(self, name: str, filename: str):
         self.write_file(f"ebraille/{name}", filename, False)
     def write_volume(self, name: str, data: AnyStr):
         self.write_str(f"ebraille/{name}", data, True)
     def close(self):
         try:
-            self._zipfile.writestr(_OPF_NAME, _create_opf_str())
+            self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
             self._zipfile.writestr("META-INF/container.xml", _CONTAINER_XML_template.format(_OPF_NAME))
         finally:
             self._zipfile.close()
