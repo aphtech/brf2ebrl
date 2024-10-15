@@ -37,19 +37,19 @@ class Bundler(ABC):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
     @abstractmethod
-    def write_file(self, name: str, filename: str):
+    def write_file(self, name: str, filename: str, add_to_spine: bool):
         """Write an existing file to the bundle."""
         pass
     def write_image(self, name: str, filename: str):
         """Write an image file to the bundle"""
-        self.write_file(name, filename)
+        self.write_file(name, filename, False)
     @abstractmethod
-    def write_str(self, name: str, data: AnyStr):
+    def write_str(self, name: str, data: AnyStr, add_to_spine: bool):
         """Write a file containing the content to the bundle."""
         pass
     def write_volume(self, name: str, data: AnyStr):
         """Write a volume to the bundle."""
-        self.write_str(name, data)
+        self.write_str(name, data, True)
     @abstractmethod
     def close(self):
         """Close the bundle."""
@@ -81,14 +81,14 @@ class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
-    def write_file(self, name: str, filename: str):
+    def write_file(self, name: str, filename: str, add_to_spine: bool):
         self._zipfile.write(filename, name)
     def write_image(self, name: str, filename: str):
-        self.write_file(f"ebraille/{name}", filename)
-    def write_str(self, name: str, data: AnyStr):
+        self.write_file(f"ebraille/{name}", filename, False)
+    def write_str(self, name: str, data: AnyStr, add_to_spine: bool):
         self._zipfile.writestr(name, data)
     def write_volume(self, name: str, data: AnyStr):
-        self.write_str(f"ebraille/{name}", data)
+        self.write_str(f"ebraille/{name}", data, True)
     def close(self):
         try:
             self._zipfile.writestr(_OPF_NAME, _create_opf_str())
