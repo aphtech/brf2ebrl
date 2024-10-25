@@ -83,6 +83,8 @@ def main():
     arg_parser.add_argument(
         "-i", "--images", type=str, help="The images folder or file."
     )
+    debug_args = arg_parser.add_argument_group(title="Debug options")
+    debug_args.add_argument("-pp", "--parser-passes", type=int, default=-1, help="Only run number of parser passes.")
     arg_parser.add_argument("-o", "--output", dest="output_file", help="The output file name", required=True)
     arg_parser.add_argument("brfs", help="The input BRFs to convert", nargs="+")
     args = arg_parser.parse_args()
@@ -131,7 +133,7 @@ def main():
         lines_per_page=args.lines_per_page,
     )
     running_heads = args.running_heads
-    convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, input_images=input_images, detect_running_heads=running_heads, page_layout=page_layout)
+    convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, input_images=input_images, detect_running_heads=running_heads, page_layout=page_layout, parser_passes=args.parser_passes)
 
 
 if __name__ == "__main__":
