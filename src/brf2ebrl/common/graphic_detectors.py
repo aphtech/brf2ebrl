@@ -85,6 +85,7 @@ def create_images_references(
 
     def write_pdf(bp_page_number: str, work_path: str, pdf_filename: str, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
+        pdf_filename = pdf_filename.replace ("#","_")
         if bp_page_trans in _references:
             _references[bp_page_trans].append(pdf_filename)
         else:
