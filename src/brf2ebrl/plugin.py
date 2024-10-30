@@ -9,8 +9,10 @@ import os
 import pkgutil
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
+from datetime import date
 from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
+from uuid import uuid4
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
 from lxml import etree
@@ -18,7 +20,7 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
-from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT
+from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT, DATE, IDENTIFIER
 
 
 def find_plugins():
@@ -83,7 +85,9 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
             CREATOR("-"),
-            FORMAT("eBraille 1.0")
+            FORMAT("eBraille 1.0"),
+            DATE(date.today().isoformat()),
+            IDENTIFIER(str(uuid4()))
         ),
         MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
         SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
