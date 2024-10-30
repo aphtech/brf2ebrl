@@ -11,13 +11,13 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
-from xml.etree import ElementTree
-from xml.etree.ElementTree import QName, Element, SubElement
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
+
+from lxml import etree
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
-from brf2ebrl.utils.opf import OPF_NAMESPACE
+from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF
 
 
 def find_plugins():
@@ -74,20 +74,13 @@ class OpfFileEntry:
 
 def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
     files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
-    root = Element(str(QName(OPF_NAMESPACE, tag="package")), attrib={str(QName(OPF_NAMESPACE, tag="version")): "3.0", str(QName(OPF_NAMESPACE, tag="unique-identifier")): "bookid"})
-    metadata = Element(str(QName(OPF_NAMESPACE, tag="metadata")))
-    root.append(metadata)
-    manifest = Element(str(QName(OPF_NAMESPACE, "manifest")))
-    for i,n,t,s in files_list:
-        SubElement(manifest, str(QName(OPF_NAMESPACE, tag="item")), attrib={str(QName(OPF_NAMESPACE, "id")): i, str(QName(OPF_NAMESPACE, "href")): n, str(QName(OPF_NAMESPACE, "media-type")): t})
-    root.append(manifest)
-    spine = Element(str(QName(OPF_NAMESPACE, "spine")))
-    for i,_,_,s in files_list:
-        if s:
-            SubElement(spine, str(QName(OPF_NAMESPACE, tag="itemref")), attrib={str(QName(OPF_NAMESPACE, "idref")): i})
-    root.append(spine)
-    ElementTree.indent(root)
-    return ElementTree.tostring(root, xml_declaration=True, encoding="UTF-8", default_namespace=OPF_NAMESPACE)
+    opf = PACKAGE(
+        {"unique-identifier": "bookid", "version": "3.0"},
+        METADATA(),
+        MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
+        SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
+    )
+    return etree.tostring(opf, xml_declaration=True, pretty_print=True, encoding="UTF-8")
 
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
