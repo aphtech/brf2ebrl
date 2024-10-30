@@ -14,6 +14,7 @@ from typing import Sequence, AnyStr
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
 from lxml import etree
+from lxml.builder import ElementMaker
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
@@ -60,12 +61,16 @@ class Bundler(ABC):
 
 _MIMETYPES = MimeTypes()
 _OPF_NAME = "package.opf"
-_CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
-<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
-    <rootfiles>
-        <rootfile full-path="%s" media-type="application/oebps-package+xml"/>
-    </rootfiles>
-</container>"""
+
+
+def _create_container_xml(opf_name: str):
+    e = ElementMaker(namespace="urn:oasis:names:tc:opendocument:xmlns:container", nsmap={None: "urn:oasis:names:tc:opendocument:xmlns:container"})
+    container = e.container({"version": "1.0"},
+        e.rootfiles(
+            e.rootfile({"full-path": opf_name, "media-type": "application/oebps-package+xml"})
+        )
+    )
+    return etree.tostring(container, xml_declaration=True, encoding="UTF-8", pretty_print=True)
 
 @dataclass(frozen=True)
 class OpfFileEntry:
@@ -104,7 +109,7 @@ class EBrlZippedBundler(Bundler):
     def close(self):
         try:
             self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
-            self._zipfile.writestr("META-INF/container.xml", _CONTAINER_XML_template.format(_OPF_NAME))
+            self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
             self._zipfile.close()
 
