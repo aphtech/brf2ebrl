@@ -7,11 +7,15 @@
 from lxml.builder import ElementMaker
 
 OPF_NAMESPACE = "http://www.idpf.org/2007/opf"
+DC_NAMESPACE = "http://purl.org/dc/elements/1.1/"
 
-_E = ElementMaker(namespace=OPF_NAMESPACE, nsmap={None: OPF_NAMESPACE})
-PACKAGE = _E.package
-METADATA = _E.metadata
-MANIFEST = _E.manifest
-ITEM = _E.item
-SPINE = _E.spine
-ITEMREF = _E.itemref
+_OPF = ElementMaker(namespace=OPF_NAMESPACE, nsmap={None: OPF_NAMESPACE, "dc": DC_NAMESPACE})
+_DC = ElementMaker(namespace=DC_NAMESPACE, nsmap={None: OPF_NAMESPACE, "dc": DC_NAMESPACE})
+PACKAGE = _OPF.package
+METADATA = _OPF.metadata
+CREATOR = _DC.creator
+FORMAT = _DC.format
+MANIFEST = _OPF.manifest
+ITEM = _OPF.item
+SPINE = _OPF.spine
+ITEMREF = _OPF.itemref

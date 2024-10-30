@@ -18,7 +18,7 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
-from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF
+from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT
 
 
 def find_plugins():
@@ -81,7 +81,10 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
     files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
-        METADATA(),
+        METADATA(
+            CREATOR("-"),
+            FORMAT("eBraille 1.0")
+        ),
         MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
         SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
     )
