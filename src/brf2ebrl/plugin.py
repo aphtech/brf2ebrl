@@ -9,14 +9,18 @@ import os
 import pkgutil
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
+from datetime import date
 from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
-from xml.etree import ElementTree
-from xml.etree.ElementTree import QName, Element, SubElement
+from uuid import uuid4
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
+
+from lxml import etree
+from lxml.builder import ElementMaker
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
+from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT, DATE, IDENTIFIER
 
 
 def find_plugins():
@@ -58,14 +62,17 @@ class Bundler(ABC):
 
 
 _MIMETYPES = MimeTypes()
-_OPF_NAMESPACE = "http://www.idpf.org/2007/opf"
 _OPF_NAME = "package.opf"
-_CONTAINER_XML_template = """<?xml version="1.0" encoding="UTF-8"?>
-<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container" version="1.0">
-    <rootfiles>
-        <rootfile full-path="%s" media-type="application/oebps-package+xml"/>
-    </rootfiles>
-</container>"""
+
+
+def _create_container_xml(opf_name: str):
+    e = ElementMaker(namespace="urn:oasis:names:tc:opendocument:xmlns:container", nsmap={None: "urn:oasis:names:tc:opendocument:xmlns:container"})
+    container = e.container({"version": "1.0"},
+        e.rootfiles(
+            e.rootfile({"full-path": opf_name, "media-type": "application/oebps-package+xml"})
+        )
+    )
+    return etree.tostring(container, xml_declaration=True, encoding="UTF-8", pretty_print=True)
 
 @dataclass(frozen=True)
 class OpfFileEntry:
@@ -74,20 +81,18 @@ class OpfFileEntry:
 
 def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
     files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
-    root = Element(str(QName(_OPF_NAMESPACE, tag="package")), attrib={str(QName(_OPF_NAMESPACE, tag="version")): "3.0", str(QName(_OPF_NAMESPACE, tag="unique-identifier")): "bookid"})
-    metadata = Element(str(QName(_OPF_NAMESPACE, tag="metadata")))
-    root.append(metadata)
-    manifest = Element(str(QName(_OPF_NAMESPACE, "manifest")))
-    for i,n,t,s in files_list:
-        SubElement(manifest, str(QName(_OPF_NAMESPACE, tag="item")), attrib={str(QName(_OPF_NAMESPACE, "id")): i, str(QName(_OPF_NAMESPACE, "href")): n, str(QName(_OPF_NAMESPACE,  "media-type")): t})
-    root.append(manifest)
-    spine = Element(str(QName(_OPF_NAMESPACE, "spine")))
-    for i,_,_,s in files_list:
-        if s:
-            SubElement(spine, str(QName(_OPF_NAMESPACE, tag="itemref")), attrib={str(QName(_OPF_NAMESPACE, "idref")): i})
-    root.append(spine)
-    ElementTree.indent(root)
-    return ElementTree.tostring(root, xml_declaration=True, encoding="UTF-8", default_namespace=_OPF_NAMESPACE)
+    opf = PACKAGE(
+        {"unique-identifier": "bookid", "version": "3.0"},
+        METADATA(
+            CREATOR("-"),
+            FORMAT("eBraille 1.0"),
+            DATE(date.today().isoformat()),
+            IDENTIFIER(str(uuid4()))
+        ),
+        MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
+        SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
+    )
+    return etree.tostring(opf, xml_declaration=True, pretty_print=True, encoding="UTF-8")
 
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
@@ -111,7 +116,7 @@ class EBrlZippedBundler(Bundler):
     def close(self):
         try:
             self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
-            self._zipfile.writestr("META-INF/container.xml", _CONTAINER_XML_template.format(_OPF_NAME))
+            self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
             self._zipfile.close()
 
