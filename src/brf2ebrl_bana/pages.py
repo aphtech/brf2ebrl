@@ -97,7 +97,7 @@ def _convert_int_to_continuation_letter(x: int) -> str:
     result = ""
     while letter := x % len(_CONTINUATION_LETTERS):
         result = _CONTINUATION_LETTERS[letter - 1] + result
-        x = x // len(_CONTINUATION_LETTERS)
+        x //= len(_CONTINUATION_LETTERS)
     return result
 
 
@@ -130,6 +130,7 @@ def create_print_page_detector(page_layout: PageLayout, separator: str = "\u2800
             s_cont = state.get("continuation", 0)
             result = ""
             if page_num:
+                result += f"<?braille-ppn {page_num}?>\n"
                 s_cont += 1
                 if not _is_continuation_number(page_num, s_ppn, s_cont):
                     s_cont = 0
