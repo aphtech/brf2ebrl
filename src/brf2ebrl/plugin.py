@@ -8,8 +8,9 @@ import importlib
 import os
 import pkgutil
 from abc import abstractmethod, ABC
+from collections import Counter
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, UTC
 from mimetypes import MimeTypes
 from typing import Sequence, AnyStr
 from uuid import uuid4
@@ -20,7 +21,8 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
-from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT, DATE, IDENTIFIER
+from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT, DATE, IDENTIFIER, \
+    LANGUAGE, TITLE, META
 
 
 def find_plugins():
@@ -78,16 +80,29 @@ def _create_container_xml(opf_name: str):
 class OpfFileEntry:
     media_type: str
     in_spine: bool
+    tactile_graphic: bool = False
 
 def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
     files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
+    graphic_types = set(sorted(Counter(_MIMETYPES.guess_extension(n)[1:] for n,d in file_entries.items() if d.tactile_graphic), key=lambda item: item[1], reverse=True))
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
             CREATOR("-"),
             FORMAT("eBraille 1.0"),
             DATE(date.today().isoformat()),
-            IDENTIFIER(str(uuid4()))
+            IDENTIFIER(str(uuid4())),
+            LANGUAGE("en-Brai"),
+            TITLE("-"),
+            META({"property": "dcterms:dateCopyrighted"}, date.fromtimestamp(0).isoformat()),
+            META({"property": "dcterms:modified"}, datetime.now(UTC).strftime("%Y-%m-%dT%H:%M%SZ")),
+            META({"property": "a11y:brailleSystem"}, "UEB"),
+            META({"property": "a11y:cellType"}, "6"),
+            META({"property": "a11y:completeTranscription"}, "true"),
+            META({"property": "a11y:dateTranscribed"}, date.fromtimestamp(0).isoformat()),
+            META({"property": "a11y:producer"}, "-"),
+            META({"property": "a11y:tactileGraphics"}, "true"),
+            META({"property": "a11y:graphicType"}, "PDF")
         ),
         MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
         SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
@@ -99,16 +114,16 @@ class EBrlZippedBundler(Bundler):
         self._files: dict[str, OpfFileEntry] = {}
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
-    def _add_to_files(self, name, add_to_spine):
+    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool):
         media_type = _MIMETYPES.guess_type(name)[0]
         self._files[name] = OpfFileEntry(media_type=media_type if media_type else "application/octet-stream",
-                                         in_spine=add_to_spine)
-    def write_file(self, name: str, filename: str, add_to_spine: bool):
+                                         in_spine=add_to_spine, tactile_graphic=tactile_graphic)
+    def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False):
         self._zipfile.write(filename, name)
-        self._add_to_files(name, add_to_spine)
-    def write_str(self, name: str, data: AnyStr, add_to_spine: bool):
+        self._add_to_files(name, add_to_spine, tactile_graphic)
+    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False):
         self._zipfile.writestr(name, data)
-        self._add_to_files(name, add_to_spine)
+        self._add_to_files(name, add_to_spine, tactile_graphic)
     def write_image(self, name: str, filename: str):
         self.write_file(f"ebraille/{name}", filename, False)
     def write_volume(self, name: str, data: AnyStr):

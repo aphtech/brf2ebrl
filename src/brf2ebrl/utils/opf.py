@@ -13,10 +13,13 @@ _OPF = ElementMaker(namespace=OPF_NAMESPACE, nsmap={None: OPF_NAMESPACE, "dc": D
 _DC = ElementMaker(namespace=DC_NAMESPACE, nsmap={None: OPF_NAMESPACE, "dc": DC_NAMESPACE})
 PACKAGE = _OPF.package
 METADATA = _OPF.metadata
+META = _OPF.meta
 CREATOR = _DC.creator
 FORMAT = _DC.format
 DATE = _DC.date
 IDENTIFIER = _DC.identifier
+LANGUAGE = _DC.language
+TITLE = _DC.title
 MANIFEST = _OPF.manifest
 ITEM = _OPF.item
 SPINE = _OPF.spine
