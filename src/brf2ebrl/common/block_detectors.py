@@ -306,12 +306,6 @@ def create_block_paragraph_detector() -> Detector:
                 new_cursor += line.end()
         lines = [(x,y)  for x,y in lines if (x is not None  or  y is not None)]
         if lines and [elem for elem in lines[1:] if elem[1][0]!=lines[0][1][0]]:
-            print (f"lines {[elem for elem in lines[1:] if elem[1][0]==lines[0][1][0]]}")
-            print ("start")
-            for u in lines:
-                print(u[1])
-            print("end")
-            
             brl = '<p class="left-justified">' + ''.join([item for tup in lines for item in tup if item is not None]) + '</p>'
         return (
             DetectionResult(new_cursor, state, 0.89, f"{output_text}{brl}\n")
