@@ -80,9 +80,11 @@ def create_centered_detector(
 _PRINT_PAGE_RE = "(?:<\\?print-page[ \u2800-\u28ff]*?\\?>)"
 _RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*\\?>)"
 _BRAILLE_PAGE_RE = "(?:<\\?braille-page[ \u2800-\u28ff]*\\?>)"
+_BRAILLE_PPN_RE = "(?:<\\?braille-ppn [ \u2800-\u28ff]*\\?>)"
 _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
-_PROCESSING_INSTRUCTION_RE = f"(?:(?:(?:{_BLANK_LINE_RE}\n)?{_BRAILLE_PAGE_RE}\n{_PRINT_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?(?:{_BLANK_LINE_RE}\n)?)|(?:{_BRAILLE_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?)|(?:{_PRINT_PAGE_RE}\n))"
-
+#_PROCESSING_INSTRUCTION_RE = f"(?:(?:(?:{_BLANK_LINE_RE}\n)?{_BRAILLE_PAGE_RE}\n{_BRAILLE_PPN_RE}\n{_PRINT_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?(?:{_BLANK_LINE_RE}\n)?)|(?:{_BRAILLE_PAGE_RE}\n{_BRAILLE_PPN_RE}\n(?:{_RUNNING_HEAD_RE}\n)?)|{_BRAILLE_PPN_RE}\n(?:{_PRINT_PAGE_RE}\n))"
+#_PROCESSING_INSTRUCTION_RE = f"(?:(?:(?:{_BLANK_LINE_RE}\n)?{_BRAILLE_PAGE_RE}\n{_PRINT_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?(?:{_BLANK_LINE_RE}\n)?)|(?:{_BRAILLE_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?)|(?:{_PRINT_PAGE_RE}\n))"
+_PROCESSING_INSTRUCTION_RE = f"(?:(?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
 
 def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str | None, int)]:
     _first_line_re = re.compile(
@@ -168,7 +170,7 @@ def create_nested_list_detector(first_line_indent: int, run_over: int) -> Detect
 def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
     """Creates a detector for finding lists with the specified first line indent and run over."""
     first_line_re = re.compile(
-        f"^({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+        f"\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
         f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{run_over},}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
 
@@ -179,8 +181,8 @@ def create_list_detector(first_line_indent: int, run_over: int) -> Detector:
         new_cursor = cursor
         li_items = []
         brl = ''
-        while line := first_line_re.match(text[new_cursor:]):
-            lines.append(line.group(1) + line.group(2))
+        while  line := first_line_re.match(text[new_cursor:]):
+            lines.append(line.group(1) )
             new_cursor += line.end()
             while line := run_over_re.match(text[new_cursor:]):
                 lines.append(line.group(1) + line.group(2))
@@ -284,10 +286,9 @@ def create_table_detector() -> Detector:
 def create_block_paragraph_detector() -> Detector:
     """Creates a detector for finding blokc paragraphs"""
     first_line_re = re.compile(
-        f"({_PROCESSING_INSTRUCTION_RE}?)([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+        "([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
-        f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{1},}}([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
-
+    f"({_PROCESSING_INSTRUCTION_RE}?)([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     
     
 
@@ -297,16 +298,21 @@ def create_block_paragraph_detector() -> Detector:
         lines = []
         new_cursor = cursor
         brl = ''
-        while line := first_line_re.match(text[new_cursor:]):
-            lines.append(line.group(1) + line.group(2))
+        if  line := first_line_re.match(text[new_cursor:]):
+            lines.append((None,line.group(1)) )
             new_cursor += line.end()
-            if  line := run_over_re.match(text[new_cursor:]):
-                lines =[]
-                break
-
-        lines = [x for x in lines if x is not None]
-        if lines and [elem for elem in lines[1:] if elem[0]==lines[0][0]]:
-            brl = '<p class="left-justified">' + ''.join(lines) + '</p>'
+            while   line := run_over_re.match(text[new_cursor:]):
+                lines.append((line.group(1) ,line.group(2)))
+                new_cursor += line.end()
+        lines = [(x,y)  for x,y in lines if (x is not None  or  y is not None)]
+        if lines and [elem for elem in lines[1:] if elem[1][0]!=lines[0][1][0]]:
+            print (f"lines {[elem for elem in lines[1:] if elem[1][0]==lines[0][1][0]]}")
+            print ("start")
+            for u in lines:
+                print(u[1])
+            print("end")
+            
+            brl = '<p class="left-justified">' + ''.join([item for tup in lines for item in tup if item is not None]) + '</p>'
         return (
             DetectionResult(new_cursor, state, 0.89, f"{output_text}{brl}\n")
             if brl
