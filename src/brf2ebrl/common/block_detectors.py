@@ -289,7 +289,17 @@ def create_block_paragraph_detector() -> Detector:
         "([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
     f"({_PROCESSING_INSTRUCTION_RE}?)([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
-    
+
+    def is_block_paragraph(lines: list[tuple[str, str]]) -> bool:
+        if lines:
+            #if there are more than one line and all the first characters are not the same:
+            if [elem for elem in lines[1:] if elem[1][0]!=lines[0][1][0]]:
+                return True 
+        return False    
+
+    def make_block_paragrap(lines: list[tuple[str, str]]) -> str:
+        return '<p class="left-justified">' + ''.join([item for tup in lines for item in tup if item is not None]) + '</p>'
+
     
 
     def detect_block_paragraph(
@@ -305,8 +315,9 @@ def create_block_paragraph_detector() -> Detector:
                 lines.append((line.group(1) ,line.group(2)))
                 new_cursor += line.end()
         lines = [(x,y)  for x,y in lines if (x is not None  or  y is not None)]
-        if lines and [elem for elem in lines[1:] if elem[1][0]!=lines[0][1][0]]:
-            brl = '<p class="left-justified">' + ''.join([item for tup in lines for item in tup if item is not None]) + '</p>'
+        if is_block_paragraph(lines):
+
+            brl = make_block_paragrap(lines)
         return (
             DetectionResult(new_cursor, state, 0.89, f"{output_text}{brl}\n")
             if brl
