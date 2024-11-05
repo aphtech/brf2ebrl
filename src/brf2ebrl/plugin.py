@@ -84,7 +84,7 @@ class OpfFileEntry:
 
 def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
     files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
-    graphic_types = set(sorted(Counter(_MIMETYPES.guess_extension(n)[1:] for n,d in file_entries.items() if d.tactile_graphic), key=lambda item: item[1], reverse=True))
+    graphic_types = " ".join(sorted(Counter(_MIMETYPES.guess_extension(d.media_type)[1:] for n,d in file_entries.items() if d.tactile_graphic), key=lambda item: item[1], reverse=True))
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
@@ -101,8 +101,7 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
             META({"property": "a11y:completeTranscription"}, "true"),
             META({"property": "a11y:dateTranscribed"}, date.fromtimestamp(0).isoformat()),
             META({"property": "a11y:producer"}, "-"),
-            META({"property": "a11y:tactileGraphics"}, "true"),
-            META({"property": "a11y:graphicType"}, "PDF")
+            *([META({"property": "a11y:tactileGraphics"}, "false")] if not graphic_types else [META({"property": "a11y:tactileGraphics"}, "true"), META({"property": "a11y:graphicType"}, graphic_types)])
         ),
         MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
         SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
@@ -125,7 +124,7 @@ class EBrlZippedBundler(Bundler):
         self._zipfile.writestr(name, data)
         self._add_to_files(name, add_to_spine, tactile_graphic)
     def write_image(self, name: str, filename: str):
-        self.write_file(f"ebraille/{name}", filename, False)
+        self.write_file(f"ebraille/{name}", filename, False, tactile_graphic=True)
     def write_volume(self, name: str, data: AnyStr):
         self.write_str(f"ebraille/{name}", data, True)
     def close(self):
