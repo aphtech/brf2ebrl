@@ -10,7 +10,7 @@ import logging
 import os
 from dataclasses import dataclass
 
-from brf2ebrl import convert_brf2ebrl, convert
+from brf2ebrl import convert
 from brf2ebrl.common import PageNumberPosition, PageLayout
 from brf2ebrl.plugin import find_plugins
 
