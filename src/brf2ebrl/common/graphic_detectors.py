@@ -18,14 +18,14 @@ from brf2ebrl.parser import DetectionState, DetectionResult, Detector
 _page_number_pattern = re.compile(
     r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
 )
+_braille_page_re = re.compile(r"([a-zA-Z]*#+[a-zA-z]*)$")
+_references = {}
 
 
 def create_images_references(
     brf_path: str, output_path: str, images_path: str
 ) -> dict[str, str]:
     """Creates the PDF files and the references dictionary. Returns the Reference dictionary"""
-    _braille_page_re = re.compile(r"([a-zA-Z]*#+[a-zA-z]*)$")
-    _references = {}
     ebrf_folder = os.path.split(output_path)[0]
     in_filename_base = os.path.split(brf_path)[1].split(".")[0]
 
@@ -71,8 +71,8 @@ def create_images_references(
     def extract_page_number(page):
         text_elements = []
 
-        def visitor(text, cm, tm, font_dict, font_size):
-            x, y = tm[4], tm[5]
+        def visitor(text, _a, tm, __dict, _b):
+            _, y = tm[4], tm[5]
             text_elements.append((y, text))
 
         page.extract_text(visitor_text=visitor)
@@ -85,7 +85,7 @@ def create_images_references(
 
     def write_pdf(bp_page_number: str, work_path: str, pdf_filename: str, pdf_page):
         bp_page_trans = bp_page_number.strip().upper().translate(_ASCII_TO_UNICODE_DICT)
-        pdf_filename = pdf_filename.replace ("#","_")
+        pdf_filename = pdf_filename.replace("#", "_")
         if bp_page_trans in _references:
             _references[bp_page_trans].append(pdf_filename)
         else:
