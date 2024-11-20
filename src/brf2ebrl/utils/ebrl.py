@@ -5,7 +5,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Utilities for working with eBraille format."""
 import lxml.html
-from lxml.html.builder import HTML, HEAD, BODY, ATTR, META, LINK
+from lxml.html.builder import HTML, HEAD, BODY, ATTR, META, LINK, TITLE
 
 
 def XMLNS(uri: str, prefix=None) -> dict[str, str]:
@@ -15,13 +15,14 @@ def XMLNS(uri: str, prefix=None) -> dict[str, str]:
 def XML_LANG(lang: str) -> dict[str, str]:
     return {"xml:lang": lang}
 
-def create_navigation_html(opf_name: str = "package.opf") -> str:
+def create_navigation_html(title: str = "-", opf_name: str = "package.opf") -> str:
     root = HTML(
         XMLNS("http://www.w3.org/1999/xhtml"),
         XMLNS("http://www.idpf.org/2007/ops", prefix="epub"),
         XML_LANG("en"),
         ATTR(lang="en"),
         HEAD(
+            TITLE(title),
             META(
                 charset="UTF-8"
             ),
