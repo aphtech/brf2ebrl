@@ -55,7 +55,7 @@ def create_images_references(
         logging.error("No images path or folder found %s", images_path)
         return {}
 
-    def match_page_number(text):
+    def match_page_number(text :str) -> str:
         page_number_pattern = re.compile(
             r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
         )
@@ -68,16 +68,8 @@ def create_images_references(
 
         return ""
 
-    def extract_page_number(page):
-        text_elements = []
-
-        def visitor(text, _a, tm, __dict, _b):
-            _, y = tm[4], tm[5]
-            text_elements.append((y, text))
-
-        page.extract_text(visitor_text=visitor)
-        text_elements.sort(reverse=True, key=lambda element: element[0])
-        text = "\n".join([element[1] for element in text_elements])
+    def extract_page_number(page :str) -> str:
+        text = page.extract_text(extraction_mode="layout")
         if text:
             page_number = match_page_number(text)
             return page_number
@@ -88,7 +80,9 @@ def create_images_references(
         pdf_filename = pdf_filename.replace("#", "_")
         pdf_filename = pdf_filename.replace(",", "C")
         if bp_page_trans in _references:
-            pdf_filename = pdf_filename.replace(".pdf",f"_{len(_references[bp_page_trans])+1}.pdf")
+            pdf_filename = pdf_filename.replace(
+                ".pdf", f"_{len(_references[bp_page_trans])+1}.pdf"
+            )
             _references[bp_page_trans].append(pdf_filename)
         else:
             _references[bp_page_trans] = [pdf_filename]
@@ -147,6 +141,15 @@ def create_pdf_graphic_detector(
     _detect_braille_page_re = re.compile("(<\\?braille-ppn [\u2801-\u28ff]+\\?>)")
     _search_blank_re = re.compile("(?:<\\?blank-line\\?>\n){3,}")
 
+    def get_key_for_page(brf_page :str, references :dict[str, str]) -> str:
+        if brf_page in references:
+            return brf_page
+
+        brf_pages = brf_page.split("\u2824")
+        if len(brf_pages) > 1:
+            return brf_pages[1]
+        return brf_pages[0]
+
     def detect_pdf(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
@@ -157,6 +160,7 @@ def create_pdf_graphic_detector(
             new_cursor += line.end()
             start_page = new_cursor
             braille_page = line.group(1).split()[1].split("?")[0].strip()
+            braille_page = get_key_for_page(braille_page, _images_references)
             if braille_page in _images_references:
                 if end_page := _detect_braille_page_re.match(text[new_cursor:]):
                     end_page = new_cursor + end_page.start()
@@ -165,7 +169,7 @@ def create_pdf_graphic_detector(
                 if search_blank := _search_blank_re.search(text[start_page:end_page]):
                     end_page = new_cursor + search_blank.start()
                     new_cursor += search_blank.end()
-                # the for loop takes care of left and right
+                # the for loop takes care of multiple pages
                 for file_ref in _images_references[braille_page]:
                     href += (
                         f'<p><a href="{file_ref}" '
@@ -173,6 +177,9 @@ def create_pdf_graphic_detector(
                         + f"{_pdf_text}{braille_page}</a></p>"
                     )
                 del _images_references[braille_page]
+
+        # logging.info(f"rest of refs {_images_references.keys()}")
+
         return (
             DetectionResult(
                 new_cursor, state, 0.9, f"{output_text}{text[cursor:end_page]}{href}"
