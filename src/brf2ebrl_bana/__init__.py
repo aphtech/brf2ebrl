@@ -147,13 +147,9 @@ def create_brf2ebrl_parser(
                 most_confident_detector,
             ),
             # Make complete HTML5 pass
-            detector_parser(
+            Parser(
                 "Make complete XML",
-                {},
-                [
-                    xhtml_fixup_detector
-                ],
-                most_confident_detector,
+                xhtml_fixup_detector
             ),
             Parser(
                 "Convert u+2800 to regular space as per ebraille standard",

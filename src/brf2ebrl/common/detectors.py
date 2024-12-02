@@ -119,10 +119,8 @@ _HTML5_FOOTER = """</body>
 """
 
 
-def xhtml_fixup_detector(input_text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult:
-    return DetectionResult(
-        len(input_text), state, 1.0, f"{output_text}{_HTML5_HEADER}{input_text[cursor:]}{_HTML5_FOOTER}"
-    )
+def xhtml_fixup_detector(input_text: str, _) -> str:
+    return f"{_HTML5_HEADER}{input_text}{_HTML5_FOOTER}"
 
 def combine_detectors(detectors: Iterable[Detector]) -> Detector:
     def apply(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
