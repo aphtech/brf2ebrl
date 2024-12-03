@@ -11,6 +11,8 @@ from collections.abc import Iterable
 from enum import Enum, auto
 from typing import Callable
 
+import lxml.html
+from lxml.html.builder import HTML, BODY
 from brf2ebrl.parser import DetectionResult, DetectionState, Detector
 
 _ASCII_TO_UNICODE_DICT = str.maketrans(
@@ -120,7 +122,13 @@ _HTML5_FOOTER = """</body>
 
 
 def xhtml_fixup_detector(input_text: str, _) -> str:
-    return f"{_HTML5_HEADER}{input_text}{_HTML5_FOOTER}"
+    root = HTML(
+        BODY(
+            *(lxml.html.fragments_fromstring(input_text, parser=lxml.html.xhtml_parser))
+        )
+    )
+    lxml.html.etree.indent(root)
+    return lxml.html.tostring(root, doctype="<!DOCTYPE html>", pretty_print=True, encoding="unicode", method="xml")
 
 def combine_detectors(detectors: Iterable[Detector]) -> Detector:
     def apply(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
