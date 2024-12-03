@@ -16,11 +16,13 @@ from typing import Sequence, AnyStr
 from uuid import uuid4
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
+import lxml.html
 from lxml import etree
 from lxml.builder import ElementMaker
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
+from brf2ebrl.utils.ebrl import create_navigation_html, PageRef
 from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, CREATOR, FORMAT, DATE, IDENTIFIER, \
     LANGUAGE, TITLE, META
 
@@ -113,6 +115,18 @@ class EBrlZippedBundler(Bundler):
         self._files: dict[str, OpfFileEntry] = {}
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
+    def _create_navigation_html(self, opf_name: str) -> str:
+        page_refs = []
+        vols = [k for k,v in self._files.items() if v.in_spine]
+        for vol_name in vols:
+            with self._zipfile.open(vol_name) as f:
+                root = lxml.html.parse(f, parser=lxml.html.xhtml_parser)
+                for element in root.iter():
+                    if element.tag == "span" and element.get("role") == "doc-pagebreak":
+                        page_id = element.get("id")
+                        page_ref = PageRef(href=f"{vol_name}#{page_id}", page_num_braille=element.text_content(), title="")
+                        page_refs.append(page_ref)
+        return create_navigation_html(opf_name=opf_name, page_refs=page_refs)
     def _add_to_files(self, name, add_to_spine, tactile_graphic: bool):
         media_type = _MIMETYPES.guess_type(name)[0]
         self._files[name] = OpfFileEntry(media_type=media_type if media_type else "application/octet-stream",
@@ -130,6 +144,7 @@ class EBrlZippedBundler(Bundler):
     def close(self):
         try:
             self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
+            self._zipfile.writestr("index.html", self._create_navigation_html(_OPF_NAME))
             self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
             self._zipfile.close()

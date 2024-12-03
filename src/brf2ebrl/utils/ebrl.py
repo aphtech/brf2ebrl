@@ -62,4 +62,4 @@ def create_navigation_html(title: str = "-", page_refs: Iterable[PageRef] = (), 
             )
         )
     )
-    return lxml.html.tostring(root, pretty_print=True, method="xml", doctype="<!DOCTYPE html>")
+    return lxml.html.tostring(root, pretty_print=True, method="xml", doctype="<!DOCTYPE html>", encoding="unicode")
