@@ -112,16 +112,6 @@ def create_running_head_detector(min_indent: int) -> Detector:
     return detect_running_head
 
 
-_HTML5_HEADER = """<!DOCTYPE html>
-<html>
-<body>
-"""
-
-_HTML5_FOOTER = """</body>
-</html>
-"""
-
-
 def xhtml_fixup_detector(input_text: str, _) -> str:
     root = HTML(
         BODY(
@@ -129,11 +119,16 @@ def xhtml_fixup_detector(input_text: str, _) -> str:
         )
     )
     lxml.etree.indent(root)
-    id_count = 1
-    for element in root.iter(tag=["h1","h2","h3", "h4", "h5", "h6"]):
+    heading_id = 1
+    page_id = 1
+    for element in root.iter():
         if "id" not in element.keys():
-            element.set("id", f"{element.tag}_{id_count}")
-            id_count += 1
+            if element.tag in ["h1","h2","h3", "h4", "h5", "h6"]:
+                element.set("id", f"h_{heading_id}")
+                heading_id += 1
+            elif element.get("role") == "doc-pagebreak":
+                element.set("id", f"page_{page_id}")
+                page_id += 1
     return lxml.html.tostring(root, doctype="<!DOCTYPE html>", pretty_print=True, encoding="unicode", method="xml")
 
 def combine_detectors(detectors: Iterable[Detector]) -> Detector:
