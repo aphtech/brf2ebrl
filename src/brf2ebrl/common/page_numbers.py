@@ -31,9 +31,9 @@ def create_ebrf_print_page_tags() -> Detector:
                 end_index = find_end_of_element(text, tag_start)
                 if end_index > tag_start:
                     return DetectionResult(end_index, state, 0.9,
-                                           f"{new_text}<div class=\"keeptgr\"><span role=\"doc-pagebreak\" id=\"page{page_number}\" class=\"keepwithnext\">{page_number}</span>{text[tag_start:end_index]}</div>")
+                                           f"{new_text}<div class=\"keeptgr\"><span role=\"doc-pagebreak\" class=\"keepwithnext\">{page_number}</span>{text[tag_start:end_index]}</div>")
             return DetectionResult(tag_start, state, 0.9,
-                                   f"{new_text}<span role=\"doc-pagebreak\" id=\"page{page_number}\">{page_number}</span>")
+                                   f"{new_text}<span role=\"doc-pagebreak\">{page_number}</span>")
         return DetectionResult(len(text), state, 0.5, f"{new_text}{text[cursor:]}")
 
     return convert_to_ebrf_print_page_numbers
