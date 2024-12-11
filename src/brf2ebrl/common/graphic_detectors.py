@@ -172,9 +172,14 @@ def create_pdf_graphic_detector(
                 # the for loop takes care of multiple pages
                 for file_ref in _images_references[braille_page]:
                     href += (
-                        f'<p><a href="{file_ref}" '
-                        + f' alt="{_auto_gen}{braille_page}"> '
-                        + f"{_pdf_text}{braille_page}</a></p>"
+                        f'<object data="{file_ref}" '
+                        +'type="application/pdf" ' 
+     +'height="250" '
+     +'width="100" '
+     +'aria-label="{_auto_gen}{braille_page}"> '
+   +f'<p>{_pdf_text} '
+   + f'{braille_page}</p>'
++'</object>'
                     )
                 del _images_references[braille_page]
 
