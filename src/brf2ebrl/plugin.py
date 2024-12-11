@@ -138,25 +138,29 @@ class EBrlZippedBundler(Bundler):
                         page_refs.append(
                             PageRef(href=f"{vol_name}#{page_id}", page_num_braille=element.text_content(), title=""))
         return create_navigation_html(opf_name=opf_name, page_refs=page_refs, heading_refs=headings)
-    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool, is_nav_document: bool):
-        media_type = _MIMETYPES.guess_type(name)[0]
-        self._files[name] = OpfFileEntry(media_type=media_type if media_type else "application/octet-stream",
+    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool, is_nav_document: bool, media_type: str|None = None):
+        def get_media_type():
+            yield media_type
+            yield _MIMETYPES.guess_type(name)[0]
+            yield "application/octet-stream"
+        media_type = next(m for m in get_media_type() if m is not None)
+        self._files[name] = OpfFileEntry(media_type=media_type,
                                          in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
-    def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False):
+    def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
         self._zipfile.write(filename, arch_name)
-        self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
-    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False):
+        self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
+    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
         self._zipfile.writestr(arch_name, data)
-        self._add_to_files(arch_name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document)
+        self._add_to_files(arch_name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
     def write_image(self, name: str, filename: str):
         self.write_file(f"ebraille/{name}", filename, False, tactile_graphic=True)
     def write_volume(self, name: str, data: AnyStr):
-        self.write_str(f"ebraille/{name}", data, True)
+        self.write_str(f"ebraille/{name}", data, True, media_type="application/xhtml+xml")
     def close(self):
         try:
-            self.write_str("index.html", self._create_navigation_html(_OPF_NAME), True, is_nav_document=True)
+            self.write_str("index.html", self._create_navigation_html(_OPF_NAME), True, is_nav_document=True, media_type="application/xhtml+xml")
             self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
             self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
