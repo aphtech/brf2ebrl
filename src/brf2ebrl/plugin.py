@@ -12,6 +12,7 @@ from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import date, datetime, UTC
 from mimetypes import MimeTypes
+from pathlib import Path
 from typing import Sequence, AnyStr
 from uuid import uuid4
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
@@ -142,11 +143,13 @@ class EBrlZippedBundler(Bundler):
         self._files[name] = OpfFileEntry(media_type=media_type if media_type else "application/octet-stream",
                                          in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
     def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False):
-        self._zipfile.write(filename, name)
-        self._add_to_files(name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
+        arch_name = Path(name).as_posix()
+        self._zipfile.write(filename, arch_name)
+        self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
     def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False):
-        self._zipfile.writestr(name, data)
-        self._add_to_files(name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document)
+        arch_name = Path(name).as_posix()
+        self._zipfile.writestr(arch_name, data)
+        self._add_to_files(arch_name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document)
     def write_image(self, name: str, filename: str):
         self.write_file(f"ebraille/{name}", filename, False, tactile_graphic=True)
     def write_volume(self, name: str, data: AnyStr):
