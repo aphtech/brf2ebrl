@@ -124,9 +124,12 @@ class EBrlZippedBundler(Bundler):
         page_refs = []
         headings = deque()
         vols = [k for k,v in self._files.items() if v.in_spine]
+        detected_title = None
         for vol_name in vols:
             with self._zipfile.open(vol_name) as f:
-                root = lxml.html.parse(f, parser=lxml.html.xhtml_parser)
+                root = lxml.html.parse(f, parser=lxml.html.xhtml_parser).getroot()
+                if detected_title is None:
+                    detected_title = next((x.text_content for x in root.body.iter(tag=["li", *_HEADING_TAGS, "p"])), "")
                 for element in root.iter():
                     if element.tag in _HEADING_TAGS:
                         heading_id = element.get("id")
@@ -137,7 +140,7 @@ class EBrlZippedBundler(Bundler):
                         page_id = element.get("id")
                         page_refs.append(
                             PageRef(href=f"{vol_name}#{page_id}", page_num_braille=element.text_content(), title=""))
-        return create_navigation_html(opf_name=opf_name, page_refs=page_refs, heading_refs=headings)
+        return create_navigation_html(opf_name=opf_name, page_refs=page_refs, heading_refs=headings, braille_title=detected_title)
     def _add_to_files(self, name, add_to_spine, tactile_graphic: bool, is_nav_document: bool, media_type: str|None = None):
         def get_media_type():
             yield media_type
