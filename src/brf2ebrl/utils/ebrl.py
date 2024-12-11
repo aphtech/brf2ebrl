@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import lxml.html
 from lxml.html import HtmlElement
-from lxml.html.builder import HTML, HEAD, BODY, ATTR, META, LINK, TITLE, H2, OL, LI, A
+from lxml.html.builder import HTML, HEAD, BODY, ATTR, META, LINK, TITLE, H2, OL, LI, A, H1
 
 
 def XMLNS(uri: str, prefix=None) -> dict[str, str]:
@@ -55,7 +55,7 @@ def _make_heading_list(headings: Iterable[HeadingRef], current_level: int) -> Ht
                 ol.append(current_li)
     return ol
 
-def create_navigation_html(title: str = "-", heading_refs: Iterable[HeadingRef] = (), page_refs: Iterable[PageRef] = (), opf_name: str = "package.opf") -> str:
+def create_navigation_html(title: str = "-", braille_title: str = "⠤", heading_refs: Iterable[HeadingRef] = (), page_refs: Iterable[PageRef] = (), opf_name: str = "package.opf") -> str:
     root = HTML(
         XMLNS("http://www.w3.org/1999/xhtml"),
         XMLNS("http://www.idpf.org/2007/ops", prefix="epub"),
@@ -73,6 +73,7 @@ def create_navigation_html(title: str = "-", heading_refs: Iterable[HeadingRef] 
             ),
         ),
         BODY(
+            H1(braille_title),
             NAV(
                 ATTR(role="doc-toc"),
                 ARIA_LABEL("Contents"),

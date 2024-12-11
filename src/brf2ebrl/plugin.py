@@ -5,7 +5,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Module used when defining a plugin."""
 import importlib
-import itertools
 import os
 import pkgutil
 from abc import abstractmethod, ABC
@@ -13,7 +12,7 @@ from collections import Counter, deque
 from dataclasses import dataclass
 from datetime import date, datetime, UTC
 from mimetypes import MimeTypes
-from typing import Sequence, AnyStr, Iterable
+from typing import Sequence, AnyStr
 from uuid import uuid4
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
@@ -86,9 +85,10 @@ class OpfFileEntry:
     media_type: str
     in_spine: bool
     tactile_graphic: bool = False
+    is_nav_document: bool = False
 
 def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
-    files_list = [(f"file{i}", n, d.media_type, d.in_spine) for i,(n,(d)) in enumerate(file_entries.items())]
+    files_list = [(f"file{i}", n, d.media_type, d.in_spine, d.is_nav_document) for i,(n,(d)) in enumerate(file_entries.items())]
     graphic_types = " ".join(sorted(Counter(_MIMETYPES.guess_extension(d.media_type)[1:] for n,d in file_entries.items() if d.tactile_graphic), key=lambda item: item[1], reverse=True))
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
@@ -108,13 +108,11 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
             META({"property": "a11y:producer"}, "-"),
             *([META({"property": "a11y:tactileGraphics"}, "false")] if not graphic_types else [META({"property": "a11y:tactileGraphics"}, "true"), META({"property": "a11y:graphicType"}, graphic_types)])
         ),
-        MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t}) for i,n,t,_ in files_list]),
-        SPINE(*[ITEMREF({"idref": i}) for i,_,_,s in files_list if s])
+        MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t, **({"properties": "nav"} if nav else {})}) for i,n,t,_,nav in files_list]),
+        SPINE(*[ITEMREF({"idref": i}) for i,_,_,s,_ in files_list if s])
     )
     return etree.tostring(opf, xml_declaration=True, pretty_print=True, encoding="UTF-8")
 
-def _make_heading_list(headings: Iterable[HeadingRef], current_level: int):
-    heading_groups = itertools.groupby(headings, lambda x: x.level > current_level)
 
 class EBrlZippedBundler(Bundler):
     def __init__(self, name: str):
@@ -139,24 +137,24 @@ class EBrlZippedBundler(Bundler):
                         page_refs.append(
                             PageRef(href=f"{vol_name}#{page_id}", page_num_braille=element.text_content(), title=""))
         return create_navigation_html(opf_name=opf_name, page_refs=page_refs, heading_refs=headings)
-    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool):
+    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool, is_nav_document: bool):
         media_type = _MIMETYPES.guess_type(name)[0]
         self._files[name] = OpfFileEntry(media_type=media_type if media_type else "application/octet-stream",
-                                         in_spine=add_to_spine, tactile_graphic=tactile_graphic)
-    def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False):
+                                         in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
+    def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False):
         self._zipfile.write(filename, name)
-        self._add_to_files(name, add_to_spine, tactile_graphic)
-    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False):
+        self._add_to_files(name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
+    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False):
         self._zipfile.writestr(name, data)
-        self._add_to_files(name, add_to_spine, tactile_graphic)
+        self._add_to_files(name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document)
     def write_image(self, name: str, filename: str):
         self.write_file(f"ebraille/{name}", filename, False, tactile_graphic=True)
     def write_volume(self, name: str, data: AnyStr):
         self.write_str(f"ebraille/{name}", data, True)
     def close(self):
         try:
+            self.write_str("index.html", self._create_navigation_html(_OPF_NAME), True, is_nav_document=True)
             self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
-            self._zipfile.writestr("index.html", self._create_navigation_html(_OPF_NAME))
             self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
             self._zipfile.close()
