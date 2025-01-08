@@ -82,8 +82,6 @@ _RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*\\?>)"
 _BRAILLE_PAGE_RE = "(?:<\\?braille-page[ \u2800-\u28ff]*\\?>)"
 _BRAILLE_PPN_RE = "(?:<\\?braille-ppn [ \u2800-\u28ff]*\\?>)"
 _BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
-#_PROCESSING_INSTRUCTION_RE = f"(?:(?:(?:{_BLANK_LINE_RE}\n)?{_BRAILLE_PAGE_RE}\n{_BRAILLE_PPN_RE}\n{_PRINT_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?(?:{_BLANK_LINE_RE}\n)?)|(?:{_BRAILLE_PAGE_RE}\n{_BRAILLE_PPN_RE}\n(?:{_RUNNING_HEAD_RE}\n)?)|{_BRAILLE_PPN_RE}\n(?:{_PRINT_PAGE_RE}\n))"
-#_PROCESSING_INSTRUCTION_RE = f"(?:(?:(?:{_BLANK_LINE_RE}\n)?{_BRAILLE_PAGE_RE}\n{_PRINT_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?(?:{_BLANK_LINE_RE}\n)?)|(?:{_BRAILLE_PAGE_RE}\n(?:{_RUNNING_HEAD_RE}\n)?)|(?:{_PRINT_PAGE_RE}\n))"
 _PROCESSING_INSTRUCTION_RE = f"(?:(?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
 
 def _create_indented_block_finder(first_line_indent: int, run_over: int) -> Callable[[str, int], (str | None, int)]:
@@ -289,12 +287,33 @@ def create_block_paragraph_detector() -> Detector:
         "([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
     f"({_PROCESSING_INSTRUCTION_RE}?)([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+    punctuation_re = re.compile("(?:\u2832|\u2826|\u2816)(?:\u2800|\u2804|\u2800|\u2834\u2800)")
+    end_punctuation_equal_re = re.compile(".*(?:\u2832|\u2826|\u2816)(?:\u2804|\u2834)*$")
+
 
     def is_block_paragraph(lines: list[tuple[str, str]]) -> bool:
-        if lines:
-            #if there are more than one line and all the first characters are not the same:
-            if [elem for elem in lines[1:] if elem[1][0]!=lines[0][1][0]]:
-                return True 
+        if not lines:
+            return False 
+
+        # if all lines end in punctuation assume list
+        count = 0
+        for elem in lines:
+            if end_punctuation_equal_re.match(elem[1]):
+                count+=1
+
+        if count == len (lines):
+            return False
+
+        #if there are more than one line and all the first characters are not the same:
+        if [elem for elem in lines[1:] if elem[1][0]!=lines[0][1][0]]:
+            # and if there is some punctuation in the block. that look like sentences
+            for elem in lines:
+                if punctuation_re.search(elem[1]):
+                    return True
+                
+            if end_punctuation_equal_re.match(lines[-1][1]):
+                return True
+
         return False    
 
     def make_block_paragrap(lines: list[tuple[str, str]]) -> str:
