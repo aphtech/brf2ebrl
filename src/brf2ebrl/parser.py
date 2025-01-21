@@ -8,8 +8,28 @@
 import logging
 from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
+from enum import IntEnum
 from functools import cached_property
 from typing import Any
+
+
+class NotifyLevel(IntEnum):
+    DEBUG = 10
+    INFO = 20
+    WARN = 30
+    ERROR = 40
+    CRITICAL = 50
+
+
+@dataclass(frozen=True)
+class ParserContext:
+    is_cancelled: Callable[[], bool] = False
+    notify: Callable[[NotifyLevel, Callable[[], str]], None] = lambda _: None
+    def check_cancelled(self):
+        if self.is_cancelled():
+            raise ParsingCancelledException()
+    def notify_str(self, level: NotifyLevel, msg: str):
+        self.notify(level, lambda: msg)
 
 
 @dataclass(frozen=True)
@@ -90,20 +110,14 @@ class ParsingCancelledException(Exception):
 
 
 def parse(brf: str, parser_passes: Iterable[Parser], progress_callback: Callable[[int], None] = lambda x: None,
-          is_cancelled: Callable[[], bool] = lambda: False) -> str:
+          parser_context: ParserContext = ParserContext()) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
-
-    def check_cancelled():
-        if is_cancelled():
-            logging.warning("Parsing cancelled.")
-            raise ParsingCancelledException()
-
     logging.info("Starting parsing")
     text = brf
     for i, parser_pass in enumerate(parser_passes):
-        check_cancelled()
+        parser_context.check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
-        text = parser_pass.parse(text, check_cancelled)
+        text = parser_pass.parse(text, parser_context.check_cancelled)
     logging.info(f"Finished parsing")
     return text
