@@ -28,7 +28,7 @@ _INLINE_TN_RE = re.compile(f"{_START_TN_SYMBOL}[\u2800-\u28ff\\s]+{_END_TN_SYMBO
 _INLINE_EXCLUDES_RE = re.compile(f"(?:\"|{_START_TN_BLOCK})$")
 
 
-def tag_inline_tn(text: str, check_cancelled: Callable[[], None], start: int = 0):
+def tag_inline_tn(text: str, check_cancelled: Callable[[], None], *, start: int = 0):
     new_text = ""
     while m := _INLINE_TN_RE.search(text, pos=start):
         prev_cursor = start
@@ -45,7 +45,7 @@ _TN_HEADING_LIST_SEP_RE = re.compile("((<\\?blank-line\\?>)|\\s)*")
 _TN_LIST_START_RE = re.compile("<ul")
 
 
-def tag_symbols_list_tn(text: str, check_cancelled: Callable[[], None] = lambda: None, cursor: int = 0) -> str:
+def tag_symbols_list_tn(text: str, check_cancelled: Callable[[], None] = lambda: None, *, cursor: int = 0) -> str:
     new_text = ""
     start = cursor
     while start < len(text):
