@@ -10,6 +10,8 @@ import os
 import sys
 
 import re
+from pathlib import Path
+
 from pypdf import PdfWriter, PdfReader
 
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
@@ -172,7 +174,7 @@ def create_pdf_graphic_detector(
                 # the for loop takes care of multiple pages
                 for file_ref in _images_references[braille_page]:
                     href += (
-                        f'<object data="{file_ref.replace("\\","/")}" '
+                        f'<object data="{Path(file_ref).as_posix()}" '
                         +'type="application/pdf" ' 
      +'height="250" '
      +'width="100" '
