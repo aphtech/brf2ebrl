@@ -23,7 +23,7 @@ class NotifyLevel(IntEnum):
 
 @dataclass(frozen=True)
 class ParserContext:
-    is_cancelled: Callable[[], bool] = False
+    is_cancelled: Callable[[], bool] = lambda: False
     notify: Callable[[NotifyLevel, Callable[[], str]], None] = lambda _: None
     def check_cancelled(self):
         if self.is_cancelled():
@@ -35,7 +35,7 @@ class ParserContext:
 @dataclass(frozen=True)
 class Parser:
     name: str
-    parse: Callable[[str, Callable[[], None]], str]
+    parse: Callable[[str, ParserContext], str]
 
 
 DetectionState = Mapping[str, Any]
@@ -94,10 +94,10 @@ DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]]
 def detector_parser(name: str, initial_state: DetectionState, detectors: Iterable[Detector], selector: DetectionSelector) -> Parser:
     """A configuration for a single step in a multipass parsing."""
 
-    def run_detectors(text: str, check_cancelled: Callable[[], None]) -> str:
+    def run_detectors(text: str, parser_context: ParserContext) -> str:
         text_builder, cursor, state = "", 0, initial_state
         while cursor < len(text):
-            check_cancelled()
+            parser_context.check_cancelled()
             result = selector(text, cursor, state, text_builder, detectors)
             assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
             text_builder, cursor, state = result.text, result.cursor, result.state
@@ -118,6 +118,6 @@ def parse(brf: str, parser_passes: Iterable[Parser], progress_callback: Callable
         parser_context.check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
-        text = parser_pass.parse(text, parser_context.check_cancelled)
+        text = parser_pass.parse(text, parser_context)
     logging.info(f"Finished parsing")
     return text

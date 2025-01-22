@@ -7,9 +7,8 @@
 """Script to convert a ASCII BRF into unicode Braille."""
 import argparse
 
-from brf2ebrl.common.detectors import convert_ascii_to_unicode_braille_bulk
-from brf2ebrl.common.selectors import most_confident_detector
-from brf2ebrl.parser import parse, detector_parser
+from brf2ebrl.common.detectors import translate_ascii_to_unicode_braille
+from brf2ebrl.parser import parse, Parser
 
 
 def main():
@@ -25,8 +24,9 @@ def main():
     output_text = parse(
         brf,
         [
-            detector_parser(
-                "Unicode Braille", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector
+            Parser(
+                "Unicode Braille",
+                translate_ascii_to_unicode_braille
             )
         ],
     )

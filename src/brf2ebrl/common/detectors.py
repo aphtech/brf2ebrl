@@ -9,11 +9,12 @@ import logging
 import re
 from collections.abc import Iterable
 from enum import Enum, auto
-from typing import Callable
 
 import lxml.etree
 import lxml.html
 from lxml.html.builder import HTML, BODY
+
+from brf2ebrl import ParserContext
 from brf2ebrl.parser import DetectionResult, DetectionState, Detector
 
 _ASCII_TO_UNICODE_DICT = str.maketrans(
@@ -29,19 +30,13 @@ class BraillePageType(Enum):
     NORMAL = auto()
 
 
-def convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, state: DetectionState,
-                                          output_text: str) -> DetectionResult:
-    """Convert the entire BRF into unicode Braille in a single step."""
-    return DetectionResult(len(text), state, 1.0, output_text + translate_ascii_to_unicode_braille(text[cursor:]))
-
-
-def translate_ascii_to_unicode_braille(text: str, _: Callable[[], None] = lambda: None) -> str:
+def translate_ascii_to_unicode_braille(text: str, _: ParserContext = ParserContext()) -> str:
     return text.translate(_ASCII_TO_UNICODE_DICT)
 
 
 def convert_ascii_to_unicode_braille(text: str, cursor: int, state: DetectionState,
                                      output_text: str) -> DetectionResult:
-    """Convert only th next character to unicode Braille."""
+    """Convert only th next character to Unicode Braille."""
     return DetectionResult(cursor + 1, state, 1.0, output_text + text[cursor].translate(_ASCII_TO_UNICODE_DICT))
 
 
@@ -112,7 +107,7 @@ def create_running_head_detector(min_indent: int) -> Detector:
     return detect_running_head
 
 
-def xhtml_fixup_detector(input_text: str, _) -> str:
+def xhtml_fixup_detector(input_text: str, _: ParserContext) -> str:
     root = HTML(
         BODY(
             *(lxml.html.fragments_fromstring(input_text, parser=lxml.html.xhtml_parser))

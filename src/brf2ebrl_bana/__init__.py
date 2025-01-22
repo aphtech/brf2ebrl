@@ -40,7 +40,7 @@ def create_brf2ebrl_parser(
                 "Transform to uppercase ASCII",
                 lambda x,_: x.upper()
             ),
-            # Convert to unicode pass
+            # Convert to Unicode pass
             Parser(
                 "Convert to unicode Braille",
                 translate_ascii_to_unicode_braille
@@ -85,7 +85,7 @@ def create_brf2ebrl_parser(
             # Remove form feeds pass.
             Parser(
                 "Remove form feeds",
-                lambda text, check_cancellation: text.replace("\f", "")
+                lambda text, _: text.replace("\f", "")
             ),
             # Detect blank lines pass
             detector_parser(
@@ -164,7 +164,7 @@ PLUGIN = create_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", br
                        file_mapper=lambda input_file, index: f"vol{index}.html")
 
 
-def create_image_detection_parser_pass(brf_path, images_path, output_path):
+def create_image_detection_parser_pass(brf_path, images_path, output_path) -> Parser | None:
     if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path)):
         return detector_parser(
             "Convert PDF to single files and links",

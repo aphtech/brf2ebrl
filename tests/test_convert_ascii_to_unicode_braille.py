@@ -5,22 +5,22 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import pytest
-from brf2ebrl.common.detectors import convert_ascii_to_unicode_braille_bulk, convert_ascii_to_unicode_braille
+
+from brf2ebrl import ParserContext
+from brf2ebrl.common.detectors import convert_ascii_to_unicode_braille, \
+    translate_ascii_to_unicode_braille
 from brf2ebrl.common.selectors import most_confident_detector
-from brf2ebrl.parser import DetectionResult, parse, detector_parser
+from brf2ebrl.parser import DetectionResult, parse, detector_parser, Parser
 
 
-@pytest.mark.parametrize("text,cursor,expected_text", [
-    ("TEST", 0, "\u281e\u2811\u280e\u281e"),
-    ("TEST", 1, "\u2811\u280e\u281e"),
-    ("TEST", 2, "\u280e\u281e"),
-    ("TEST\nTEST\fTEST", 0, "\u281e\u2811\u280e\u281e\n\u281e\u2811\u280e\u281e\f\u281e\u2811\u280e\u281e"),
-    ("\"S TEXT", 0, "\u2810\u280e\u2800\u281e\u2811\u282d\u281e"),
-    (r""" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)=""", 0, "".join([chr(x) for x in range(0x2800, 0x2840)]))
+@pytest.mark.parametrize("text,expected_text", [
+    ("TEST", "\u281e\u2811\u280e\u281e"),
+    ("TEST\nTEST\fTEST", "\u281e\u2811\u280e\u281e\n\u281e\u2811\u280e\u281e\f\u281e\u2811\u280e\u281e"),
+    ("\"S TEXT", "\u2810\u280e\u2800\u281e\u2811\u282d\u281e"),
+    (r""" A1B'K2L@CIF/MSP"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\0Z7(_?W]#Y)=""", "".join([chr(x) for x in range(0x2800, 0x2840)]))
 ])
-def test_convert_ascii_to_unicode_braille_bulk(text: str, cursor: int, expected_text: str):
-    assert convert_ascii_to_unicode_braille_bulk(text, cursor, {}, "") == DetectionResult(len(text), {},
-                                                                                             1.0, expected_text)
+def test_translate_ascii_to_unicode_braille(text: str, expected_text: str):
+    assert translate_ascii_to_unicode_braille(text, ParserContext()) == expected_text
 
 
 @pytest.mark.parametrize("text,cursor,expected_text", [
@@ -41,4 +41,4 @@ def test_convert_ascii_to_unicode_braille(text: str, cursor: int, expected_text:
     "TEST\nDOCU;mT\f"
 ])
 def test_conversion_by_character_vs_bulk(text: str):
-    assert parse(text, [detector_parser("Test conversion bulk", {}, [convert_ascii_to_unicode_braille_bulk], most_confident_detector)]) == parse(text, [detector_parser("Test convert by character", {}, [convert_ascii_to_unicode_braille], most_confident_detector)])
+    assert parse(text, [Parser("Test conversion bulk", translate_ascii_to_unicode_braille)]) == parse(text, [detector_parser("Test convert by character", {}, [convert_ascii_to_unicode_braille], most_confident_detector)])
