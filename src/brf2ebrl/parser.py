@@ -23,8 +23,8 @@ class NotifyLevel(IntEnum):
 
 @dataclass(frozen=True)
 class ParserContext:
-    is_cancelled: Callable[[], bool] = lambda: False
-    notify: Callable[[NotifyLevel, Callable[[], str]], None] = lambda _: None
+    is_cancelled: Callable[[], bool] = field(default=lambda: False)
+    notify: Callable[[NotifyLevel, Callable[[], str]], None] = field(default=lambda l,t: None)
     def check_cancelled(self):
         if self.is_cancelled():
             raise ParsingCancelledException()
