@@ -158,14 +158,14 @@ def create_pdf_graphic_detector(
         new_cursor = cursor
         start_page = end_page = 0
         href = ""
-        if line := _detect_braille_page_re.match(text[new_cursor:]):
-            new_cursor += line.end()
+        if line := _detect_braille_page_re.search(text, new_cursor):
+            new_cursor = line.end()
             start_page = new_cursor
             braille_page = line.group(1).split()[1].split("?")[0].strip()
             braille_page = get_key_for_page(braille_page, _images_references)
             if braille_page in _images_references:
-                if end_page := _detect_braille_page_re.match(text[new_cursor:]):
-                    end_page = new_cursor + end_page.start()
+                if end_page := _detect_braille_page_re.search(text, new_cursor):
+                    end_page = end_page.start()
                 else:
                     end_page = len(text)
                 if search_blank := _search_blank_re.search(text[start_page:end_page]):
@@ -174,14 +174,7 @@ def create_pdf_graphic_detector(
                 # the for loop takes care of multiple pages
                 for file_ref in _images_references[braille_page]:
                     href += (
-                            f'<object data="{Path(file_ref).as_posix()}" '
-                            + 'type="application/pdf" '
-                            + 'height="250" '
-                            + 'width="100" '
-                            + f'aria-label="{_auto_gen}{braille_page}"> '
-                            + f'<p>{_pdf_text} '
-                            + f'{braille_page}</p>'
-                            + '</object>'
+                            f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
                     )
                 del _images_references[braille_page]
 
