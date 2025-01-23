@@ -178,7 +178,7 @@ def create_pdf_graphic_detector(
                             + 'type="application/pdf" '
                             + 'height="250" '
                             + 'width="100" '
-                            + 'aria-label="{_auto_gen}{braille_page}"> '
+                            + f'aria-label="{_auto_gen}{braille_page}"> '
                             + f'<p>{_pdf_text} '
                             + f'{braille_page}</p>'
                             + '</object>'
