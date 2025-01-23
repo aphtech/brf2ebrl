@@ -25,7 +25,7 @@ _references = {}
 
 
 def create_images_references(
-    brf_path: str, output_path: str, images_path: str
+        brf_path: str, output_path: str, images_path: str
 ) -> dict[str, str]:
     """Creates the PDF files and the references dictionary. Returns the Reference dictionary"""
     ebrf_folder = os.path.split(output_path)[0]
@@ -57,7 +57,7 @@ def create_images_references(
         logging.error("No images path or folder found %s", images_path)
         return {}
 
-    def match_page_number(text :str) -> str:
+    def match_page_number(text: str) -> str:
         page_number_pattern = re.compile(
             r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
         )
@@ -70,7 +70,7 @@ def create_images_references(
 
         return ""
 
-    def extract_page_number(page :str) -> str:
+    def extract_page_number(page: str) -> str:
         text = page.extract_text(extraction_mode="layout")
         if text:
             page_number = match_page_number(text)
@@ -83,7 +83,7 @@ def create_images_references(
         pdf_filename = pdf_filename.replace(",", "C")
         if bp_page_trans in _references:
             pdf_filename = pdf_filename.replace(
-                ".pdf", f"_{len(_references[bp_page_trans])+1}.pdf"
+                ".pdf", f"_{len(_references[bp_page_trans]) + 1}.pdf"
             )
             _references[bp_page_trans].append(pdf_filename)
         else:
@@ -118,7 +118,7 @@ def create_images_references(
 
 
 def create_pdf_graphic_detector(
-    brf_path: str, output_path: str, images_path: str
+        brf_path: str, output_path: str, images_path: str
 ) -> Detector | None:
     """Creates a detector for finding graphic page numbers and matching with PDF pages
     * argument:
@@ -134,8 +134,8 @@ def create_pdf_graphic_detector(
 
     # auto generated page text
     _auto_gen = (
-        "\u2801\u2825\u281e\u2815\u2800\u281b\u2811"
-        + "\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
+            "\u2801\u2825\u281e\u2815\u2800\u281b\u2811"
+            + "\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
     )
     _pdf_text = "\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
@@ -143,7 +143,7 @@ def create_pdf_graphic_detector(
     _detect_braille_page_re = re.compile("(<\\?braille-ppn [\u2801-\u28ff]+\\?>)")
     _search_blank_re = re.compile("(?:<\\?blank-line\\?>\n){3,}")
 
-    def get_key_for_page(brf_page :str, references :dict[str, str]) -> str:
+    def get_key_for_page(brf_page: str, references: dict[str, str]) -> str:
         if brf_page in references:
             return brf_page
 
@@ -153,7 +153,7 @@ def create_pdf_graphic_detector(
         return brf_pages[0]
 
     def detect_pdf(
-        text: str, cursor: int, state: DetectionState, output_text: str
+            text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
         new_cursor = cursor
         start_page = end_page = 0
@@ -174,14 +174,14 @@ def create_pdf_graphic_detector(
                 # the for loop takes care of multiple pages
                 for file_ref in _images_references[braille_page]:
                     href += (
-                        f'<object data="{Path(file_ref).as_posix()}" '
-                        +'type="application/pdf" ' 
-     +'height="250" '
-     +'width="100" '
-     +'aria-label="{_auto_gen}{braille_page}"> '
-   +f'<p>{_pdf_text} '
-   + f'{braille_page}</p>'
-+'</object>'
+                            f'<object data="{Path(file_ref).as_posix()}" '
+                            + 'type="application/pdf" '
+                            + 'height="250" '
+                            + 'width="100" '
+                            + 'aria-label="{_auto_gen}{braille_page}"> '
+                            + f'<p>{_pdf_text} '
+                            + f'{braille_page}</p>'
+                            + '</object>'
                     )
                 del _images_references[braille_page]
 
