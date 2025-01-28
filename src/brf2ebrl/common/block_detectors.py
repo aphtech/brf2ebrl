@@ -293,7 +293,8 @@ def create_block_paragraph_detector() -> Detector:
         f"(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
     )
 
-    pi_re = re.compile(f"(_PROCESSING_INSTRUCTION_RE)")
+    pi_re = re.compile(f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)")
+
     punctuation_re = re.compile(
         "(?:\u2832|\u2826|\u2816)(?:\u2800|\u2804|\u2800|\u2834\u2800)"
     )
@@ -310,12 +311,17 @@ def create_block_paragraph_detector() -> Detector:
         "[\u2801\u2803\u2805\u2807\u2809\u280a\u280b\u280d\u280e\u280f\u2811\u2813\u2815\u2817\u2819\u281a\u281b\u281d\u281e\u281f\u2825\u2827\u282d\u2835\u283a\u283d]+\u2802\u28c1\u2800[\u2800-\u28ff]+"
     )
 
-    def match_line(current_line: str) -> tuple:
+    def match_line(current_line: str, first_line: bool) -> tuple:
+        """match if this is a block or list"""
         if line := first_line_re.match(current_line):
             return (0, "", line.group(1), line.end())
-        if line := run_over_re.match(current_line):
+        
+        line = run_over_re.match(current_line)
+        if not first_line and line:
             return (len(line.group(1)), "", line.group(2), line.end())
-        if line := pi_re.match(current_line):
+        
+        line = pi_re.match(current_line)
+        if not first_line and line and line.group(1):
             return (-1, line.group(1), "", line.end())
 
         return None
@@ -325,8 +331,8 @@ def create_block_paragraph_detector() -> Detector:
         logging.info("start")
 
         logging.info(f"block size: {len(lines)}")
-        for i, l in enumerate(lines):
-            logging.info(f"{i} {l[2]}")
+        #for i, l in enumerate(lines):
+            #logging.info(f"{i} {l[2]}")
 
         # copy and remove PI
         _lines = [line for line in lines if line[0] != -1]
@@ -334,47 +340,38 @@ def create_block_paragraph_detector() -> Detector:
         new_lines = [line[2] for line in _lines if line[0] == 0]
         # if not all lines have zero indent
         if not new_lines:
-            logging.info("f1")
             return False
 
         # if all lines start with roman with out punctuation
         if not [line for line in new_lines if not roman_re.match(line)]:
-            logging.info("f2")
             return False
 
         # if all lines start with letter  period  assume list with small letters or small roman
         if not [
             line for line in new_lines if not lower_alpha_with_period_re.match(line)
         ]:
-            logging.info("f3")
             return False
 
         # if all lines start with letter  right paran   assume list with small letters or small roman
         if not [
             line for line in new_lines if not lower_alpha_with_paran_re.match(line)
         ]:
-            logging.info("f4")
             return False
 
         # if all lines end in punctuation assume list
         if not [line for line in new_lines if not end_punctuation_equal_re.match(line)]:
-            logging.info("f5")
             return False
 
         # if there are more than one line and all the first characters are not the same:
         if [line for line in new_lines[1:] if line[0] != new_lines[0][0]]:
-            logging.info("t0")
             # and if there is some punctuation in the block. that look like sentences
             for line in new_lines:
                 if punctuation_re.search(line):
-                    logging.info("t1")
                     return True
 
             if end_punctuation_equal_re.match(new_lines[-1]):
-                logging.info("t2")
                 return True
 
-        logging.info("rl")
         return False
 
     def make_lists(lines: list[tuple[int, str, str]]) -> str:
@@ -397,7 +394,9 @@ def create_block_paragraph_detector() -> Detector:
         lines = []
         new_cursor = cursor
         brl = ""
-        while line := match_line(text[new_cursor:]):
+        first_line = True
+        while line := match_line(text[new_cursor:],first_line):
+            first_line = False
             lines.append(line[:3])
             new_cursor += line[3]
 
