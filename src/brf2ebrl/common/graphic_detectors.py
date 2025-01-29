@@ -15,7 +15,7 @@ from typing import Callable
 from pypdf import PdfWriter, PdfReader
 
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
-from brf2ebrl.parser import ParserContext
+from brf2ebrl.parser import ParserContext, NotifyLevel
 
 _page_number_pattern = re.compile(
     r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
@@ -177,7 +177,9 @@ def create_pdf_graphic_detector(
                     result_text += f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
                 del _images_references[braille_page]
 
-        # logging.info(f"rest of refs {_images_references.keys()}")
+        if _images_references:
+            unused_graphics = [x for x in _images_references.keys()]
+            parser_context.notify(NotifyLevel.WARN, lambda: f"There were unused graphics for pages {unused_graphics}")
 
         return f"{result_text}{text[new_cursor:]}"
 
