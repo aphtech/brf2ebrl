@@ -155,12 +155,14 @@ def create_pdf_graphic_detector(
     def detect_pdf(
             text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
+        logging.info(")checking for graphics.")
+        result_text = ""
         new_cursor = cursor
         start_page = end_page = 0
-        href = ""
-        if line := _detect_braille_page_re.search(text, new_cursor):
-            new_cursor = line.end()
-            start_page = new_cursor
+        while line := _detect_braille_page_re.search(text, new_cursor):
+            start_page = line.end()
+            result_text += text[new_cursor:start_page]
+            new_cursor = start_page
             braille_page = line.group(1).split()[1].split("?")[0].strip()
             braille_page = get_key_for_page(braille_page, _images_references)
             if braille_page in _images_references:
@@ -171,21 +173,22 @@ def create_pdf_graphic_detector(
                 if search_blank := _search_blank_re.search(text[start_page:end_page]):
                     end_page = new_cursor + search_blank.start()
                     new_cursor += search_blank.end()
+                result_text += text[start_page:end_page]
                 # the for loop takes care of multiple pages
+                img_count = 0
                 for file_ref in _images_references[braille_page]:
-                    href += (
+                    href = (
                             f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
                     )
+                    img_count += 1
+                    result_text += href
+                logging.warn("Added %d images", img_count)
                 del _images_references[braille_page]
 
         # logging.info(f"rest of refs {_images_references.keys()}")
 
-        return (
-            DetectionResult(
-                new_cursor, state, 0.9, f"{output_text}{text[cursor:end_page]}{href}"
+        return DetectionResult(
+                len(text), state, 0.9, f"{output_text}{result_text}{text[new_cursor:]}"
             )
-            if href
-            else None
-        )
 
     return detect_pdf
