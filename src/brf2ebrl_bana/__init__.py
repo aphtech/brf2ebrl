@@ -12,7 +12,7 @@ from brf2ebrl.common.block_detectors import create_centered_detector, create_cel
     create_table_detector, create_list_detector, detect_pre, create_block_paragraph_detector
 from brf2ebrl.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
 from brf2ebrl.common.detectors import detect_and_pass_processing_instructions, \
-    create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector, \
+    create_running_head_detector, braille_page_counter_detector, xhtml_fixup_detector, \
     translate_ascii_to_unicode_braille, combine_detectors, convert_blank_lines_to_processing_instructions
 from brf2ebrl.common.emphasis_detectors import tag_emphasis
 from brf2ebrl.common.graphic_detectors import create_pdf_graphic_detector
@@ -162,11 +162,9 @@ PLUGIN = create_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", br
 
 def create_image_detection_parser_pass(brf_path, images_path, output_path) -> Parser | None:
     if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path)):
-        return detector_parser(
+        return Parser(
             "Convert PDF to single files and links",
-            {},
-            [image_detector],
-            most_confident_detector,
+            image_detector
         )
     else:
         return None

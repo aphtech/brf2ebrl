@@ -7,15 +7,15 @@
 """Detector for Graphics"" currently for PDF"""
 import logging
 import os
-import sys
-
 import re
+import sys
 from pathlib import Path
+from typing import Callable
 
 from pypdf import PdfWriter, PdfReader
 
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
-from brf2ebrl.parser import DetectionState, DetectionResult, Detector
+from brf2ebrl.parser import ParserContext
 
 _page_number_pattern = re.compile(
     r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
@@ -119,12 +119,12 @@ def create_images_references(
 
 def create_pdf_graphic_detector(
         brf_path: str, output_path: str, images_path: str
-) -> Detector | None:
+) -> Callable[[str, ParserContext], str] | None:
     """Creates a detector for finding graphic page numbers and matching with PDF pages
     * argument:
     * filename None if no image file or folder
     *Returns:
-    * DetectionResult,
+    * Parser,
     """
 
     # image references
@@ -153,12 +153,10 @@ def create_pdf_graphic_detector(
         return brf_pages[0]
 
     def detect_pdf(
-            text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult | None:
-        logging.info(")checking for graphics.")
+            text: str, parser_context: ParserContext
+    ) -> str:
         result_text = ""
-        new_cursor = cursor
-        start_page = end_page = 0
+        new_cursor = 0
         while line := _detect_braille_page_re.search(text, new_cursor):
             start_page = line.end()
             result_text += text[new_cursor:start_page]
@@ -175,20 +173,12 @@ def create_pdf_graphic_detector(
                     new_cursor += search_blank.end()
                 result_text += text[start_page:end_page]
                 # the for loop takes care of multiple pages
-                img_count = 0
                 for file_ref in _images_references[braille_page]:
-                    href = (
-                            f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
-                    )
-                    img_count += 1
-                    result_text += href
-                logging.warn("Added %d images", img_count)
+                    result_text += f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
                 del _images_references[braille_page]
 
         # logging.info(f"rest of refs {_images_references.keys()}")
 
-        return DetectionResult(
-                len(text), state, 0.9, f"{output_text}{result_text}{text[new_cursor:]}"
-            )
+        return f"{result_text}{text[new_cursor:]}"
 
     return detect_pdf
