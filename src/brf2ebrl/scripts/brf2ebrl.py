@@ -110,7 +110,7 @@ def main():
         arg_parser.print_help()
         arg_parser.exit()
     else:
-        input_brf = [x for f in input_brf for x in glob(f)]
+        input_brf = [x for f in input_brf for x in sorted(glob(f), key=lambda x: x.lower())]
 
     output_ebrf = args.output_file
     output_file_path = os.path.split(output_ebrf)[0]
