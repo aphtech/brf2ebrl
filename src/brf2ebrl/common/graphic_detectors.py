@@ -179,6 +179,7 @@ def create_pdf_graphic_detector(
 
         if _images_references:
             unused_graphics = [x for x in _images_references.keys()]
+            logging.warning("Unused graphics %s", unused_graphics)
             parser_context.notify(NotifyLevel.WARN, lambda: f"There were unused graphics for pages {unused_graphics}")
 
         return f"{result_text}{text[new_cursor:]}"
