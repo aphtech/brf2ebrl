@@ -8,14 +8,34 @@
 import logging
 from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
+from enum import IntEnum
 from functools import cached_property
 from typing import Any
+
+
+class NotifyLevel(IntEnum):
+    DEBUG = 10
+    INFO = 20
+    WARN = 30
+    ERROR = 40
+    CRITICAL = 50
+
+
+@dataclass(frozen=True)
+class ParserContext:
+    is_cancelled: Callable[[], bool] = field(default=lambda: False)
+    notify: Callable[[NotifyLevel, Callable[[], str]], None] = field(default=lambda l,t: None)
+    def check_cancelled(self):
+        if self.is_cancelled():
+            raise ParsingCancelledException()
+    def notify_str(self, level: NotifyLevel, msg: str):
+        self.notify(level, lambda: msg)
 
 
 @dataclass(frozen=True)
 class Parser:
     name: str
-    parse: Callable[[str, Callable[[], None]], str]
+    parse: Callable[[str, ParserContext], str]
 
 
 DetectionState = Mapping[str, Any]
@@ -74,10 +94,10 @@ DetectionSelector = Callable[[str, int, DetectionState, str, Iterable[Detector]]
 def detector_parser(name: str, initial_state: DetectionState, detectors: Iterable[Detector], selector: DetectionSelector) -> Parser:
     """A configuration for a single step in a multipass parsing."""
 
-    def run_detectors(text: str, check_cancelled: Callable[[], None]) -> str:
+    def run_detectors(text: str, parser_context: ParserContext) -> str:
         text_builder, cursor, state = "", 0, initial_state
         while cursor < len(text):
-            check_cancelled()
+            parser_context.check_cancelled()
             result = selector(text, cursor, state, text_builder, detectors)
             assert cursor != result.cursor or state != result.state, f"Input conditions not changed by detector, cursor={cursor}, state={state}, selected detector={result}"
             text_builder, cursor, state = result.text, result.cursor, result.state
@@ -90,20 +110,14 @@ class ParsingCancelledException(Exception):
 
 
 def parse(brf: str, parser_passes: Iterable[Parser], progress_callback: Callable[[int], None] = lambda x: None,
-          is_cancelled: Callable[[], bool] = lambda: False) -> str:
+          parser_context: ParserContext = ParserContext()) -> str:
     """Perform a parse of the BRF according to the steps in the parser configuration."""
-
-    def check_cancelled():
-        if is_cancelled():
-            logging.warning("Parsing cancelled.")
-            raise ParsingCancelledException()
-
     logging.info("Starting parsing")
     text = brf
     for i, parser_pass in enumerate(parser_passes):
-        check_cancelled()
+        parser_context.check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
-        text = parser_pass.parse(text, check_cancelled)
+        text = parser_pass.parse(text, parser_context)
     logging.info(f"Finished parsing")
     return text

@@ -6,8 +6,8 @@
 
 """Detectors for Box lines"""
 import re
-from typing import Callable
 
+from brf2ebrl import ParserContext
 from brf2ebrl.parser import DetectionState, DetectionResult
 
 # Define the regular expression patterns
@@ -52,19 +52,9 @@ def convert_box_lines(
     )
 
 
-def tag_boxlines(text: str, _: Callable[[], None] = lambda: None) -> str:
+def tag_boxlines(text: str, _: ParserContext = ParserContext()) -> str:
     return _ENCLOSING_RE.sub(_convert_groups, _BOX_RE.sub(_convert_groups, text))
 
 
-def remove_box_lines_processing_instructions(
-        text: str, _: int, state: DetectionState, output_text: str
-) -> DetectionResult | None:
-    """Remove box processing instructions. This was to stop the pre problem."""
-
-    return DetectionResult(
-        len(text),
-        state,
-        1.0,
-        output_text
-        + _BOX_LINES_PROCESSING_INSTRUCTION_RE.sub(lambda m: m.group(1), text),
-    )
+def remove_box_lines_processing_instructions(text: str, _: ParserContext = ParserContext()):
+    return _BOX_LINES_PROCESSING_INSTRUCTION_RE.sub(lambda m: m.group(1), text)

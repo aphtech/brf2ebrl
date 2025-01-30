@@ -3,6 +3,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
+from brf2ebrl import ParserContext
 from brf2ebrl.common.box_line_detectors import convert_box_lines, remove_box_lines_processing_instructions
 from brf2ebrl.parser import DetectionResult
 
@@ -152,6 +153,5 @@ def test_remove_box_processing_instructions():
 </div>
 
 '''
-    actual = remove_box_lines_processing_instructions(brf,0,{},"")
-    expected = DetectionResult(len(brf ), {},1.0, expected_brf)
-    assert actual == expected
+    actual = remove_box_lines_processing_instructions(brf, ParserContext())
+    assert actual == expected_brf

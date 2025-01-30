@@ -12,7 +12,8 @@ the regular expressions are pre-built  and I might remove the for loops that cre
 """
 
 import re
-from typing import Callable
+
+from brf2ebrl import ParserContext
 
 letter = {
     "\u2828\u2806": ("<em>", "</em>"),
@@ -130,7 +131,7 @@ def phrase_groups(match):
     )
 
 
-def tag_emphasis(text: str, _: Callable[[], None] = lambda: None) -> str:
+def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
     # Add letter tags
     text = letter_re.sub(letter_groups, text)
     # add Word tags

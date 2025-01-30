@@ -7,13 +7,15 @@
 """Detector for Graphics"" currently for PDF"""
 import logging
 import os
-import sys
-
 import re
+import sys
+from pathlib import Path
+from typing import Callable
+
 from pypdf import PdfWriter, PdfReader
 
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
-from brf2ebrl.parser import DetectionState, DetectionResult, Detector
+from brf2ebrl.parser import ParserContext, NotifyLevel
 
 _page_number_pattern = re.compile(
     r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
@@ -23,7 +25,7 @@ _references = {}
 
 
 def create_images_references(
-    brf_path: str, output_path: str, images_path: str
+        brf_path: str, output_path: str, images_path: str
 ) -> dict[str, str]:
     """Creates the PDF files and the references dictionary. Returns the Reference dictionary"""
     ebrf_folder = os.path.split(output_path)[0]
@@ -55,7 +57,7 @@ def create_images_references(
         logging.error("No images path or folder found %s", images_path)
         return {}
 
-    def match_page_number(text :str) -> str:
+    def match_page_number(text: str) -> str:
         page_number_pattern = re.compile(
             r"([A-Za-z]?,?[A-Za-z]?#[a-jA-J]+(?:-[A-Za-z]?,?[A-Za-z]#[A-Ja-j]+)?)$"
         )
@@ -68,7 +70,7 @@ def create_images_references(
 
         return ""
 
-    def extract_page_number(page :str) -> str:
+    def extract_page_number(page: str) -> str:
         text = page.extract_text(extraction_mode="layout")
         if text:
             page_number = match_page_number(text)
@@ -81,7 +83,7 @@ def create_images_references(
         pdf_filename = pdf_filename.replace(",", "C")
         if bp_page_trans in _references:
             pdf_filename = pdf_filename.replace(
-                ".pdf", f"_{len(_references[bp_page_trans])+1}.pdf"
+                ".pdf", f"_{len(_references[bp_page_trans]) + 1}.pdf"
             )
             _references[bp_page_trans].append(pdf_filename)
         else:
@@ -116,13 +118,13 @@ def create_images_references(
 
 
 def create_pdf_graphic_detector(
-    brf_path: str, output_path: str, images_path: str
-) -> Detector | None:
+        brf_path: str, output_path: str, images_path: str
+) -> Callable[[str, ParserContext], str] | None:
     """Creates a detector for finding graphic page numbers and matching with PDF pages
     * argument:
     * filename None if no image file or folder
     *Returns:
-    * DetectionResult,
+    * Parser,
     """
 
     # image references
@@ -132,8 +134,8 @@ def create_pdf_graphic_detector(
 
     # auto generated page text
     _auto_gen = (
-        "\u2801\u2825\u281e\u2815\u2800\u281b\u2811"
-        + "\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
+            "\u2801\u2825\u281e\u2815\u2800\u281b\u2811"
+            + "\u281d\u2811\u2817\u2801\u281e\u2811\u2800\u2820\u2820\u280f\u2819\u280b\u2800"
     )
     _pdf_text = "\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
@@ -141,7 +143,7 @@ def create_pdf_graphic_detector(
     _detect_braille_page_re = re.compile("(<\\?braille-ppn [\u2801-\u28ff]+\\?>)")
     _search_blank_re = re.compile("(?:<\\?blank-line\\?>\n){3,}")
 
-    def get_key_for_page(brf_page :str, references :dict[str, str]) -> str:
+    def get_key_for_page(brf_page: str, references: dict[str, str]) -> str:
         if brf_page in references:
             return brf_page
 
@@ -151,46 +153,35 @@ def create_pdf_graphic_detector(
         return brf_pages[0]
 
     def detect_pdf(
-        text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult | None:
-        new_cursor = cursor
-        start_page = end_page = 0
-        href = ""
-        if line := _detect_braille_page_re.match(text[new_cursor:]):
-            new_cursor += line.end()
-            start_page = new_cursor
+            text: str, parser_context: ParserContext
+    ) -> str:
+        result_text = ""
+        new_cursor = 0
+        while line := _detect_braille_page_re.search(text, new_cursor):
+            start_page = line.end()
+            result_text += text[new_cursor:start_page]
+            new_cursor = start_page
             braille_page = line.group(1).split()[1].split("?")[0].strip()
             braille_page = get_key_for_page(braille_page, _images_references)
             if braille_page in _images_references:
-                if end_page := _detect_braille_page_re.match(text[new_cursor:]):
-                    end_page = new_cursor + end_page.start()
+                if end_page := _detect_braille_page_re.search(text, new_cursor):
+                    end_page = end_page.start()
                 else:
                     end_page = len(text)
                 if search_blank := _search_blank_re.search(text[start_page:end_page]):
                     end_page = new_cursor + search_blank.start()
                     new_cursor += search_blank.end()
+                result_text += text[start_page:end_page]
                 # the for loop takes care of multiple pages
                 for file_ref in _images_references[braille_page]:
-                    href += (
-                        f'<object data="{file_ref.replace("\\","/")}" '
-                        +'type="application/pdf" ' 
-     +'height="250" '
-     +'width="100" '
-     +'aria-label="{_auto_gen}{braille_page}"> '
-   +f'<p>{_pdf_text} '
-   + f'{braille_page}</p>'
-+'</object>'
-                    )
+                    result_text += f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
                 del _images_references[braille_page]
 
-        # logging.info(f"rest of refs {_images_references.keys()}")
+        if _images_references:
+            unused_graphics = [x for x in _images_references.keys()]
+            logging.warning("Unused graphics %s", unused_graphics)
+            parser_context.notify(NotifyLevel.WARN, lambda: f"There were unused graphics for pages {unused_graphics}")
 
-        return (
-            DetectionResult(
-                new_cursor, state, 0.9, f"{output_text}{text[cursor:end_page]}{href}"
-            )
-            if href
-            else None
-        )
+        return f"{result_text}{text[new_cursor:]}"
 
     return detect_pdf

@@ -12,8 +12,8 @@ from brf2ebrl.common.block_detectors import create_centered_detector, create_cel
     create_table_detector, detect_pre, create_block_paragraph_detector
 from brf2ebrl.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
 from brf2ebrl.common.detectors import detect_and_pass_processing_instructions, \
-    create_running_head_detector, braille_page_counter_detector, convert_blank_line_to_pi, xhtml_fixup_detector, \
-    translate_ascii_to_unicode_braille, combine_detectors
+    create_running_head_detector, braille_page_counter_detector, xhtml_fixup_detector, \
+    translate_ascii_to_unicode_braille, combine_detectors, convert_blank_lines_to_processing_instructions
 from brf2ebrl.common.emphasis_detectors import tag_emphasis
 from brf2ebrl.common.graphic_detectors import create_pdf_graphic_detector
 from brf2ebrl.common.page_numbers import create_ebrf_print_page_tags
@@ -40,7 +40,7 @@ def create_brf2ebrl_parser(
                 "Transform to uppercase ASCII",
                 lambda x,_: x.upper()
             ),
-            # Convert to unicode pass
+            # Convert to Unicode pass
             Parser(
                 "Convert to unicode Braille",
                 translate_ascii_to_unicode_braille
@@ -85,14 +85,12 @@ def create_brf2ebrl_parser(
             # Remove form feeds pass.
             Parser(
                 "Remove form feeds",
-                lambda text, check_cancellation: text.replace("\f", "")
+                lambda text, _: text.replace("\f", "")
             ),
             # Detect blank lines pass
-            detector_parser(
+            Parser(
                 "Detect blank lines",
-                {},
-                [convert_blank_line_to_pi, detect_and_pass_processing_instructions],
-                most_confident_detector,
+                convert_blank_lines_to_processing_instructions
             ),
             # convert box lines pass
             Parser(
@@ -117,11 +115,9 @@ def create_brf2ebrl_parser(
                 most_confident_detector,
             ),
             # remove box line processing instructions
-            detector_parser(
+            Parser(
                 "Remove  box lines processing instructions",
-                {},
-                [remove_box_lines_processing_instructions],
-                most_confident_detector,
+                remove_box_lines_processing_instructions
             ),
             Parser(
                 "Detecting inline TNs",
@@ -163,13 +159,11 @@ PLUGIN = create_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", br
                        file_mapper=lambda input_file, index: f"vol{index}.html")
 
 
-def create_image_detection_parser_pass(brf_path, images_path, output_path):
+def create_image_detection_parser_pass(brf_path, images_path, output_path) -> Parser | None:
     if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path)):
-        return detector_parser(
+        return Parser(
             "Convert PDF to single files and links",
-            {},
-            [image_detector],
-            most_confident_detector,
+            image_detector
         )
     else:
         return None
