@@ -157,39 +157,6 @@ def create_paragraph_detector(
     return detect_paragraph
 
 
-def create_nested_list_detector(first_line_indent: int, run_over: int) -> Detector:
-    """Creates a detector for finding lists with the specified first line indent and run over."""
-    first_line_re = re.compile(
-        f"^\u2800{{{first_line_indent}}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff\n]*){_BLANK_LINE_RE}",
-        re.MULTILINE,
-    )
-    run_over_re = re.compile(
-        f"\u2800{{{run_over},}}({_PROCESSING_INSTRUCTION_RE}|[\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
-    )
-
-    def detect_nested_list(
-        text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult | None:
-        lines = []
-        new_cursor = cursor
-        li_items = []
-        brl = ""
-        if line := first_line_re.match(text[new_cursor:]):
-            lines.append(line.group(1))
-            new_cursor += line.end()
-            li_items.append("<li>" + "\u2800".join(lines) + "</li>")
-            lines = []
-        if li_items:
-            brl = '<ul style="list-style-type: none">' + "".join(li_items) + "</ul>"
-        return (
-            DetectionResult(new_cursor, state, 0.9, f"{output_text}{brl}\n")
-            if brl
-            else None
-        )
-
-    return detect_nested_list
-
-
 def create_table_detector() -> Detector:
     """Creates a detector for finding simple tables more can be added"""
     seperator_re = re.compile(
@@ -293,7 +260,9 @@ def create_block_paragraph_detector() -> Detector:
         f"(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
     )
 
-    pi_re = re.compile(f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)")
+    pi_re = re.compile(
+        f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
+    )
 
     punctuation_re = re.compile(
         "(?:\u2832|\u2826|\u2816)(?:\u2800|\u2804|\u2800|\u2834\u2800)"
@@ -314,25 +283,24 @@ def create_block_paragraph_detector() -> Detector:
     def match_line(current_line: str, first_line: bool) -> tuple:
         """match if this is a block or list"""
         if line := first_line_re.match(current_line):
-            return (0, "", line.group(1), line.end())
-        
+            return [0, "", line.group(1), line.end()]
+
         line = run_over_re.match(current_line)
         if not first_line and line:
-            return (len(line.group(1)), "", line.group(2), line.end())
-        
+            return [len(line.group(1)), "", line.group(2), line.end()]
+
         line = pi_re.match(current_line)
         if not first_line and line and line.group(1):
-            return (-1, line.group(1), "", line.end())
+            return [-1, line.group(1), "", line.end()]
 
         return None
 
-    def is_block_paragraph(lines: list[tuple[str, int, str]]) -> bool:
+    def is_block_paragraph(lines: list[list[str, int, str]]) -> bool:
         """Check if this is a list or block paragraph."""
-        logging.info("start")
 
-        logging.info(f"block size: {len(lines)}")
-        #for i, l in enumerate(lines):
-            #logging.info(f"{i} {l[2]}")
+        # if it is length one it is a block because who makes a 1 line list in braille
+        if len(lines) == 1:
+            return True
 
         # copy and remove PI
         _lines = [line for line in lines if line[0] != -1]
@@ -374,14 +342,61 @@ def create_block_paragraph_detector() -> Detector:
 
         return False
 
-    def make_lists(lines: list[tuple[int, str, str]]) -> str:
-        """Make a list or nested list"""
-        li_items = [f"<li>{line[1]}{line[2]}</li>" for line in lines]
-        if li_items:
-            return '<ul style="list-style-type: none">' + "".join(li_items) + "</ul>"
-        return None
+    def build_list(
+        lines: list[int, str, str],
+        index: int,
+        length: int,
+        levels: list[int],
+        current_level: int,
+    ) -> tuple:
+        """Recursive list builder"""
+        list_level = []
+        while index < length:
+            index_diff = 1
+            if index < length - 1 and lines[index + 1][0] > current_level:
+                index_diff, buff = build_list(
+                    lines, index + 1, length, levels, levels.index(lines[index + 1][0])
+                )
+                lines[index][2] += buff
+            list_level.append(lines[index])
+            index += index_diff
+            if index >= length or lines[index][0] < current_level:
+                break
 
-    def make_block_paragrap(lines: list[tuple[str, int, str]]) -> str:
+        if list_level[0][0] == levels[-1] and is_block_paragraph(list_level):
+            print(f"t1: {len(list_level)}")
+            return (
+                len(list_level),
+                "".join([f"{line[1]}\n{line[2]} " for line in list_level]).strip(),
+            )
+        else:
+            print(f"t2: {len(list_level)}")
+            return len(list_level), (
+                '<ul style="list-style-type: none">'
+                + "".join([f"{line[1]}<li>{line[2]}</li>\n" for line in list_level])
+                + "</ul>"
+            )
+
+    def make_lists(lines: list[list[int, str, str]]) -> str:
+        """Make a list or nested list"""
+
+        # create clean set of levels acending
+        levels = list(set([level[0] for level in lines if level[0] != -1]))
+
+        # one level list
+        if len(levels) == 1:
+            print(f"x2: {len(lines)}")
+            return (
+                '<ul style="list-style-type: none">\n'
+                + "".join([f"{line[1]}<li>{line[2]}</li>\n" for line in lines])
+                + "</ul>\n"
+            )
+
+        #  nested list or over run list
+        _, brl_str = build_list(lines, 0, len(lines), levels, 0)
+        return brl_str
+
+    def make_block_paragrap(lines: list[list[str, int, str]]) -> str:
         return (
             '<p class="left-justified">'
             + "".join([item for tup in lines for item in tup[1:]])
@@ -395,7 +410,7 @@ def create_block_paragraph_detector() -> Detector:
         new_cursor = cursor
         brl = ""
         first_line = True
-        while line := match_line(text[new_cursor:],first_line):
+        while line := match_line(text[new_cursor:], first_line):
             first_line = False
             lines.append(line[:3])
             new_cursor += line[3]
