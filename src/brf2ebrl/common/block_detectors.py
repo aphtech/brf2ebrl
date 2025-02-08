@@ -6,7 +6,6 @@
 
 """Detectors for blocks"""
 import re
-import logging
 from collections.abc import Iterable, Callable
 
 from brf2ebrl.parser import DetectionState, DetectionResult, Detector
@@ -253,7 +252,7 @@ def create_table_detector() -> Detector:
 
 
 # detect block aligned paragraphs
-def create_block_paragraph_detector() -> Detector:
+def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding blokc paragraphs"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
@@ -280,6 +279,8 @@ def create_block_paragraph_detector() -> Detector:
         "[\u2801\u2803\u2805\u2807\u2809\u280a\u280b\u280d\u280e\u280f\u2811\u2813\u2815\u2817\u2819\u281a\u281b\u281d\u281e\u281f\u2825\u2827\u282d\u2835\u283a\u283d]+\u2802\u28c1\u2800[\u2800-\u28ff]+"
     )
 
+    _cells_per_line = cells_per_line
+
     def match_line(current_line: str, first_line: bool) -> tuple:
         """match if this is a block or list"""
         if line := first_line_re.match(current_line):
@@ -295,49 +296,75 @@ def create_block_paragraph_detector() -> Detector:
 
         return None
 
-    def is_block_paragraph(lines: list[list[str, int, str]]) -> bool:
+    def is_block_paragraph(lines: list[list[str, int, str]], depth: int  = 0) -> bool:
         """Check if this is a list or block paragraph."""
 
         # if it is length one it is a block because who makes a 1 line list in braille
         if len(lines) == 1:
             return True
 
-        # copy and remove PI
+        # copy and remove just PI
         _lines = [line for line in lines if line[0] != -1]
+        
 
-        new_lines = [line[2] for line in _lines if line[0] == 0]
-        # if not all lines have zero indent
-        if not new_lines:
+        block_len = len(_lines)
+        block = [line[2] for line in _lines if line[0] == depth]
+        # if not all lines have depth  indent
+        if len(block) != block_len:
             return False
+        
+        #Willo idea.
+        # # if any of the lines start with a word that could fit on the previous line its a list
+        i = 1
+        line_len = len (lines)
+        last_line_was_page_info = False
+        while i < line_len:
+            if lines[i-1][0] == -1:
+                last_line_was_page_info  = True
+                i += 1
+                continue
+            if lines[i][0] == -1:
+                i+=1
+                continue
+            if last_line_was_page_info  :
+                last_line_was_page_info  = False
+                i+= 1
+                continue
+            prev_line_len = len(lines[i-1][2])+depth
+            if prev_line_len   < _cells_per_line:
+                word = lines[i][2].strip('\u2800').split('\u2800',1)[0]
+                if (len(word)+1) < (_cells_per_line - prev_line_len):
+                    return False
+            i += 1
 
         # if all lines start with roman with out punctuation
-        if not [line for line in new_lines if not roman_re.match(line)]:
+        if not [line for line in block if not roman_re.match(line)]:
             return False
 
         # if all lines start with letter  period  assume list with small letters or small roman
         if not [
-            line for line in new_lines if not lower_alpha_with_period_re.match(line)
+            line for line in block if not lower_alpha_with_period_re.match(line)
         ]:
             return False
 
         # if all lines start with letter  right paran   assume list with small letters or small roman
         if not [
-            line for line in new_lines if not lower_alpha_with_paran_re.match(line)
+            line for line in block if not lower_alpha_with_paran_re.match(line)
         ]:
             return False
 
         # if all lines end in punctuation assume list
-        if not [line for line in new_lines if not end_punctuation_equal_re.match(line)]:
+        if not [line for line in block if not end_punctuation_equal_re.match(line)]:
             return False
 
-        # if there are more than one line and all the first characters are not the same:
-        if [line for line in new_lines[1:] if line[0] != new_lines[0][0]]:
+        # if there are more than one lines and all the first characters are not the same:
+        if [line for line in block[1:] if line[0] != block[0][0]]:
             # and if there is some punctuation in the block. that look like sentences
-            for line in new_lines:
+            for line in block:
                 if punctuation_re.search(line):
                     return True
 
-            if end_punctuation_equal_re.match(new_lines[-1]):
+            if end_punctuation_equal_re.match(block[-1]):
                 return True
 
         return False
@@ -347,36 +374,43 @@ def create_block_paragraph_detector() -> Detector:
         index: int,
         length: int,
         levels: list[int],
+        last_level: int,
         current_level: int,
     ) -> tuple:
         """Recursive list builder"""
         list_level = []
+        index_diff = 1
         while index < length:
-            index_diff = 1
-            if index < length - 1 and lines[index + 1][0] > current_level:
+            index_diff += 1
+            if (index +1) < length and lines[index+1][0] == -1:
+                if lines[index][0] != -1:
+                    list_level.append(lines[index])
+                index+=1
+                continue
+            elif index <( length - 1) and lines[index + 1][0] > current_level:
+                list_level.append(lines[index])
                 index_diff, buff = build_list(
-                    lines, index + 1, length, levels, levels.index(lines[index + 1][0])
+                    lines, index + 1, length, levels, current_level, lines[index+1][0]
                 )
-                lines[index][2] += buff
-            list_level.append(lines[index])
-            index += index_diff
-            if index >= length or lines[index][0] < current_level:
-                break
+                list_level[-1][2] += buff
+                index += index_diff
+            elif (index + 1)  < length and lines[index + 1 ][0] != -1  and lines[index + 1 ][0] < current_level: 
+                list_level.append(lines[index])
+                break 
+            else: 
+                list_level.append(lines[index])
+                index += 1
 
-        if list_level[0][0] == levels[-1] and is_block_paragraph(list_level):
-            print(f"t1: {len(list_level)}")
-            return (
-                len(list_level),
-                "".join([f"{line[1]}\n{line[2]} " for line in list_level]).strip(),
-            )
+        if ((current_level - last_level) > 2) or (current_level  == levels[-1] and  is_block_paragraph(list_level)):
+            return index_diff, "".join([f"{line[1]} {line[2]}" for line in list_level])
         else:
-            print(f"t2: {len(list_level)}")
-            return len(list_level), (
-                '<ul style="list-style-type: none">'
-                + "".join([f"{line[1]}<li>{line[2]}</li>\n" for line in list_level])
-                + "</ul>"
+            return index_diff,(
+                '\n<ul style="list-style-type: none">\n'
+                +''.join([f"{line[1]}<li>{line[2]}</li>\n" if line[2]  else  f"{line[1]}\n" for line in list_level])
+                +"</ul>"
             )
-
+        
+        
     def make_lists(lines: list[list[int, str, str]]) -> str:
         """Make a list or nested list"""
 
@@ -385,7 +419,6 @@ def create_block_paragraph_detector() -> Detector:
 
         # one level list
         if len(levels) == 1:
-            print(f"x2: {len(lines)}")
             return (
                 '<ul style="list-style-type: none">\n'
                 + "".join([f"{line[1]}<li>{line[2]}</li>\n" for line in lines])
@@ -393,7 +426,7 @@ def create_block_paragraph_detector() -> Detector:
             )
 
         #  nested list or over run list
-        _, brl_str = build_list(lines, 0, len(lines), levels, 0)
+        _, brl_str = build_list(lines, 0, len(lines), levels, 0, 0)
         return brl_str
 
     def make_block_paragrap(lines: list[list[str, int, str]]) -> str:

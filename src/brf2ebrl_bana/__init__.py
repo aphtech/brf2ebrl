@@ -107,7 +107,7 @@ def create_brf2ebrl_parser(
                     create_cell_heading(4, "h2"),
                     create_paragraph_detector(6, 4, tn_indicators_block_matcher, confidence=0.95),
                     create_paragraph_detector(2, 0),
-                    create_block_paragraph_detector(),
+                    create_block_paragraph_detector(page_layout.cells_per_line),
                     create_table_detector(),  # might add arguments later
                     detect_pre,
                     detect_and_pass_processing_instructions,
