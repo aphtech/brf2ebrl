@@ -9,6 +9,7 @@ import logging
 import re
 from collections.abc import Iterable
 from enum import Enum, auto
+from pathlib import Path
 
 import lxml.etree
 import lxml.html
@@ -112,11 +113,14 @@ def create_running_head_detector(min_indent: int) -> Detector:
 
 
 def xhtml_fixup_detector(input_text: str, _: ParserContext) -> str:
-    root = HTML(
-        BODY(
-            *(lxml.html.fragments_fromstring(input_text, parser=lxml.html.xhtml_parser))
+    try:
+        root = HTML(
+            BODY(
+                *(lxml.html.fragments_fromstring(input_text, parser=lxml.html.xhtml_parser))
+            )
         )
-    )
+    except Exception as e:
+        raise ValueError("Parser has not created valid HTML.")
     lxml.etree.indent(root)
     heading_id = 1
     page_id = 1
