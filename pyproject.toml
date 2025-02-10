@@ -25,8 +25,8 @@ authors = [
     {name = "Michael Whapples", email = "mwhapples@aph.org"},
 ]
 dependencies = [
-    "regex>=2023.8.8",
-    "pypdf>=4.3.1",
+    "regex>=2024.11.6",
+    "pypdf>=5.3.0",
     "lxml>=5.3.0",
     "html5lib>=1.1",
 ]
