@@ -132,12 +132,14 @@ def phrase_groups(match):
 
 
 def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
-    # Add letter tags
-    text = letter_re.sub(letter_groups, text)
-    # add Word tags
-    for word_re in words_re:
-        text = word_re.sub(word_groups, text)
     # Add Phrase tags
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
+
+    # add Word tags
+    for word_re in words_re:
+        text = word_re.sub(word_groups, text)
+
+        # Add letter tags
+        text = letter_re.sub(letter_groups, text)
     return text
