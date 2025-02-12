@@ -60,4 +60,9 @@ def test_convert_letter_emphasis():
     actual = tag_emphasis(brf)
     expected = expected_brf
     assert actual == expected
-                                
+
+def test_nested_emphasis():
+    brf = "<h2>⠠⠩⠕⠑⠀⠠⠁⠀⠊⠎⠀⠁⠃⠀⠼⠃⠀⠔⠡⠑⠎⠀⠇⠰⠛⠲⠀⠠⠩⠕⠑⠀⠰⠠⠃⠀⠊⠎⠀⠁⠃⠀⠼⠙⠀⠔⠡⠑⠎⠀⠇⠰⠛⠲⠀⠠⠩⠕⠑⠀⠠⠁⠀⠊⠎⠀⠼⠃⠀⠔⠡⠑⠎⠀⠈⠼⠂⠘⠂⠩⠕⠗⠞⠻⠀⠘⠂⠇⠰⠛⠻</h2>"
+    actual = tag_emphasis(brf)
+    expected = "<h2>⠠⠩⠕⠑⠀⠠⠁⠀⠊⠎⠀⠁⠃⠀⠼⠃⠀⠔⠡⠑⠎⠀⠇⠰⠛⠲⠀⠠⠩⠕⠑⠀⠰⠠⠃⠀⠊⠎⠀⠁⠃⠀⠼⠙⠀⠔⠡⠑⠎⠀⠇⠰⠛⠲⠀⠠⠩⠕⠑⠀⠠⠁⠀⠊⠎⠀⠼⠃⠀⠔⠡⠑⠎⠀<em class=\"trans1\">⠈⠼⠂<strong>⠘⠂⠩⠕⠗⠞⠻</strong></em>⠀<strong>⠘⠂⠇⠰⠛⠻</strong></h2>"
+    assert actual == expected
