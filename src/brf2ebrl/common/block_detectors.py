@@ -281,14 +281,22 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
     _cells_per_line = cells_per_line
 
-    def match_line(current_line: str, first_line: bool) -> tuple:
+    def match_line(lines: list(list[int, str, str]),current_line: str, first_line: bool) -> tuple:
         """match if this is a block or list"""
         if line := first_line_re.match(current_line):
             return [0, "", line.group(1), line.end()]
 
         line = run_over_re.match(current_line)
         if not first_line and line:
-            return [len(line.group(1)), "", line.group(2), line.end()]
+            level = len(line.group(1))
+            if lines[-1][0] == -1:
+                # create clean set of levels acending
+                levels = list(set([level[0] for level in lines if level[0] != -1]))
+                #check for heading on next page.
+                if level not in levels and level > (max(levels)+2): 
+                    return None
+            
+            return[level, "", line.group(2), line.end()]
 
         line = pi_re.match(current_line)
         if not first_line and line and line.group(1):
@@ -368,9 +376,8 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 return True
 
         return False
-
     def build_list(
-        lines: list[int, str, str],
+        lines: list(list[int, str, str]),
         index: int,
         length: int,
         levels: list[int],
@@ -443,7 +450,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         new_cursor = cursor
         brl = ""
         first_line = True
-        while line := match_line(text[new_cursor:], first_line):
+        while line := match_line(lines, text[new_cursor:], first_line):
             first_line = False
             lines.append(line[:3])
             new_cursor += line[3]
