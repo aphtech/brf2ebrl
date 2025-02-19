@@ -14,7 +14,6 @@ from datetime import date, datetime, UTC
 from mimetypes import MimeTypes
 from pathlib import Path
 from typing import Sequence, AnyStr
-from uuid import uuid4
 from zipfile import ZipFile, ZIP_DEFLATED, ZIP_STORED
 
 import lxml.html
@@ -24,15 +23,9 @@ from lxml.builder import ElementMaker
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
-from brf2ebrl.utils.metadata import Title, Creator, Date, Identifier, Format, Language
+from brf2ebrl.utils.metadata import DEFAULT_METADATA
 from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META
 
-DEFAULT_METADATA = [Creator("-"),
-          Format("eBraille 1.0"),
-          Date(date.today()),
-          Identifier(str(uuid4())),
-          Language("en-Brai"),
-          Title("-")]
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
 

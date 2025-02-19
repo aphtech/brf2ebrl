@@ -6,6 +6,7 @@
 """Classes for metadata in eBraille"""
 import datetime
 from typing import Any, Callable
+from uuid import uuid4
 
 from lxml.etree import Element
 
@@ -59,3 +60,10 @@ class Format(MetadataItem):
 class Language(MetadataItem):
     def __init__(self, value: Any = "en-Brai"):
         super().__init__("Language", value, LANGUAGE)
+
+DEFAULT_METADATA = [Creator("-"),
+          Format("eBraille 1.0"),
+          Date(datetime.date.today()),
+          Identifier(str(uuid4())),
+          Language("en-Brai"),
+          Title("-")]
