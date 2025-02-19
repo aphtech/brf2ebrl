@@ -63,7 +63,7 @@ class Language(MetadataItem):
 
 DEFAULT_METADATA = [Creator("-"),
           Format("eBraille 1.0"),
-          Date(datetime.date.today()),
+          Date(datetime.date.today().isoformat()),
           Identifier(str(uuid4())),
           Language("en-Brai"),
           Title("-")]
