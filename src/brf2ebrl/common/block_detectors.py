@@ -409,7 +409,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 index += 1
 
         if ((current_level - last_level) > 2) or (current_level  == levels[-1] and  is_block_paragraph(list_level)):
-            return index_diff, "".join([f"{line[1]} {line[2]}" for line in list_level])
+            return index_diff, "".join([f"{line[1]}\u2800{line[2]}" for line in list_level])
         else:
             return index_diff,(
                 '\n<ul style="list-style-type: none">\n'
