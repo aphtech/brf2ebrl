@@ -60,7 +60,7 @@ word = {
     "\u2828\u283c\u2802": ("\u2828\u283c\u2804", '<em class="trans5">', "</em>"),
 }
 
-_end_tags = r"\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>| <span"
+_end_tags = r"\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
 words_re = []
 for key, value in word.items():
     end_re = f"{value[0]}|{_end_tags}"
