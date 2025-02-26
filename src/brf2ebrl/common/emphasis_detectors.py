@@ -50,7 +50,7 @@ def letter_groups(match):
 
 word = {
     "\u2828\u2802": ("\u2828\u2804", "<em>", "</em>"),  # italic
-    "\u2818\u2802": ("\u2818\u2804", "<strong>", "</strong>"),  # bold
+    
     "\u2838\u2802": ("\u2838\u2804", '<em class="underline">', "</em>"),
     "\u2808\u2802": ("\u2808\u2804", '<em class="script">', "</em>"),
     "\u2808\u283c\u2802": ("\u2808\u283c\u2804", '<em class="trans1">', "</em>"),
@@ -58,6 +58,7 @@ word = {
     "\u2838\u283c\u2802": ("\u2838\u283c\u2804", '<em class="trans3">', "</em>"),
     "\u2810\u283c\u2802": ("\u2810\u283c\u2804", '<em class="trans4">', "</em>"),
     "\u2828\u283c\u2802": ("\u2828\u283c\u2804", '<em class="trans5">', "</em>"),
+    "\u2818\u2802": ("\u2818\u2804", "<strong>", "</strong>"),  # bold
 }
 
 
