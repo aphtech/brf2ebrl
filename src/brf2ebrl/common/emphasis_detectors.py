@@ -144,5 +144,7 @@ def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
     # Add Phrase tags
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
-        text = re.sub("@r@","",text)
+
+    text=re.sub(r"(<strong>(?:(?!<em).)*?)(</em>@r@</strong>)",lambda match : f"{match.group(1)}</strong></em>" ,text)
+    text = re.sub("@r@","",text)
     return text
