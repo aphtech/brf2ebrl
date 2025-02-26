@@ -9,7 +9,6 @@ import logging
 import re
 from collections.abc import Iterable
 from enum import Enum, auto
-from pathlib import Path
 
 import lxml.etree
 import lxml.html
