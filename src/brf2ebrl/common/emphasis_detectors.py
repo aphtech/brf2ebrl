@@ -60,7 +60,9 @@ word = {
     "\u2828\u283c\u2802": ("\u2828\u283c\u2804", '<em class="trans5">', "</em>"),
 }
 
-_end_tags = r"\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
+
+
+_end_tags = r"(?:</strong>)*?(?:</em>)*?(?:</strong>)*?\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
 words_re = []
 for key, value in word.items():
     end_re = f"{value[0]}|{_end_tags}"
@@ -69,15 +71,16 @@ for key, value in word.items():
 
 def word_groups(match):
     """create the word substitution"""
-    if match.group(3).startswith("<") or match.group(3) == "\u2800" or match.group(3) == " <span":
+    if match.group(3) == word[match.group(1)][0]:
         return (
-                f"{word[match.group(1)][1]}{match.group(1)}"
-                + f"{match.group(2)}{word[match.group(1)][2]}{match.group(3)}"
+            f"{word[match.group(1)][1]}{match.group(1)}"
+            + f"{match.group(2)}{match.group(3)}{word[match.group(1)][2]}"
         )
     return (
             f"{word[match.group(1)][1]}{match.group(1)}"
-            + f"{match.group(2)}{match.group(3)}{word[match.group(1)][2]}"
-    )
+            + f"{match.group(2)}{word[match.group(1)][2]}@r@{match.group(3)}"
+        )
+
 phrase = {
     "\u2828\u2836": ("\u2828\u2804", "<em>", "</em>"),  # phrase start
     "\u2818\u2836": ("\u2818\u2804", "<strong>", "</strong>"),  # phrase start
@@ -114,7 +117,7 @@ _end_tags = r"</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
 #|</strong>|</em.*?>"
 phrases_re = []
 for key, value in phrase.items():
-    end_re = f"{value[0]}(?:</strong>)*(?:</em.*?>)*|{_end_tags}"
+    end_re = f"{value[0]}(?:</strong>)*(?:</em.*?>)*(?:</strong>)*|{_end_tags}"
     phrases_re.append(re.compile(f"({key})(.*?)({end_re})"))
 
 
@@ -140,4 +143,5 @@ def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
     # Add Phrase tags
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
+        text = re.sub("@r@","",text)
     return text
