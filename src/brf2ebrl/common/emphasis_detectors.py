@@ -140,10 +140,16 @@ def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
     # add Word tags
     for word_re in words_re:
         text = word_re.sub(word_groups, text)
+
+    #Word cleanup markers
+    text=re.sub(r"(<strong>(?:(?!<em).)*?)(</em>@r@</strong>)",lambda match : f"{match.group(1)}</strong></em>" ,text)
+    text = re.sub("@r@","",text)
+
     # Add Phrase tags
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
 
-    text=re.sub(r"(<strong>(?:(?!<em).)*?)(</em>@r@</strong>)",lambda match : f"{match.group(1)}</strong></em>" ,text)
-    text = re.sub("@r@","",text)
+    text=re.sub(r"(<em[^>]*>)([^<]*)(</strong>)(?!.*<strong>)([^<]*)(</em>)",r"\1\2</em>\3\1\4\5",text)
+
+
     return text
