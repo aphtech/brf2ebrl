@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from glob import glob
 
-from brf2ebrl import convert, ParserContext
+from brf2ebrl import convert, ParserContext, ParserException
 from brf2ebrl.common import PageNumberPosition, PageLayout
 from brf2ebrl.plugin import find_plugins
 

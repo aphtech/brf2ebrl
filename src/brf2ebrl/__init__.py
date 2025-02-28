@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 from typing import Iterable, Callable
 
 from brf2ebrl.common import PageLayout
-from brf2ebrl.parser import detector_parser, parse, ParserContext
+from brf2ebrl.parser import detector_parser, parse, ParserContext, ParserException
 from brf2ebrl.plugin import Plugin, EBrlZippedBundler
 
 __version__ = "0.1.0"
@@ -33,9 +33,15 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images
                     images_path=input_images
                 )[:parser_passes]
                 parser_steps = len(selected_parser)
-                out_bundle.write_volume(out_name, convert_brf2ebrl_str(brf, selected_parser,
-                                     progress_callback=lambda x: progress_callback(index, x / parser_steps),
-                                     parser_context = parser_context))
+                try:
+                    out_bundle.write_volume(out_name, convert_brf2ebrl_str(brf, selected_parser,
+                                         progress_callback=lambda x: progress_callback(index, x / parser_steps),
+                                         parser_context = parser_context))
+                except ParserException as e:
+                    out_bundle.write_str(f"errors/{out_name}", e.text, False)
+                    e.file_name = brf
+                    e.add_note(f"Problem processing file {brf}, text is in bundle in file errors/{out_name}")
+                    raise
             for root, dirs, files in os.walk(temp_dir):
                 arch_path = os.path.relpath(root, start=temp_dir)
                 for f in files:

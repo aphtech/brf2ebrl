@@ -119,7 +119,7 @@ def xhtml_fixup_detector(input_text: str, _: ParserContext) -> str:
             )
         )
     except Exception as e:
-        raise ValueError("Parser has not created valid HTML.")
+        raise ValueError("Parser has not created valid HTML.") from e
     lxml.etree.indent(root)
     heading_id = 1
     page_id = 1

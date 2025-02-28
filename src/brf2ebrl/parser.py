@@ -108,6 +108,10 @@ def detector_parser(name: str, initial_state: DetectionState, detectors: Iterabl
 class ParsingCancelledException(Exception):
     pass
 
+class ParserException(Exception):
+    def __init__(self, text: str):
+        self.text = text
+        self.file_name = None
 
 def parse(brf: str, parser_passes: Iterable[Parser], progress_callback: Callable[[int], None] = lambda x: None,
           parser_context: ParserContext = ParserContext()) -> str:
@@ -118,6 +122,11 @@ def parse(brf: str, parser_passes: Iterable[Parser], progress_callback: Callable
         parser_context.check_cancelled()
         progress_callback(i)
         logging.info(f"Processing pass {parser_pass.name}")
-        text = parser_pass.parse(text, parser_context)
+        try:
+            text = parser_pass.parse(text, parser_context)
+        except ParsingCancelledException as e:
+            raise e
+        except Exception as e:
+            raise ParserException(text=text) from e
     logging.info(f"Finished parsing")
     return text
