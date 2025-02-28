@@ -255,7 +255,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding blokc paragraphs"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
-        "(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
+        f"(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
     )
 
     pi_re = re.compile(
@@ -393,8 +393,8 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 levels = list({level[0] for level in lines if level[0] != -1})
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
-                #if run_over and level > run_over:
-                    #return None
+                if run_over and level > run_over:
+                    return None
                 if level not in levels and level > (max(levels) + 2):
                     return None
 
