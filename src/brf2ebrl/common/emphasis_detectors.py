@@ -149,7 +149,15 @@ def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
     for phrase_re in phrases_re:
         text = phrase_re.sub(phrase_groups, text)
 
-    text=re.sub(r"(<em[^>]*>)([^<]*)(</strong>)(?!.*<strong>)([^<]*)(</em>)",r"\1\2</em>\3\1\4\5",text)
+
+    # Pattern to detect incorrect nesting where </strong> appears before </em>
+    pattern = r"(<strong>[^<]*)(<em[^>]*>)([^<]*)(</strong>)([^<]*)(</em>)"
+
+    # Correct replacement pattern to move </strong> before </em> and reinsert the <em> tag
+    replacement = r"\1\2\3</em></strong>\2\5\6"
+
+    # Apply the transformation
+    text = re.sub(pattern, replacement, text)
 
 
     return text
