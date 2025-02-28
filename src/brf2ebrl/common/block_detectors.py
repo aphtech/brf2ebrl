@@ -118,8 +118,7 @@ def _create_indented_block_finder(
                 new_cursor += line.end()
             brl = "\u2800".join([x for x in lines if x is not None])
             return brl, new_cursor
-        else:
-            return None, cursor
+        return None, cursor
 
     return find_paragraph_braille
 
@@ -256,7 +255,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding blokc paragraphs"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
-        f"(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
+        "(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
     )
 
     pi_re = re.compile(
@@ -281,30 +280,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
     _cells_per_line = cells_per_line
 
-    def match_line(lines: list(list[int, str, str]),current_line: str, first_line: bool) -> tuple:
-        """match if this is a block or list"""
-        if line := first_line_re.match(current_line):
-            return [0, "", line.group(1), line.end()]
-
-        line = run_over_re.match(current_line)
-        if not first_line and line:
-            level = len(line.group(1))
-            if lines[-1][0] == -1:
-                # create clean set of levels acending
-                levels = list(set([level[0] for level in lines if level[0] != -1]))
-                #check for heading on next page.
-                if level not in levels and level > (max(levels)+2): 
-                    return None
-            
-            return[level, "", line.group(2), line.end()]
-
-        line = pi_re.match(current_line)
-        if not first_line and line and line.group(1):
-            return [-1, line.group(1), "", line.end()]
-
-        return None
-
-    def is_block_paragraph(lines: list[list[str, int, str]], depth: int  = 0) -> bool:
+    def is_block_paragraph(lines: list[list[str, int, str]], depth: int = 0) -> bool:
         """Check if this is a list or block paragraph."""
 
         # if it is length one it is a block because who makes a 1 line list in braille
@@ -313,35 +289,34 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
         # copy and remove just PI
         _lines = [line for line in lines if line[0] != -1]
-        
 
         block_len = len(_lines)
         block = [line[2] for line in _lines if line[0] == depth]
         # if not all lines have depth  indent
         if len(block) != block_len:
             return False
-        
-        #Willo idea.
+
+        # Willo idea.
         # # if any of the lines start with a word that could fit on the previous line its a list
         i = 1
-        line_len = len (lines)
+        line_len = len(lines)
         last_line_was_page_info = False
         while i < line_len:
-            if lines[i-1][0] == -1:
-                last_line_was_page_info  = True
+            if lines[i - 1][0] == -1:
+                last_line_was_page_info = True
                 i += 1
                 continue
             if lines[i][0] == -1:
-                i+=1
+                i += 1
                 continue
-            if last_line_was_page_info  :
-                last_line_was_page_info  = False
-                i+= 1
+            if last_line_was_page_info:
+                last_line_was_page_info = False
+                i += 1
                 continue
-            prev_line_len = len(lines[i-1][2])+depth
-            if prev_line_len   < _cells_per_line:
-                word = lines[i][2].strip('\u2800').split('\u2800',1)[0]
-                if (len(word)+1) < (_cells_per_line - prev_line_len):
+            prev_line_len = len(lines[i - 1][2]) + depth
+            if prev_line_len < _cells_per_line:
+                word = lines[i][2].strip("\u2800").split("\u2800", 1)[0]
+                if (len(word) + 1) < (_cells_per_line - prev_line_len):
                     return False
             i += 1
 
@@ -350,15 +325,11 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return False
 
         # if all lines start with letter  period  assume list with small letters or small roman
-        if not [
-            line for line in block if not lower_alpha_with_period_re.match(line)
-        ]:
+        if not [line for line in block if not lower_alpha_with_period_re.match(line)]:
             return False
 
         # if all lines start with letter  right paran   assume list with small letters or small roman
-        if not [
-            line for line in block if not lower_alpha_with_paran_re.match(line)
-        ]:
+        if not [line for line in block if not lower_alpha_with_paran_re.match(line)]:
             return False
 
         # if all lines end in punctuation assume list
@@ -376,6 +347,65 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 return True
 
         return False
+
+    def get_run_over_depth(lines: list[list[int, str]]) -> list[list[list[int, str]]]:
+        """Get the lists of the deepest groupings."""
+        max_depth = 0
+        current_depth = 0
+        current_start = 0
+        groupings = []
+
+        for index, line in enumerate(lines):
+            if line[0] > current_depth:
+                current_depth = line[0]
+                current_start = index
+            elif line[0] < current_depth:
+                if current_depth > max_depth:
+                    max_depth = current_depth
+                    groupings = [lines[current_start:index]]
+                elif current_depth == max_depth:
+                    groupings.append(lines[current_start:index])
+                current_depth = line[0]
+
+        if current_depth == max_depth:
+            groupings.append(lines[current_start:])
+        elif current_depth > max_depth:
+            groupings = [lines[current_start:]]
+
+        for group in groupings:
+            if is_block_paragraph(group):
+                return group[0][0]
+
+        return 0
+
+    def match_line(
+        lines: list(list[int, str, str]), current_line: str, first_line: bool
+    ) -> tuple:
+        """match if this is a block or list"""
+        if line := first_line_re.match(current_line):
+            return [0, "", line.group(1), line.end()]
+
+        line = run_over_re.match(current_line)
+        if not first_line and line:
+            level = len(line.group(1))
+            if lines[-1][0] == -1:
+                # create clean set of levels acending
+                levels = list({level[0] for level in lines if level[0] != -1})
+                # check for heading on next page.
+                run_over = get_run_over_depth(lines)
+                #if run_over and level > run_over:
+                    #return None
+                if level not in levels and level > (max(levels) + 2):
+                    return None
+
+            return [level, "", line.group(2), line.end()]
+
+        line = pi_re.match(current_line)
+        if not first_line and line and line.group(1):
+            return [-1, line.group(1), "", line.end()]
+
+        return None
+
     def build_list(
         lines: list(list[int, str, str]),
         index: int,
@@ -389,40 +419,51 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         index_diff = 1
         while index < length:
             index_diff += 1
-            if (index +1) < length and lines[index+1][0] == -1:
+            if (index + 1) < length and lines[index + 1][0] == -1:
                 if lines[index][0] != -1:
                     list_level.append(lines[index])
-                index+=1
+                index += 1
                 continue
-            elif index <( length - 1) and lines[index + 1][0] > current_level:
+            if index < (length - 1) and lines[index + 1][0] > current_level:
                 list_level.append(lines[index])
                 index_diff, buff = build_list(
-                    lines, index + 1, length, levels, current_level, lines[index+1][0]
+                    lines, index + 1, length, levels, current_level, lines[index + 1][0]
                 )
                 list_level[-1][2] += buff
                 index += index_diff
-            elif (index + 1)  < length and lines[index + 1 ][0] != -1  and lines[index + 1 ][0] < current_level: 
+            elif (
+                (index + 1) < length
+                and lines[index + 1][0] != -1
+                and lines[index + 1][0] < current_level
+            ):
                 list_level.append(lines[index])
-                break 
-            else: 
+                break
+            else:
                 list_level.append(lines[index])
                 index += 1
 
-        if ((current_level - last_level) > 2) or (current_level  == levels[-1] and  is_block_paragraph(list_level)):
-            return index_diff, "".join([f"{line[1]}\u2800{line[2]}" for line in list_level])
-        else:
-            return index_diff,(
-                '\n<ul style="list-style-type: none">\n'
-                +''.join([f"{line[1]}<li>{line[2]}</li>\n" if line[2]  else  f"{line[1]}\n" for line in list_level])
-                +"</ul>"
+        if ((current_level - last_level) > 2) or (
+            current_level == levels[-1] and is_block_paragraph(list_level)
+        ):
+            return index_diff, "".join(
+                [f"{line[1]}\u2800{line[2]}" for line in list_level]
             )
-        
-        
+        return index_diff, (
+            '\n<ul style="list-style-type: none">\n'
+            + "".join(
+                [
+                    f"{line[1]}<li>{line[2]}</li>\n" if line[2] else f"{line[1]}\n"
+                    for line in list_level
+                ]
+            )
+            + "</ul>"
+        )
+
     def make_lists(lines: list[list[int, str, str]]) -> str:
         """Make a list or nested list"""
 
         # create clean set of levels acending
-        levels = list(set([level[0] for level in lines if level[0] != -1]))
+        levels = list({level[0] for level in lines if level[0] != -1})
 
         # one level list
         if len(levels) == 1:
