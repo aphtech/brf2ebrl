@@ -8,6 +8,7 @@
 
 Detectors for blocks
 """
+
 import re
 
 from collections.abc import Iterable, Callable
