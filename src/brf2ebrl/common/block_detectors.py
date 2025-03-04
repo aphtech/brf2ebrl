@@ -1,3 +1,4 @@
+"""
 #  Copyright (c) 2024. American Printing House for the Blind.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -5,7 +6,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Detectors for blocks"""
+Detectors for blocks
+"""
 import re
 
 from collections.abc import Iterable, Callable
@@ -257,7 +259,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding blokc paragraphs"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
     run_over_re = re.compile(
-        f"(\u2800{{2}}|\u2800{{4}}|\u2800{{6}}|\u2800{{8}}|\u2800{{10}}|\u2800{{12}}|\u2800{{14}})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
+        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
     )
 
     pi_re = re.compile(
