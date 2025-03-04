@@ -451,7 +451,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         ):
             return index_diff, "".join(
                 [
-                    f"{line[1]}+\u2800{line[2]}" if line[1] else line[2]
+                    f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
                     for line in list_level
                 ]
             )
