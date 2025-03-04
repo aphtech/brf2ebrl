@@ -486,7 +486,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     def make_block_paragrap(lines: list[list[str, int, str]]) -> str:
         return (
             '<p class="left-justified">'
-            + "".join([item for tup in lines for item in tup[1:]])
+            + "\u2800".join([item for tup in lines for item in tup[1:]])
             + "</p>"
         )
 
