@@ -1,11 +1,13 @@
 #  Copyright (c) 2024. American Printing House for the Blind.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
+415
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 """Detectors for blocks"""
 import re
+
 from collections.abc import Iterable, Callable
 
 from brf2ebrl.parser import DetectionState, DetectionResult, Detector
@@ -373,7 +375,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             groupings = [lines[current_start:]]
 
         for group in groupings:
-            if is_block_paragraph(group):
+            if is_block_paragraph(group, group[0][0]):
                 return group[0][0]
 
         return 0
@@ -411,7 +413,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         index: int,
         length: int,
         levels: list[int],
-        last_level: int,
         current_level: int,
     ) -> tuple:
         """Recursive list builder"""
@@ -427,7 +428,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             if index < (length - 1) and lines[index + 1][0] > current_level:
                 list_level.append(lines[index])
                 index_diff, buff = build_list(
-                    lines, index + 1, length, levels, current_level, lines[index + 1][0]
+                    lines, index + 1, length, levels, lines[index + 1][0]
                 )
                 list_level[-1][2] += buff
                 index += index_diff
@@ -442,11 +443,14 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 list_level.append(lines[index])
                 index += 1
 
-        if ((current_level - last_level) > 2) or (
-            current_level == levels[-1] and is_block_paragraph(list_level)
+        if current_level == levels[-1] and is_block_paragraph(
+            list_level, current_level
         ):
             return index_diff, "".join(
-                [f"{line[1]}\u2800{line[2]}" for line in list_level]
+                [
+                    f"{line[1]+"\u2800" if line[1] else ""}{line[2]}"
+                    for line in list_level
+                ]
             )
         return index_diff, (
             '\n<ul style="list-style-type: none">\n'
@@ -474,7 +478,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             )
 
         #  nested list or over run list
-        _, brl_str = build_list(lines, 0, len(lines), levels, 0, 0)
+        _, brl_str = build_list(lines, 0, len(lines), levels, 0)
         return brl_str
 
     def make_block_paragrap(lines: list[list[str, int, str]]) -> str:
