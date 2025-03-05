@@ -69,7 +69,7 @@ for key, value in word.items():
     words_re.append(re.compile(f"({key})(.*?)({end_re})"))
 
 
-def word_groups(match):
+def word_groups(match: re.Match[str]) -> str:
     """create the word substitution"""
     if match.group(3) == word[match.group(1)][0]:
         return (
@@ -121,7 +121,7 @@ for key, value in phrase.items():
     phrases_re.append(re.compile(f"({key})(.*?)({end_re})"))
 
 
-def phrase_groups(match):
+def phrase_groups(match: re.Match[str]) -> str:
     """Create the phrase substitution"""
     if match.group(3).startswith("<"):
         return (
@@ -150,14 +150,10 @@ def tag_emphasis(text: str, _: ParserContext = ParserContext()) -> str:
         text = phrase_re.sub(phrase_groups, text)
 
 
-    # Pattern to detect incorrect nesting where </strong> appears before </em>
-    pattern = r"(<strong>[^<]*)(<em[^>]*>)([^<]*)(</strong>)([^<]*)(</em>)"
-
-    # Correct replacement pattern to move </strong> before </em> and reinsert the <em> tag
-    replacement = r"\1\2\3</em></strong>\2\5\6"
-
-    # Apply the transformation
-    text = re.sub(pattern, replacement, text)
-
+    
+    
+    # patterns to fix problems with emphasis. these can be removed after current methodd for detecting emphasis is changed.
+    text = re.sub(r"(<strong>[^<]*)(<em[^>]*>)([^<]*)(</strong>)([^<]*)(</em>)", r"\1\2\3</em></strong>\2\5\6", text)
+    text = re.sub(r"(<span[^>]*>.*?<em[^>]*>.*?)(</span>)(</em>)", r"\1\3\2", text)
 
     return text

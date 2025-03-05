@@ -30,7 +30,8 @@ from brf2ebrl.common.emphasis_detectors import tag_emphasis
     ("<li>⠘⠂⠘⠸⠂⠑⠃⠃⠑⠗⠕</li>", "<li><strong>⠘⠂⠘<em class=\"underline\">⠸⠂⠑⠃⠃⠑⠗⠕</em></strong></li>"),
     ('<p class="left-justified">⠘⠂⠨⠶⠠⠛⠁⠇⠇⠑⠗⠊⠁⠀⠙⠊⠀⠏⠑⠗⠎⠕⠝⠑⠀⠊⠇⠇⠥⠎⠞⠗⠊⠨⠄⠏⠗⠕⠋⠊⠇⠑⠎⠘⠄⠀⠠⠃⠗⠊⠑⠋⠀⠙⠑⠎⠉⠗⠊⠏⠰⠝⠎⠀⠏⠗⠕⠧⠊⠙⠑⠀⠁⠎⠽⠝⠕⠏⠎⠊⠎⠀⠷⠀⠮⠀⠋⠂⠞⠥⠗⠫⠀⠏⠻⠎⠕⠝⠄⠎⠀⠇⠊⠋⠑⠀⠯⠉⠥⠇⠞⠥⠗⠁⠇⠀⠊⠍⠏⠕⠗⠞⠨⠑⠲</p>','<p class="left-justified"><strong>⠘⠂<em>⠨⠶⠠⠛⠁⠇⠇⠑⠗⠊⠁</em></strong><em>⠀⠙⠊⠀⠏⠑⠗⠎⠕⠝⠑⠀⠊⠇⠇⠥⠎⠞⠗⠊⠨⠄</em>⠏⠗⠕⠋⠊⠇⠑⠎⠘⠄⠀⠠⠃⠗⠊⠑⠋⠀⠙⠑⠎⠉⠗⠊⠏⠰⠝⠎⠀⠏⠗⠕⠧⠊⠙⠑⠀⠁⠎⠽⠝⠕⠏⠎⠊⠎⠀⠷⠀⠮⠀⠋⠂⠞⠥⠗⠫⠀⠏⠻⠎⠕⠝⠄⠎⠀⠇⠊⠋⠑⠀⠯⠉⠥⠇⠞⠥⠗⠁⠇⠀⠊⠍⠏⠕⠗⠞⠨⠑⠲</p>'),
     ('<li>⠘⠂⠙⠘⠸⠂⠕⠗⠍⠘⠄⠕⠝⠕⠀⠀⠘⠂⠉⠁⠏⠘⠄⠘⠸⠂⠊⠎⠉⠕⠝⠕</li>','<li><strong>⠘⠂⠙⠘<em class="underline">⠸⠂⠕⠗⠍⠘⠄</em></strong><em class="underline">⠕⠝⠕</em>⠀⠀<strong>⠘⠂⠉⠁⠏⠘⠄</strong>⠘<em class="underline">⠸⠂⠊⠎⠉⠕⠝⠕</em></li>'),
-     
+('<li>⠧⠊⠞⠁⠒⠀⠝⠑⠀⠧⠁⠇⠑⠀⠧⠑⠗⠁⠍⠑⠝⠞⠑⠀⠇⠁⠀⠏⠑⠝⠁⠦<span class="tn">⠈⠨⠣⠠⠏⠊⠉⠞⠥⠗⠑⠈⠨⠜⠀⠨⠂⠠⠁⠇⠏⠊⠝⠊⠎⠍⠕⠒⠈⠨⠣⠠⠏⠊⠉⠞⠥⠗⠑⠈⠨⠜</span>⠀⠨⠂⠠⠁⠇⠏⠊⠝⠊⠎⠍⠕⠒</li>', '<li>⠧⠊⠞⠁⠒⠀⠝⠑⠀⠧⠁⠇⠑⠀⠧⠑⠗⠁⠍⠑⠝⠞⠑⠀⠇⠁⠀⠏⠑⠝⠁⠦<span class="tn">⠈⠨⠣⠠⠏⠊⠉⠞⠥⠗⠑⠈⠨⠜⠀<em>⠨⠂⠠⠁⠇⠏⠊⠝⠊⠎⠍⠕⠒⠈⠨⠣⠠⠏⠊⠉⠞⠥⠗⠑⠈⠨⠜</em></span>⠀<em>⠨⠂⠠⠁⠇⠏⠊⠝⠊⠎⠍⠕⠒</em></li>'),
+
 ])
 def test_detect_emphasis(text, expected_text):
     actual = tag_emphasis(text)
