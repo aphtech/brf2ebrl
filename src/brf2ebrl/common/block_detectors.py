@@ -114,7 +114,7 @@ def _create_indented_block_finder(
         f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n"
     )
 
-    def find_paragraph_braille(text: str, cursor: int) -> (str | None, int):
+    def find_paragraph_braille(text: str, cursor: int) -> tuple[str | None, int]:
         if line := _first_line_re.match(text[cursor:]):
             lines = [line.group(1)]
             new_cursor = cursor + line.end()
@@ -129,8 +129,8 @@ def _create_indented_block_finder(
 
 
 def _no_indicators_block_matcher(
-    brl: str, state: DetectionState, tags: (str, str) = ("<p>", "</p>")
-) -> (str | None, DetectionState):
+    brl: str, state: DetectionState, tags: tuple[str, str] = ("<p>", "</p>")
+) -> tuple[str | None, DetectionState]:
     return f"{tags[0]}{brl}{tags[1]}", state
 
 
@@ -385,10 +385,10 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
     def match_line(
         lines: list[list[int, str, str]], current_line: str, first_line: bool
-    ) -> tuple | None:
+    ) -> list[int,str,str]:
         """match if this is a block or list"""
         if line := first_line_re.match(current_line):
-            return 0, "", line.group(1), line.end()
+            return [0, "", line.group(1), line.end()]
 
         line = run_over_re.match(current_line)
         if not first_line and line:
@@ -399,17 +399,17 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
                 if run_over and level > run_over:
-                    return None
+                    return []
                 if level not in levels and level > (max(levels) + 2):
-                    return None
+                    return []
 
-            return level, "", line.group(2), line.end()
+            return [level, "", line.group(2), line.end()]
 
         line = pi_re.match(current_line)
         if not first_line and line and line.group(1):
-            return -1, line.group(1), "", line.end()
+            return [-1, line.group(1), "", line.end()]
 
-        return None
+        return []
 
     def build_list(
         lines: list[list[int, str, str]],
@@ -417,7 +417,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         length: int,
         levels: list[int],
         current_level: int,
-    ) -> tuple:
+    ) -> tuple[int , str]:
         """Recursive list builder"""
         list_level = []
         index_diff = 1
