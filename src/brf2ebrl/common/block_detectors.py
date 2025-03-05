@@ -384,11 +384,11 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         return 0
 
     def match_line(
-        lines: list(list[int, str, str]), current_line: str, first_line: bool
-    ) -> tuple:
+        lines: list[list[int, str, str]], current_line: str, first_line: bool
+    ) -> tuple | None:
         """match if this is a block or list"""
         if line := first_line_re.match(current_line):
-            return [0, "", line.group(1), line.end()]
+            return 0, "", line.group(1), line.end()
 
         line = run_over_re.match(current_line)
         if not first_line and line:
@@ -403,16 +403,16 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 if level not in levels and level > (max(levels) + 2):
                     return None
 
-            return [level, "", line.group(2), line.end()]
+            return level, "", line.group(2), line.end()
 
         line = pi_re.match(current_line)
         if not first_line and line and line.group(1):
-            return [-1, line.group(1), "", line.end()]
+            return -1, line.group(1), "", line.end()
 
         return None
 
     def build_list(
-        lines: list(list[int, str, str]),
+        lines: list[list[int, str, str]],
         index: int,
         length: int,
         levels: list[int],
