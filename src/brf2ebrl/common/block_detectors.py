@@ -258,9 +258,9 @@ def create_table_detector() -> Detector:
 # detect block aligned paragraphs
 def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding blokc paragraphs"""
-    first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)")
+    first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
     run_over_re = re.compile(
-        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)(?:\n)"
+        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
     )
 
     pi_re = re.compile(
@@ -268,10 +268,10 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     )
 
     punctuation_re = re.compile(
-        "(?:\u2832|\u2826|\u2816)(?:\u2800|\u2804|\u2800|\u2834\u2800)"
+        "[\u2832\u2826\u2816](?:\u2800|\u2804|\u2800|\u2834\u2800)"
     )
     end_punctuation_equal_re = re.compile(
-        ".*(?:\u2832|\u2826|\u2816)(?:\u2804|\u2834)*$"
+        ".*[\u2832\u2826\u2816][\u2804\u2834]*$"
     )
     roman_re = re.compile(
         "^\u280d{0,3}(\u2809\u280d|\u2809\u2819|\u2819?\u2809{0,3})(\u282d\u2809|\u282d\u2807|\u2807?\u282d{0,3})(\u280a\u282d|\u280a\u2827|\u2827?\u280a{0,3})\u2800[2800-28ff]+$"
