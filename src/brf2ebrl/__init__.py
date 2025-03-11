@@ -16,8 +16,8 @@ from brf2ebrl.plugin import Plugin, EBrlZippedBundler
 __version__ = "0.1.0"
 
 
-def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images: str, output_ebrf: str,
-            detect_running_heads: bool, page_layout: PageLayout, is_cancelled: Callable[[], None] = lambda: None,
+def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], output_ebrf: str, input_images: str = "",
+            detect_running_heads: bool = True, page_layout: PageLayout = PageLayout(), is_cancelled: Callable[[], None] = lambda: None,
             progress_callback: Callable[[int, float], None] = lambda x,y: None, parser_passes: int|None =None, parser_context: ParserContext = ParserContext()):
     with selected_plugin.create_bundler(output_ebrf) as out_bundle:
         with TemporaryDirectory() as temp_dir:

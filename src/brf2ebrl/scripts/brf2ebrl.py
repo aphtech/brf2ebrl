@@ -139,7 +139,7 @@ def main():
     running_heads = args.running_heads
     notifications = []
     parser_options = {EBrailleParserOptions.page_layout: page_layout, EBrailleParserOptions.images_path: input_images, EBrailleParserOptions.detect_running_heads: running_heads}
-    convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, input_images=input_images, detect_running_heads=running_heads, page_layout=page_layout, parser_passes=args.parser_passes, parser_context=ParserContext(notify=lambda l,s: notifications.append(f"{logging.getLevelName(l)}: {s()}"), options=parser_options))
+    convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, parser_passes=args.parser_passes, parser_context=ParserContext(notify=lambda l,s: notifications.append(f"{logging.getLevelName(l)}: {s()}"), options=parser_options))
     if notifications:
         print("Problems detected whilst converting:")
         print("\n".join(notifications))
