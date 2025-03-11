@@ -186,11 +186,6 @@ class Plugin(ABC):
     @abstractmethod
     def create_brf_parser(
             self,
-            page_layout: PageLayout = PageLayout(),
-            brf_path: str = "",
-            output_path: str = "",
-            images_path: str = "",
-            detect_running_heads: bool = True,
             *args,
             **kwargs
     ) -> Sequence[Parser]:
@@ -216,17 +211,10 @@ class _DelegatingPluginImpl(Plugin):
 
     def create_brf_parser(
             self,
-            page_layout: PageLayout = PageLayout(),
-            brf_path: str = "",
-            output_path: str = "",
-            images_path: str = "",
-            detect_running_heads: bool = True,
             *args,
             **kwargs
     ) -> Sequence[Parser]:
-        return self._brf_parser_factory(page_layout=page_layout, brf_path=brf_path, output_path=output_path,
-                                        images_path=images_path, detect_running_heads=detect_running_heads, *args,
-                                        **kwargs)
+        return self._brf_parser_factory(*args, **kwargs)
 
     def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
         return self._file_mapper(input_file=input_file, index=index, *args, **kwargs)
