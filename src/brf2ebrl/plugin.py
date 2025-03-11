@@ -20,7 +20,6 @@ import lxml.html
 from lxml import etree
 from lxml.builder import ElementMaker
 
-from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import Parser
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
 from brf2ebrl.utils.metadata import DEFAULT_METADATA

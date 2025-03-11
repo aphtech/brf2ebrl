@@ -11,8 +11,9 @@ import os
 from dataclasses import dataclass
 from glob import glob
 
-from brf2ebrl import convert, ParserContext, ParserException
+from brf2ebrl import convert, ParserContext
 from brf2ebrl.common import PageNumberPosition, PageLayout
+from brf2ebrl.parser import EBrailleParserOptions
 from brf2ebrl.plugin import find_plugins
 
 DISCOVERED_PARSER_PLUGINS = find_plugins()
@@ -137,7 +138,8 @@ def main():
     )
     running_heads = args.running_heads
     notifications = []
-    convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, input_images=input_images, detect_running_heads=running_heads, page_layout=page_layout, parser_passes=args.parser_passes, parser_context=ParserContext(notify=lambda l,s: notifications.append(f"{logging.getLevelName(l)}: {s()}")))
+    parser_options = {EBrailleParserOptions.page_layout: page_layout, EBrailleParserOptions.images_path: input_images, EBrailleParserOptions.detect_running_heads: running_heads}
+    convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, input_images=input_images, detect_running_heads=running_heads, page_layout=page_layout, parser_passes=args.parser_passes, parser_context=ParserContext(notify=lambda l,s: notifications.append(f"{logging.getLevelName(l)}: {s()}"), options=parser_options))
     if notifications:
         print("Problems detected whilst converting:")
         print("\n".join(notifications))

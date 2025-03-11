@@ -32,6 +32,8 @@ def create_brf2ebrl_parser(
         output_path: str = "",
         images_path: str = "",
         detect_running_heads: bool = True,
+        *args,
+        **kwargs
 ) -> Sequence[Parser]:
     return [
         x

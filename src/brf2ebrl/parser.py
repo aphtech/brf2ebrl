@@ -5,12 +5,19 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 """Main parser framework for the brf2ebrl system."""
+import enum
 import logging
 from collections.abc import Iterable, Callable, Mapping
 from dataclasses import dataclass, field
 from enum import IntEnum
 from functools import cached_property
 from typing import Any
+
+
+class EBrailleParserOptions(enum.StrEnum):
+    page_layout = "page_layout"
+    images_path = "images_path"
+    detect_running_heads = "detect_running_heads"
 
 
 class NotifyLevel(IntEnum):
