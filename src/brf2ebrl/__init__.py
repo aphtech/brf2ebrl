@@ -26,11 +26,9 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], input_images
                 out_name = selected_plugin.file_mapper(brf, index)
                 temp_file = os.path.join(temp_dir, out_name)
                 selected_parser = selected_plugin.create_brf_parser(
-                    page_layout=page_layout,
-                    detect_running_heads=detect_running_heads,
                     brf_path=brf,
                     output_path=temp_file,
-                    images_path=input_images
+                    **parser_context.options
                 )[:parser_passes]
                 parser_steps = len(selected_parser)
                 try:
