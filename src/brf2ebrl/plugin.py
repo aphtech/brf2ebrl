@@ -9,6 +9,7 @@ import os
 import pkgutil
 from abc import abstractmethod, ABC
 from collections import Counter, deque
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, UTC
 from mimetypes import MimeTypes
@@ -22,7 +23,7 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.parser import Parser
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
-from brf2ebrl.utils.metadata import DEFAULT_METADATA
+from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem
 from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META
 
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
@@ -86,13 +87,13 @@ class OpfFileEntry:
     tactile_graphic: bool = False
     is_nav_document: bool = False
 
-def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
+def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Iterable[MetadataItem] = DEFAULT_METADATA) -> bytes:
     files_list = [(f"file{i}", n, d.media_type, d.in_spine, d.is_nav_document) for i,(n,(d)) in enumerate(file_entries.items())]
     graphic_types = " ".join(sorted(Counter(_MIMETYPES.guess_extension(d.media_type)[1:] for n,d in file_entries.items() if d.tactile_graphic), key=lambda item: item[1], reverse=True))
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
-            *[x.to_xml() for x in DEFAULT_METADATA],
+            *[x.to_xml() for x in metadata_entries],
             META({"property": "dcterms:dateCopyrighted"}, date.fromtimestamp(0).isoformat()),
             META({"property": "dcterms:modified"}, datetime.now(UTC).strftime("%Y-%m-%dT%H:%M%SZ")),
             META({"property": "a11y:brailleSystem"}, "UEB"),
@@ -109,8 +110,9 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry]) -> bytes:
 
 
 class EBrlZippedBundler(Bundler):
-    def __init__(self, name: str):
+    def __init__(self, name: str, metadata_entries: Iterable[MetadataItem] = DEFAULT_METADATA, *args, **kwargs):
         self._files: dict[str, OpfFileEntry] = {}
+        self.metadata_entries = metadata_entries
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
     def _create_navigation_html(self, opf_name: str) -> str:
@@ -159,7 +161,7 @@ class EBrlZippedBundler(Bundler):
     def close(self):
         try:
             self.write_str("index.html", self._create_navigation_html(_OPF_NAME), True, is_nav_document=True, media_type="application/xhtml+xml")
-            self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files))
+            self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files, metadata_entries=self.metadata_entries))
             self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
             self._zipfile.close()
@@ -196,7 +198,7 @@ class Plugin(ABC):
         """Maps the input file name to the output file name."""
         return os.path.basename(input_file)
     @abstractmethod
-    def create_bundler(self, output_file: str) -> Bundler:
+    def create_bundler(self, output_file: str, *args, **kwargs) -> Bundler:
         """Creates a bundler for bundling the output"""
         pass
 
@@ -217,11 +219,11 @@ class _DelegatingPluginImpl(Plugin):
 
     def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
         return self._file_mapper(input_file=input_file, index=index, *args, **kwargs)
-    def create_bundler(self, output_file: str) -> Bundler:
-        return self._bundler_factory(output_file)
+    def create_bundler(self, output_file: str, *args, **kwargs) -> Bundler:
+        return self._bundler_factory(output_file, *args, **kwargs)
 
 
 def create_plugin(plugin_id: str, name: str, brf_parser_factory,
-                  file_mapper=lambda f, i: os.path.basename(f), bundler_factory=lambda x: EBrlZippedBundler(x)) -> Plugin:
+                  file_mapper, bundler_factory=EBrlZippedBundler) -> Plugin:
     """Create a plugin by providing the information required"""
     return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory, file_mapper=file_mapper, bundler_factory=bundler_factory)

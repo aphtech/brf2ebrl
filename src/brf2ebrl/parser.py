@@ -18,6 +18,7 @@ class EBrailleParserOptions(enum.StrEnum):
     page_layout = "page_layout"
     images_path = "images_path"
     detect_running_heads = "detect_running_heads"
+    metadata_entries = "metadata_entries"
 
 
 class NotifyLevel(IntEnum):
