@@ -141,8 +141,8 @@ def main():
     parser_options = {EBrailleParserOptions.page_layout: page_layout, EBrailleParserOptions.images_path: input_images, EBrailleParserOptions.detect_running_heads: running_heads}
     convert(parser_plugin[0], input_brf_list=input_brf, output_ebrf=output_ebrf, parser_passes=args.parser_passes, parser_context=ParserContext(notify=lambda l,s: notifications.append(f"{logging.getLevelName(l)}: {s()}"), options=parser_options))
     if notifications:
-        print("Problems detected whilst converting:")
-        print("\n".join(notifications))
+        logging.error("Problems detected whilst converting:")
+        logging.error("\n".join(notifications))
 
 
 if __name__ == "__main__":
