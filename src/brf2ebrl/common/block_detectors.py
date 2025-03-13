@@ -340,18 +340,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         # if all lines end in punctuation assume list
         if not [line for line in block if not end_punctuation_equal_re.match(line)]:
             return False
-
-        # if there are more than one lines and all the first characters are not the same:
-        if [line for line in block[1:] if line[0] != block[0][0]]:
-            # and if there is some punctuation in the block. that look like sentences
-            for line in block:
-                if punctuation_re.search(line):
-                    return True
-
-            if end_punctuation_equal_re.match(block[-1]):
-                return True
-
-        return False
+        return True
 
     def get_run_over_depth(lines: list[list[int, str]]) -> list[list[list[int, str]]]:
         """Get the lists of the deepest groupings."""
@@ -417,7 +406,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         length: int,
         levels: list[int],
         current_level: int,
-    ) -> tuple[int , str]:
+    ) -> list[int , str]:
         """Recursive list builder"""
         list_level = []
         index_diff = 1
@@ -449,13 +438,13 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         if current_level == levels[-1] and is_block_paragraph(
             list_level, current_level
         ):
-            return index_diff, "".join(
+            return [index_diff, "".join(
                 [
                     f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
                     for line in list_level
                 ]
-            )
-        return index_diff, (
+            )]
+        return [index_diff, (
             '\n<ul style="list-style-type: none">\n'
             + "".join(
                 [
@@ -464,7 +453,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 ]
             )
             + "</ul>"
-        )
+        )]
 
     def make_lists(lines: list[list[int, str, str]]) -> str:
         """Make a list or nested list"""
