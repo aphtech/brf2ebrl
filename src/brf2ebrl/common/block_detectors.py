@@ -267,9 +267,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
     )
 
-    punctuation_re = re.compile(
-        "[\u2832\u2826\u2816](?:\u2800|\u2804|\u2800|\u2834\u2800)"
-    )
     end_punctuation_equal_re = re.compile(
         ".*[\u2832\u2826\u2816][\u2804\u2834]*$"
     )
@@ -375,7 +372,13 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     def match_line(
         lines: list[list[int, str, str]], current_line: str, first_line: bool
     ) -> list[int,str,str]:
-        """match if this is a block or list"""
+        """match if this is a block or list stop if start of next page has a blank"""
+
+        # if this is a page processing instruction with a blank line after.
+        _pattern = f"(?:(?:{_BRAILLE_PAGE_RE}[\n ])?(?:{_BRAILLE_PPN_RE}[\n ])?(?:{_PRINT_PAGE_RE}[\n ])?(?:</span role.*?</span>[\n ])?(?:{_RUNNING_HEAD_RE}[\n ])?{_BLANK_LINE_RE })"
+        if  re.match(_pattern,current_line):
+            return []
+
         if line := first_line_re.match(current_line):
             return [0, "", line.group(1), line.end()]
 

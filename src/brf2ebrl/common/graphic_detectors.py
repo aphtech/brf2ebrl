@@ -140,8 +140,9 @@ def create_pdf_graphic_detector(
     _pdf_text = "\u2820\u2820\u280f\u2819\u280b\u2800\u280f\u2801\u281b\u2811\u2800"
 
     # regular expression matching braille page and one for search
-    _detect_braille_page_re = re.compile("(<\\?braille-ppn [\u2801-\u28ff]+\\?>)")
+    _detect_braille_ppn_re = re.compile("(<\\?braille-ppn [\u2801-\u28ff]+\\?>)")
     _search_blank_re = re.compile("(?:<\\?blank-line\\?>\n){3,}")
+    _search_single_blank_re = re.compile("(?:<\\?blank-line\\?>\n)")
 
     def get_key_for_page(brf_page: str, references: dict[str, str]) -> str:
         if brf_page in references:
@@ -157,24 +158,34 @@ def create_pdf_graphic_detector(
     ) -> str:
         result_text = ""
         new_cursor = 0
-        while line := _detect_braille_page_re.search(text, new_cursor):
+        while line := _detect_braille_ppn_re.search(text, new_cursor):
             start_page = line.end()
             result_text += text[new_cursor:start_page]
             new_cursor = start_page
             braille_page = line.group(1).split()[1].split("?")[0].strip()
             braille_page = get_key_for_page(braille_page, _images_references)
             if braille_page in _images_references:
-                if end_page := _detect_braille_page_re.search(text, new_cursor):
+                if end_page := _detect_braille_ppn_re.search(text, new_cursor):
                     end_page = end_page.start()
                 else:
                     end_page = len(text)
                 if search_blank := _search_blank_re.search(text[start_page:end_page]):
                     end_page = new_cursor + search_blank.start()
                     new_cursor += search_blank.end()
+                elif search_blank := _search_single_blank_re.search(text[start_page:end_page]):
+                    end_page = new_cursor + search_blank.start()
+                    new_cursor += search_blank.end()
+
                 result_text += text[start_page:end_page]
+                if search_blank := _search_blank_re.search(text[start_page:end_page]):
+                    end_page = new_cursor + search_blank.start()
+                    new_cursor += search_blank.end()
+
                 # the for loop takes care of multiple pages
+                result_text += "<?blank-line?>\n" 
                 for file_ref in _images_references[braille_page]:
                     result_text += f'<object data="{Path(file_ref).as_posix()}" type="application/pdf" height="250" width="100" aria-label="{_auto_gen}{braille_page}"> <p>{_pdf_text} {braille_page}</p></object>'
+                result_text += "<?blank-line?>\n" 
                 del _images_references[braille_page]
 
         if _images_references:
