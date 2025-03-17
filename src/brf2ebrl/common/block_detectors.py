@@ -1,6 +1,7 @@
 """
 #  Copyright (c) 2024. American Printing House for the Blind.
 #
+git log
 # This Source Code Form is subject to the terms of the Mozilla Public
 415
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -390,7 +391,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 levels = list({level[0] for level in lines if level[0] != -1})
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
-                if run_over and level > run_over:
+                if run_over and level >= run_over:
                     return []
                 if level not in levels and level > (max(levels) + 2):
                     return []
