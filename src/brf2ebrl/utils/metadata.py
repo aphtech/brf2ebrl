@@ -31,12 +31,12 @@ class MetadataItem:
         return self._xml_func(self.value)
 
 class Title(MetadataItem):
-    def __init__(self, value: Any):
+    def __init__(self, value: Any="-"):
         super().__init__("Title", value, TITLE)
 
 class Identifier(MetadataItem):
-    def __init__(self, value: Any):
-        super().__init__("Identifier", value, IDENTIFIER)
+    def __init__(self, value: Any=None):
+        super().__init__("Identifier", value if value else str(uuid4()), IDENTIFIER)
 
 def _date_value_to_xml(value: Any) -> Element:
     match value:
@@ -46,11 +46,11 @@ def _date_value_to_xml(value: Any) -> Element:
             return DATE(str(value))
 
 class Date(MetadataItem):
-    def __init__(self, value: Any):
-        super().__init__("Date", value, _date_value_to_xml)
+    def __init__(self, value: Any=None):
+        super().__init__("Date", value if value else datetime.date.today(), _date_value_to_xml)
 
 class Creator(MetadataItem):
-    def __init__(self, value: Any):
+    def __init__(self, value: Any="-"):
         super().__init__("Creator", value, CREATOR)
 
 class Format(MetadataItem):
@@ -61,9 +61,9 @@ class Language(MetadataItem):
     def __init__(self, value: Any = "en-Brai"):
         super().__init__("Language", value, LANGUAGE)
 
-DEFAULT_METADATA = [Creator("-"),
-          Format("eBraille 1.0"),
-          Date(datetime.date.today()),
-          Identifier(str(uuid4())),
-          Language("en-Brai"),
-          Title("-")]
+DEFAULT_METADATA = [Creator(),
+          Format(),
+          Date(),
+          Identifier(),
+          Language(),
+          Title()]
