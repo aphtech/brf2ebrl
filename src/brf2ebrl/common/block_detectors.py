@@ -68,10 +68,15 @@ def create_centered_detector(
         f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)\n+",
     )
 
+    _next_line_re = re.compile(
+        rf"{_BLANK_LINE_RE  }\n|\u2836{{{cells_per_line/2},{cells_per_line}}}\n|\u283f{{{cells_per_line/2},{cells_per_line}}}\n"
+    )
+
     def detect_centered(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
         lines = []
+        brl = ""
         new_cursor = cursor
         while line := heading_re.match(
             text[new_cursor:],
@@ -84,7 +89,8 @@ def create_centered_detector(
                 new_cursor += line.end()
             else:
                 break
-        brl = "\u2800".join(lines)
+        if _next_line_re.match(text[new_cursor:]):
+            brl = "\u2800".join(lines)
         return (
             DetectionResult(
                 new_cursor, state, 0.9, f"{output_text}<{tag_name}>{brl}</{tag_name}>\n"
@@ -94,6 +100,7 @@ def create_centered_detector(
         )
 
     return detect_centered
+
 
 
 # constants for list and paragraph.
