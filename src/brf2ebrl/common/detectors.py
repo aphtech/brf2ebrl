@@ -97,7 +97,8 @@ def create_running_head_detector(min_indent: int) -> Detector:
         f"\u2800{{{min_indent},}}(?P<running_head>[\u2801-\u28ff][\u2800-\u28ff]*)(?P<eol>[\n\f])")
 
     def detect_running_head(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
-        if state.get("new_braille_page", False) and state.get("braille_page_count", 0) != 1 and (
+        page_can_have_runninghead = state.get("braille_page_count", 0) != 1 or state.get("braille_page_type", BraillePageType.UNSET) == BraillePageType.P
+        if state.get("new_braille_page", False) and page_can_have_runninghead and (
                 m := min_indent_re.match(text[cursor:])):
             running_head = m.group("running_head")
             return DetectionResult(cursor + m.end(), dict(state, new_braille_page=False), 1.0,
