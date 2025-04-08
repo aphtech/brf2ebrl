@@ -23,7 +23,7 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.parser import Parser
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
-from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem
+from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem, Format, Date
 from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META
 
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
@@ -93,15 +93,22 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Ite
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
-            *[x.to_xml() for x in metadata_entries],
-            META({"property": "dcterms:dateCopyrighted"}, date.fromtimestamp(0).isoformat()),
+            # Auto generated metadata
+            Format().to_xml(),
+            Date().to_xml(),
             META({"property": "dcterms:modified"}, datetime.now(UTC).strftime("%Y-%m-%dT%H:%M%SZ")),
-            META({"property": "a11y:brailleSystem"}, "UEB"),
+            *([META({"property": "a11y:tactileGraphics"}, "false")] if not graphic_types else [
+                META({"property": "a11y:tactileGraphics"}, "true"),
+                META({"property": "a11y:graphicType"}, graphic_types)]),
             META({"property": "a11y:cellType"}, "6"),
             META({"property": "a11y:completeTranscription"}, "true"),
+            # User defined metadata
+            *[x.to_xml() for x in metadata_entries],
+            META({"property": "dcterms:dateCopyrighted"}, date.fromtimestamp(0).isoformat()),
+
+            META({"property": "a11y:brailleSystem"}, "UEB"),
             META({"property": "a11y:dateTranscribed"}, date.fromtimestamp(0).isoformat()),
-            META({"property": "a11y:producer"}, "-"),
-            *([META({"property": "a11y:tactileGraphics"}, "false")] if not graphic_types else [META({"property": "a11y:tactileGraphics"}, "true"), META({"property": "a11y:graphicType"}, graphic_types)])
+            META({"property": "a11y:producer"}, "-")
         ),
         MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t, **({"properties": "nav"} if nav else {})}) for i,n,t,_,nav in files_list]),
         SPINE(*[ITEMREF({"idref": i}) for i,_,_,s,_ in files_list if s])
