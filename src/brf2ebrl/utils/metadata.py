@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from lxml.etree import Element
 
-from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, LANGUAGE
+from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, LANGUAGE, META
 
 
 class MetadataItem:
@@ -51,6 +51,14 @@ class AbstractDate(MetadataItem):
 class Date(AbstractDate):
     def __init__(self, value: Any=None):
         super().__init__("Date", value, DATE)
+
+class DateCopyrighted(AbstractDate):
+    def __init__(self, value: Any=None):
+        super().__init__("Copyrighted", value if value else datetime.datetime.fromtimestamp(0), lambda x: META({"property": "dcterms:dateCopyrighted"}, x))
+
+class DateTranscribed(AbstractDate):
+    def __init__(self, value: Any=None):
+        super().__init__("Transcribed", value if value else datetime.datetime.fromtimestamp(0), lambda x: META({"property": "a11y:dateTranscribed"}, x))
 
 class Creator(MetadataItem):
     def __init__(self, value: Any="-"):
