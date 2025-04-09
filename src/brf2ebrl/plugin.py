@@ -23,8 +23,8 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.parser import Parser
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
-from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem, Format, Date
-from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META
+from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem, Date
+from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META, FORMAT
 
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
@@ -94,7 +94,7 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Ite
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
             # Auto generated metadata
-            Format().to_xml(),
+            FORMAT("1.0"),
             Date().to_xml(),
             META({"property": "dcterms:modified"}, datetime.now(UTC).strftime("%Y-%m-%dT%H:%M%SZ")),
             *([META({"property": "a11y:tactileGraphics"}, "false")] if not graphic_types else [
@@ -105,7 +105,6 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Ite
             # User defined metadata
             *[x.to_xml() for x in metadata_entries],
             META({"property": "dcterms:dateCopyrighted"}, date.fromtimestamp(0).isoformat()),
-
             META({"property": "a11y:brailleSystem"}, "UEB"),
             META({"property": "a11y:dateTranscribed"}, date.fromtimestamp(0).isoformat()),
             META({"property": "a11y:producer"}, "-")

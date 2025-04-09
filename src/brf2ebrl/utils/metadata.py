@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from lxml.etree import Element
 
-from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, FORMAT, LANGUAGE
+from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, LANGUAGE
 
 
 class MetadataItem:
@@ -38,32 +38,29 @@ class Identifier(MetadataItem):
     def __init__(self, value: Any=None):
         super().__init__("Identifier", value if value else str(uuid4()), IDENTIFIER)
 
-def _date_value_to_xml(value: Any) -> Element:
-    match value:
-        case datetime.date:
-            return DATE(value.isoformat())
-        case _:
-            return DATE(str(value))
+class AbstractDate(MetadataItem):
+    def __init__(self, name: str, value: Any, to_xml_func: Callable[[Any], Element]):
+        super().__init__(name, value if value else datetime.date.today(), lambda x: to_xml_func(self.value_to_str(x)))
+    def value_to_str(self, value: Any) -> str:
+        match value:
+            case datetime.date:
+                return value.isoformat()
+            case _:
+                return str(value)
 
-class Date(MetadataItem):
+class Date(AbstractDate):
     def __init__(self, value: Any=None):
-        super().__init__("Date", value if value else datetime.date.today(), _date_value_to_xml)
+        super().__init__("Date", value, DATE)
 
 class Creator(MetadataItem):
     def __init__(self, value: Any="-"):
         super().__init__("Creator", value, CREATOR)
-
-class Format(MetadataItem):
-    def __init__(self, value: Any = "eBraille 1.0"):
-        super().__init__("Format", value, FORMAT)
 
 class Language(MetadataItem):
     def __init__(self, value: Any = "en-Brai"):
         super().__init__("Language", value, LANGUAGE)
 
 DEFAULT_METADATA = [Creator(),
-          Format(),
-          Date(),
           Identifier(),
           Language(),
           Title()]
