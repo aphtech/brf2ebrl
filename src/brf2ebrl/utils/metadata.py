@@ -89,4 +89,4 @@ DEFAULT_METADATA = [
 ]
 
 def ensure_default_metadata(data: Iterable[MetadataItem]) -> Iterable[MetadataItem]:
-    return list(data) + [d for d in DEFAULT_METADATA if any(isinstance(v, type(d)) for v in data)]
+    return list(data) + [d for d in DEFAULT_METADATA if not any(isinstance(v, type(d)) for v in data)]
