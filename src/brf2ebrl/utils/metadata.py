@@ -5,12 +5,13 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Classes for metadata in eBraille"""
 import datetime
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 from uuid import uuid4
 
 from lxml.etree import Element
 
-from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, LANGUAGE, META
+from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, LANGUAGE, BRAILLE_SYSTEM, A11Y_PRODUCER, \
+    DATE_TRANSCRIBED, DATE_COPYRIGHTED
 
 
 class MetadataItem:
@@ -53,12 +54,12 @@ class Date(AbstractDate):
         super().__init__("Date", value, DATE)
 
 class DateCopyrighted(AbstractDate):
-    def __init__(self, value: Any=None):
-        super().__init__("Copyrighted", value if value else datetime.datetime.fromtimestamp(0), lambda x: META({"property": "dcterms:dateCopyrighted"}, x))
+    def __init__(self, value: Any=datetime.datetime.fromtimestamp(0)):
+        super().__init__("Copyrighted", value, DATE_COPYRIGHTED)
 
 class DateTranscribed(AbstractDate):
-    def __init__(self, value: Any=None):
-        super().__init__("Transcribed", value if value else datetime.datetime.fromtimestamp(0), lambda x: META({"property": "a11y:dateTranscribed"}, x))
+    def __init__(self, value: Any=datetime.datetime.fromtimestamp(0)):
+        super().__init__("Transcribed", value, DATE_TRANSCRIBED)
 
 class Creator(MetadataItem):
     def __init__(self, value: Any="-"):
@@ -68,7 +69,24 @@ class Language(MetadataItem):
     def __init__(self, value: Any = "en-Brai"):
         super().__init__("Language", value, LANGUAGE)
 
-DEFAULT_METADATA = [Creator(),
-          Identifier(),
-          Language(),
-          Title()]
+class BrailleSystem(MetadataItem):
+    def __init__(self, value: str="UEB"):
+        super().__init__("Braille system",  value, BRAILLE_SYSTEM)
+
+class Producer(MetadataItem):
+    def __init__(self, value: str="-"):
+        super().__init__("Producer", value, A11Y_PRODUCER)
+
+DEFAULT_METADATA = [
+    Creator(),
+    Identifier(),
+    Language(),
+    Title(),
+    DateCopyrighted(),
+    DateTranscribed(),
+    BrailleSystem(),
+    Producer()
+]
+
+def ensure_default_metadata(data: Iterable[MetadataItem]) -> Iterable[MetadataItem]:
+    return list(data) + [d for d in DEFAULT_METADATA if any(isinstance(v, type(d)) for v in data)]

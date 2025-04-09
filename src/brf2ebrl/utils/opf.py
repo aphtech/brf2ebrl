@@ -14,12 +14,19 @@ _DC = ElementMaker(namespace=DC_NAMESPACE, nsmap={None: OPF_NAMESPACE, "dc": DC_
 PACKAGE = _OPF.package
 METADATA = _OPF.metadata
 META = _OPF.meta
+META_DCTERM = lambda n, v: META({"property": f"dcterms:{n}"}, v)
+META_A11Y = lambda n,v: META({"property": f"a11y:{n}"}, v)
 CREATOR = _DC.creator
 FORMAT = _DC.format
 DATE = _DC.date
 IDENTIFIER = _DC.identifier
 LANGUAGE = _DC.language
 TITLE = _DC.title
+DATE_COPYRIGHTED = lambda x: META_DCTERM("dateCopyrighted", x)
+DATE_TRANSCRIBED = lambda x: META_A11Y("dateTranscribed", x)
+BRAILLE_SYSTEM = lambda x: META_A11Y("brailleSystem", x)
+A11Y_PRODUCER = lambda x: META_A11Y("producer", x)
+
 MANIFEST = _OPF.manifest
 ITEM = _OPF.item
 SPINE = _OPF.spine
