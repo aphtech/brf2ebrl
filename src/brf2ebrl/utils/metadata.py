@@ -10,8 +10,8 @@ from uuid import uuid4
 
 from lxml.etree import Element
 
-from brf2ebrl.utils.opf import TITLE, IDENTIFIER, DATE, CREATOR, LANGUAGE, BRAILLE_SYSTEM, A11Y_PRODUCER, \
-    DATE_TRANSCRIBED, DATE_COPYRIGHTED
+from brf2ebrl.utils.opf import TITLE, IDENTIFIER, CREATOR, LANGUAGE, BRAILLE_SYSTEM, A11Y_PRODUCER, \
+    DATE_TRANSCRIBED, DATE_COPYRIGHTED, CELL_TYPE
 
 
 class MetadataItem:
@@ -49,10 +49,6 @@ class AbstractDate(MetadataItem):
             case _:
                 return str(value)
 
-class Date(AbstractDate):
-    def __init__(self, value: Any=None):
-        super().__init__("Date", value, DATE)
-
 class DateCopyrighted(AbstractDate):
     def __init__(self, value: Any=datetime.datetime.fromtimestamp(0)):
         super().__init__("Copyrighted", value, DATE_COPYRIGHTED)
@@ -72,6 +68,10 @@ class Language(MetadataItem):
 class BrailleSystem(MetadataItem):
     def __init__(self, value: str="UEB"):
         super().__init__("Braille system",  value, BRAILLE_SYSTEM)
+
+class CellType(MetadataItem):
+    def __init__(self, value: str="6"):
+        super().__init__("Cell type", value, CELL_TYPE)
 
 class Producer(MetadataItem):
     def __init__(self, value: str="-"):
