@@ -98,6 +98,8 @@ DEFAULT_METADATA = [
     DateCopyrighted(),
     DateTranscribed(),
     BrailleSystem(),
+    CellType(),
+    CompleteTranscription(),
     Producer()
 ]
 

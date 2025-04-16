@@ -101,8 +101,6 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Ite
             *([META({"property": "a11y:tactileGraphics"}, "false")] if not graphic_types else [
                 META({"property": "a11y:tactileGraphics"}, "true"),
                 META({"property": "a11y:graphicType"}, graphic_types)]),
-            META({"property": "a11y:cellType"}, "6"),
-            META({"property": "a11y:completeTranscription"}, "true"),
             # User defined metadata
             *[x.to_xml() for x in ensure_default_metadata(metadata_entries)],
         ),
