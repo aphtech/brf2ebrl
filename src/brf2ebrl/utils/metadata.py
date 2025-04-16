@@ -11,7 +11,7 @@ from uuid import uuid4
 from lxml.etree import Element
 
 from brf2ebrl.utils.opf import TITLE, IDENTIFIER, CREATOR, LANGUAGE, BRAILLE_SYSTEM, A11Y_PRODUCER, \
-    DATE_TRANSCRIBED, DATE_COPYRIGHTED, CELL_TYPE
+    DATE_TRANSCRIBED, DATE_COPYRIGHTED, CELL_TYPE, COMPLETE_TRANSCRIPTION
 
 
 class MetadataItem:
@@ -38,6 +38,16 @@ class Title(MetadataItem):
 class Identifier(MetadataItem):
     def __init__(self, value: Any=None):
         super().__init__("Identifier", value if value else str(uuid4()), IDENTIFIER)
+
+class AbstractBool(MetadataItem):
+    def __init__(self, name: str, value: Any, to_xml_func: Callable[[Any], Element]):
+        super().__init__(name, value, lambda x: to_xml_func(self.value_to_str(x)))
+    def value_to_str(self, value: Any) -> str:
+        match value:
+            case bool(_):
+                return str(value).lower()
+            case _:
+                return str(value)
 
 class AbstractDate(MetadataItem):
     def __init__(self, name: str, value: Any, to_xml_func: Callable[[Any], Element]):
@@ -69,6 +79,9 @@ class BrailleSystem(MetadataItem):
     def __init__(self, value: str="UEB"):
         super().__init__("Braille system",  value, BRAILLE_SYSTEM)
 
+class CompleteTranscription(AbstractBool):
+    def __init__(self, value: bool=True):
+        super().__init__("Complete transcription", value, COMPLETE_TRANSCRIPTION)
 class CellType(MetadataItem):
     def __init__(self, value: str="6"):
         super().__init__("Cell type", value, CELL_TYPE)

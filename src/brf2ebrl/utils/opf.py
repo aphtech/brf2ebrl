@@ -26,6 +26,7 @@ DATE_COPYRIGHTED = lambda x: META_DCTERM("dateCopyrighted", x)
 DATE_TRANSCRIBED = lambda x: META_A11Y("dateTranscribed", x)
 BRAILLE_SYSTEM = lambda x: META_A11Y("brailleSystem", x)
 CELL_TYPE = lambda x: META({"property": "a11y:cellType"}, x)
+COMPLETE_TRANSCRIPTION = lambda x: META({"property": "a11y:completeTranscription"}, x)
 A11Y_PRODUCER = lambda x: META_A11Y("producer", x)
 
 MANIFEST = _OPF.manifest
