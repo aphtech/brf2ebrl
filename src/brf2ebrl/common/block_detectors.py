@@ -11,6 +11,7 @@ Detectors for blocks
 """
 
 import re
+import logging
 
 from collections.abc import Iterable, Callable
 
@@ -377,10 +378,37 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
         return 0
 
+    def is_toc_page_transition(
+        lines: list[list[int, str, str]], current_line: str
+    ) -> list[int, str, str]:
+        """Return if we are crossing a toc blank page blank boundey.
+        return the .match if found None if not
+        """
+        pattern = re.compile(
+                r"(<\?blank-line\?>[\s]*?"
+        r"<\?braille-page[ \u2801-\u28ff]+\?>[\s]*?"
+                r"<\?braille-ppn[ \u2801-\u28ff]+\?>[\s]*?"
+                r"(?:<\?print-page[ \u2801-\u28ff]+\?>[\s]*?)?"
+                r"(?:<\?running-head[ \u2800-\u28ff]*?\?>[\s]*?)?"
+                r"<\?blank-line\?>[\s]*)")
+        match = pattern.match(current_line)
+        if match:
+            return match
+        return []
+
+
     def match_line(
         lines: list[list[int, str, str]], current_line: str, first_line: bool
     ) -> list[int,str,str]:
         """match if this is a block or list stop if start of next page has a blank"""
+        logging.info(f"match_line:\n'{current_line[:82]}'")
+        toc = is_toc_page_transition(lines,current_line)
+        if toc:
+            if not lines:
+                return []
+            logging.info("toc transition added to lines")
+            return [-1,toc.group(1),"", toc.end()]
+
 
         # if this is a page processing instruction with a blank line after.
         _pattern = f"(?:(?:{_BRAILLE_PAGE_RE}[\n ])?(?:{_BRAILLE_PPN_RE}[\n ])?(?:{_PRINT_PAGE_RE}[\n ])?(?:</span role.*?</span>[\n ])?(?:{_RUNNING_HEAD_RE}[\n ])?{_BLANK_LINE_RE })"
@@ -388,21 +416,29 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return []
 
         if line := first_line_re.match(current_line):
+            logging.info(f"start_list:\n '{line.group(1)}'\n end: '{line.end()}'")
             return [0, "", line.group(1), line.end()]
 
+        logging.info(f"t0: \n'{current_line[:120]}")
         line = run_over_re.match(current_line)
+        logging.info("t1")
         if not first_line and line:
+            logging.info("t2")
+    
             level = len(line.group(1))
             if lines[-1][0] == -1:
                 # create clean set of levels acending
                 levels = list({level[0] for level in lines if level[0] != -1})
+                logging.info(f"levels: {levels}")
+
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
-                if run_over and level >= run_over:
+                if run_over and level > run_over:
                     return []
                 if level not in levels and level > (max(levels) + 2):
                     return []
 
+            logging.info(f"level: {level} {line.group(1)} end: {line.end()}") 
             return [level, "", line.group(2), line.end()]
 
         line = pi_re.match(current_line)
@@ -417,54 +453,63 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         length: int,
         levels: list[int],
         current_level: int,
-    ) -> list[int , str]:
-        """Recursive list builder"""
+    ) -> list:
+        """Recursive list builder, preserving processing instructions and supporting nested lists"""
         list_level = []
-        index_diff = 1
+        original_index = index
+
         while index < length:
-            index_diff += 1
-            if (index + 1) < length and lines[index + 1][0] == -1:
-                if lines[index][0] != -1:
-                    list_level.append(lines[index])
+            current = lines[index]
+            next_line = lines[index + 1] if (index + 1) < length else None
+
+            # Always include processing instructions
+            if current[0] == -1:
+                list_level.append(current)
                 index += 1
                 continue
-            if index < (length - 1) and lines[index + 1][0] > current_level:
-                list_level.append(lines[index])
-                index_diff, buff = build_list(
-                    lines, index + 1, length, levels, lines[index + 1][0]
-                )
-                list_level[-1][2] += buff
-                index += index_diff
-            elif (
-                (index + 1) < length
-                and lines[index + 1][0] != -1
-                and lines[index + 1][0] < current_level
-            ):
-                list_level.append(lines[index])
-                break
-            else:
-                list_level.append(lines[index])
-                index += 1
 
-        if current_level == levels[-1] and is_block_paragraph(
-            list_level, current_level
-        ):
-            return [index_diff, "".join(
-                [
-                    f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
-                    for line in list_level
-                ]
-            )]
-        return [index_diff, (
+            # Check for deeper nested structure
+            if next_line and next_line[0] > current_level:
+                list_level.append(current)
+                nested_index_diff, nested_html = build_list(
+                    lines, index + 1, length, levels, next_line[0]
+                )
+                # Avoid mutating original line â€” use a copy
+                updated = current.copy()
+                updated[2] += nested_html
+                list_level[-1] = updated
+                index += nested_index_diff + 1
+                continue
+
+            # Check for return to a shallower level
+            if next_line and next_line[0] < current_level and next_line[0] != -1:
+                list_level.append(current)
+                index += 1
+                break
+
+            # Normal list entry
+            list_level.append(current)
+            index += 1
+
+        # At deepest level, check if it's a block paragraph
+        if current_level == levels[-1] and is_block_paragraph(list_level, current_level):
+            joined = "".join(
+                f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
+                for line in list_level
+            )
+            return [index - original_index, joined]
+
+        # Otherwise, render HTML list, preserving PI lines
+        html = (
             '\n<ul style="list-style-type: none">\n'
             + "".join(
-                [
-                    f"{line[1]}<li>{line[2]}</li>\n" if line[2] else f"{line[1]}\n"
-                    for line in list_level
-                ]
+                f"{line[1]}<li>{line[2]}</li>\n" if line[0] != -1 else f"{line[1]}\n"
+                for line in list_level
             )
             + "</ul>"
-        )]
+        )
+        return [index - original_index, html]
+
 
     def make_lists(lines: list[list[int, str, str]]) -> str:
         """Make a list or nested list"""
@@ -506,6 +551,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         if lines and is_block_paragraph(lines):
             brl = make_block_paragrap(lines)
         elif lines:
+            logging.info(f"run make_list \n len: {len(lines)} \n last_line {lines[-1]}")
             brl = make_lists(lines)
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
