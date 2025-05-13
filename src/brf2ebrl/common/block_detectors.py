@@ -377,6 +377,81 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 return group[0][0]
 
         return 0
+    
+    def parse_and_create_toc_entry(line: str) -> str:
+        """Strip out dot 5's and create thw two sections
+        Did not use regular expressions because the end changes with the recursive.  I found 
+        it easier to stop with a quick loop
+        """
+
+        index = 0
+        length = len(line)
+        heading = ""
+        page_number = ""
+        mark_last_space = 0
+        while index < length:
+            if "\u2800" == line[index]:
+                mark_last_space = index
+            # check for dot 5
+            if "\u2810"  == line[index]:
+                break
+            heading += line[index]
+            index += 1
+
+        # consume middle bits
+        while index< length and line[index] in ["\u2810","\u2800"]:  
+            if "\u2800" == line[index]:
+                mark_last_space = index
+            index += 1
+        else:
+            index =  mark_last_space
+
+
+        # set page number
+        while  index < length and  line[index] != '<':
+            page_number += line[index]
+            index += 1
+
+        return f"<span>{heading.strip("\u2800")}</span>\u2800<span>{page_number.strip("\u2800")}</span>{line[index:] if index < length else ""}"
+    
+    
+    def join_list(lines: list[list[int, str, str]]) -> str:
+        """
+        First fine out if toc
+        second if toc set class type
+        third if toc spin through and replace dot 5 and make span and anchor
+        check for dot five split if there take last item if not for anchor
+        if not toc make list 
+        """
+        toc =None
+        for  line in lines:
+            if line[0] == -1:
+                continue
+            if re.match(r"(.*)(\u2800\u2810{2,}\u2800)(.*)",line[2]):
+                toc = "toc"
+            if toc:
+                break
+
+        if toc:
+            for index, line in enumerate(lines):
+                if line[0] != -1 and line[2]:
+                    lines[index][2] =parse_and_create_toc_entry(lines[index][2])
+                
+        list_head= '\n<ul style="list-style-type: none">'
+        list_tail = "</ul>"
+        if toc:
+            list_head ='<ol class="toc">'
+            list_tail = "</ol>"
+
+        list_str = f"{list_head}\n"
+        for line in lines:
+            if line[1]:
+                list_str += f"{line[1]}\n"
+            if line[2]:
+                list_str += f"<li>{line[2]}</li>\n"
+        list_str += f"{list_tail}\n"
+        return list_str
+
 
     def is_toc_page_transition(
         lines: list[list[int, str, str]], current_line: str
@@ -500,15 +575,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return [index - original_index, joined]
 
         # Otherwise, render HTML list, preserving PI lines
-        html = (
-            '\n<ul style="list-style-type: none">\n'
-            + "".join(
-                f"{line[1]}<li>{line[2]}</li>\n" if line[0] != -1 else f"{line[1]}\n"
-                for line in list_level
-            )
-            + "</ul>"
-        )
-        return [index - original_index, html]
+        return [index - original_index, join_list(list_level)]
 
 
     def make_lists(lines: list[list[int, str, str]]) -> str:
@@ -519,12 +586,8 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
         # one level list
         if len(levels) == 1:
-            return (
-                '<ul style="list-style-type: none">\n'
-                + "".join([f"{line[1]}<li>{line[2]}</li>\n" for line in lines])
-                + "</ul>\n"
-            )
-
+            return join_list(lines)
+            
         #  nested list or over run list
         _, brl_str = build_list(lines, 0, len(lines), levels, 0)
         return brl_str
