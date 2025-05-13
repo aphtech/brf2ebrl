@@ -11,7 +11,6 @@ Detectors for blocks
 """
 
 import re
-import logging
 
 from collections.abc import Iterable, Callable
 
@@ -476,12 +475,10 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         lines: list[list[int, str, str]], current_line: str, first_line: bool
     ) -> list[int,str,str]:
         """match if this is a block or list stop if start of next page has a blank"""
-        logging.info(f"match_line:\n'{current_line[:82]}'")
         toc = is_toc_page_transition(lines,current_line)
         if toc:
             if not lines:
                 return []
-            logging.info("toc transition added to lines")
             return [-1,toc.group(1),"", toc.end()]
 
 
@@ -491,20 +488,14 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return []
 
         if line := first_line_re.match(current_line):
-            logging.info(f"start_list:\n '{line.group(1)}'\n end: '{line.end()}'")
             return [0, "", line.group(1), line.end()]
 
-        logging.info(f"t0: \n'{current_line[:120]}")
         line = run_over_re.match(current_line)
-        logging.info("t1")
         if not first_line and line:
-            logging.info("t2")
-    
             level = len(line.group(1))
             if lines[-1][0] == -1:
                 # create clean set of levels acending
                 levels = list({level[0] for level in lines if level[0] != -1})
-                logging.info(f"levels: {levels}")
 
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
@@ -513,7 +504,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                 if level not in levels and level > (max(levels) + 2):
                     return []
 
-            logging.info(f"level: {level} {line.group(1)} end: {line.end()}") 
             return [level, "", line.group(2), line.end()]
 
         line = pi_re.match(current_line)
@@ -614,7 +604,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         if lines and is_block_paragraph(lines):
             brl = make_block_paragrap(lines)
         elif lines:
-            logging.info(f"run make_list \n len: {len(lines)} \n last_line {lines[-1]}")
             brl = make_lists(lines)
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
