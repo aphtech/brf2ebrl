@@ -448,6 +448,16 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return match
         return []
 
+    def has_toc(
+        lines: list[list[int, str, str]]
+    ) -> bool:
+        """return if one of the tiems is a toc entry"""
+        for line in lines:
+            if re.search(r".*?\u2810{2,}.*",line[2]):
+                return True
+        return False
+             
+
 
     def match_line(
         lines: list[list[int, str, str]], current_line: str, first_line: bool
@@ -477,8 +487,12 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
-                if run_over and level > run_over:
-                    return []
+                if has_toc(lines):
+                    if run_over and level > run_over:
+                        return []
+                else: 
+                    if run_over and level >= run_over:
+                        return []
                 if level not in levels and level > (max(levels) + 2):
                     return []
 
