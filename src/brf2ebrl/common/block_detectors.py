@@ -378,42 +378,20 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         return 0
     
     def parse_and_create_toc_entry(line: str) -> str:
-        """Strip out dot 5's and create thw two sections
-        Did not use regular expressions because the end changes with the recursive.  I found 
-        it easier to stop with a quick loop
-        """
+        """Do not use re because there were problems."""
+        end_line = ""
+        pos = line.find('<')
+        if pos != -1:
+            end_line = line[pos:]
+            line = line[:pos].strip('\u2800 ')
 
-        index = 0
-        length = len(line)
-        heading = ""
-        page_number = ""
-        mark_last_space = 0
-        while index < length:
-            if "\u2800" == line[index]:
-                mark_last_space = index
-            # check for dot 5
-            if "\u2810"  == line[index]:
-                break
-            heading += line[index]
-            index += 1
-
-        # consume middle bits
-        while index< length and line[index] in ["\u2810","\u2800"]:  
-            if "\u2800" == line[index]:
-                mark_last_space = index
-            index += 1
-        else:
-            index =  mark_last_space
+        line =line.rsplit('\u2800',maxsplit=1)
+        if len(line) <2:
+            return line[0]
+        line[0] = line[0].strip('\u2810\u2800')
+        return f"<span>{line[0]}</span> <span>{line[1]}</span>{end_line}"
 
 
-        # set page number
-        while  index < length and  line[index] != '<':
-            page_number += line[index]
-            index += 1
-
-        return f"<span>{heading.strip("\u2800")}</span>\u2800<span>{page_number.strip("\u2800")}</span>{line[index:] if index < length else ""}"
-    
-    
     def join_list(lines: list[list[int, str, str]]) -> str:
         """
         First fine out if toc
@@ -439,7 +417,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         list_head= '\n<ul style="list-style-type: none">'
         list_tail = "</ul>"
         if toc:
-            list_head ='<ol class="toc">'
+            list_head ='<ol class="toc" style="list-style-type: none">'
             list_tail = "</ol>"
 
         list_str = f"{list_head}\n"
