@@ -62,7 +62,7 @@ word = {
 
 
 
-_end_tags = r"(?:</strong>)*?(?:</em>)*?(?:</strong>)*?\u2800|</h[1-6]>|</pre>|</p>|</li>|</t[hd]>"
+_end_tags = r"(?:</strong>)*?(?:</em>)*?(?:</strong>)*?\u2800|</h[1-6]>|</pre>|</p>|</span>|</li>|</t[hd]>"
 words_re = []
 for key, value in word.items():
     end_re = f"{value[0]}|{_end_tags}"
