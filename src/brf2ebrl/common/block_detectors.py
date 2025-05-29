@@ -1,5 +1,5 @@
-"""
 #  Copyright (c) 2024. American Printing House for the Blind.
+"""
 #
 git log
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -299,7 +299,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
         # copy and remove just PI
         _lines = [line for line in lines if line[0] != -1]
-
         block_len = len(_lines)
         block = [line[2] for line in _lines if line[0] == depth]
         # if not all lines have depth  indent
@@ -309,23 +308,12 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         # Willo idea.
         # # if any of the lines start with a word that could fit on the previous line its a list
         i = 1
-        line_len = len(lines)
+        line_len = len(_lines)
         last_line_was_page_info = False
         while i < line_len:
-            if lines[i - 1][0] == -1:
-                last_line_was_page_info = True
-                i += 1
-                continue
-            if lines[i][0] == -1:
-                i += 1
-                continue
-            if last_line_was_page_info:
-                last_line_was_page_info = False
-                i += 1
-                continue
-            prev_line_len = len(lines[i - 1][2]) + depth
+            prev_line_len = len(_lines[i - 1][2]) + depth
             if prev_line_len < _cells_per_line:
-                word = lines[i][2].strip("\u2800").split("\u2800", 1)[0]
+                word = _lines[i][2].strip("\u2800").split("\u2800", maxsplit=1)[0]
                 if (len(word) + 1) < (_cells_per_line - prev_line_len):
                     return False
             i += 1
@@ -342,9 +330,9 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         if not [line for line in block if not lower_alpha_with_paran_re.match(line)]:
             return False
 
-        # if all lines end in punctuation assume list
-        if not [line for line in block if not end_punctuation_equal_re.match(line)]:
-            return False
+        #if all lines end in punctuation assume list
+        #if not [line for line in block if not end_punctuation_equal_re.match(line)]:
+            #return False
         return True
 
     def get_run_over_depth(lines: list[list[int, str]]) -> list[list[list[int, str]]]:
@@ -480,11 +468,16 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
         line = run_over_re.match(current_line)
         if not first_line and line:
+            
             level = len(line.group(1))
-            if lines[-1][0] == -1:
-                # create clean set of levels acending
-                levels = list({level[0] for level in lines if level[0] != -1})
 
+            #create length of lines without pi
+            levels = [level[0] for level in lines if level[0] != -1]
+            levels_len = len(levels)
+            # # create clean set of levels acending in a list for access
+            levels = list(set (levels))
+            
+            if lines[-1][0] == -1:
                 # check for heading on next page.
                 run_over = get_run_over_depth(lines)
                 if has_toc(lines):
@@ -495,6 +488,10 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                         return []
                 if level not in levels and level > (max(levels) + 2):
                     return []
+
+            # this is to catch paragraphs after blocks with no blanks
+            # if levels_len > 2 and len(levels) == 1 and levels[0] == 0 and level == 2  and is_block(lines):
+            return []
 
             return [level, "", line.group(2), line.end()]
 
