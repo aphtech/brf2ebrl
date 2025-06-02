@@ -490,8 +490,8 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
                     return []
 
             # this is to catch paragraphs after blocks with no blanks
-            # if levels_len > 2 and len(levels) == 1 and levels[0] == 0 and level == 2  and is_block(lines):
-            return []
+            if not has_toc(lines) and levels_len > 2 and len(levels) == 1 and levels[0] == 0 and level == 2  and is_block_paragraph(lines):
+                return []
 
             return [level, "", line.group(2), line.end()]
 
