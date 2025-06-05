@@ -447,10 +447,10 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
              
 
 
-    def match_line(
+    def match_block_list_line(
         lines: list[list[int, str, str]], current_line: str, first_line: bool
     ) -> list[int,str,str]:
-        """match if this is a block or list stop if start of next page has a blank"""
+        """Match lines if they are possibly part of a block or a list"""
         toc = is_toc_page_transition(lines,current_line)
         if toc:
             if not lines:
@@ -585,7 +585,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         new_cursor = cursor
         brl = ""
         first_line = True
-        while line := match_line(lines, text[new_cursor:], first_line):
+        while line := match_block_list_line(lines, text[new_cursor:], first_line):
             first_line = False
             lines.append(line[:3])
             new_cursor += line[3]
