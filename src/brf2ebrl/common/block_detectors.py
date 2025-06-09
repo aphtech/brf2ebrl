@@ -102,72 +102,6 @@ def create_centered_detector(
     return detect_centered
 
 
-
-# constants for list and paragraph.
-_PRINT_PAGE_RE = "(?:<\\?print-page[ \u2800-\u28ff]*?\\?>)"
-_RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*\\?>)"
-_BRAILLE_PAGE_RE = "(?:<\\?braille-page[ \u2800-\u28ff]*\\?>)"
-_BRAILLE_PPN_RE = "(?:<\\?braille-ppn [ \u2800-\u28ff]*\\?>)"
-_BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
-_PROCESSING_INSTRUCTION_RE = f"(?:(?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
-
-
-def _create_indented_block_finder(
-    first_line_indent: int, run_over: int
-) -> Callable[[str, int], (str | None, int)]:
-    _first_line_re = re.compile(
-        f"\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n"
-    )
-    _run_over_re = re.compile(
-        f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n"
-    )
-
-    def find_paragraph_braille(text: str, cursor: int) -> tuple[str | None, int]:
-        if line := _first_line_re.match(text[cursor:]):
-            lines = [line.group(1)]
-            new_cursor = cursor + line.end()
-            while line := _run_over_re.match(text[new_cursor:]):
-                lines.append(line.group(1) + line.group(2))
-                new_cursor += line.end()
-            brl = "\u2800".join([x for x in lines if x is not None])
-            return brl, new_cursor
-        return None, cursor
-
-    return find_paragraph_braille
-
-
-def _no_indicators_block_matcher(
-    brl: str, state: DetectionState, tags: tuple[str, str] = ("<p>", "</p>")
-) -> tuple[str | None, DetectionState]:
-    return f"{tags[0]}{brl}{tags[1]}", state
-
-
-def create_paragraph_detector(
-    first_line_indent: int,
-    run_over: int,
-    indicator_matcher: Callable[
-        [str, DetectionState], (str | None, DetectionState)
-    ] = _no_indicators_block_matcher,
-    confidence: float = 0.9,
-) -> Detector:
-    """Creates a detector for finding paragraphs with the specified first line indent and run over."""
-    find_paragraph_braille = _create_indented_block_finder(first_line_indent, run_over)
-
-    def detect_paragraph(
-        text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult | None:
-        brl, new_cursor = find_paragraph_braille(text, cursor)
-        if brl:
-            tag, new_state = indicator_matcher(brl, state)
-            if tag:
-                return DetectionResult(
-                    new_cursor, new_state, confidence, f"{output_text}{tag}\n"
-                )
-        return None
-
-    return detect_paragraph
-
-
 def create_table_detector() -> Detector:
     """Creates a detector for finding simple tables more can be added"""
     seperator_re = re.compile(
@@ -261,6 +195,73 @@ def create_table_detector() -> Detector:
         return DetectionResult(cursor, state, 0.9, f"{output_text}{complete_table}\n")
 
     return detect_table
+
+
+
+
+# constants for list and paragraph.
+_PRINT_PAGE_RE = "(?:<\\?print-page[ \u2800-\u28ff]*?\\?>)"
+_RUNNING_HEAD_RE = "(?:<\\?running-head[ \u2800-\u28ff]*\\?>)"
+_BRAILLE_PAGE_RE = "(?:<\\?braille-page[ \u2800-\u28ff]*\\?>)"
+_BRAILLE_PPN_RE = "(?:<\\?braille-ppn [ \u2800-\u28ff]*\\?>)"
+_BLANK_LINE_RE = "(?:<\\?blank-line\\?>)"
+_PROCESSING_INSTRUCTION_RE = f"(?:(?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
+
+
+def _create_indented_block_finder(
+    first_line_indent: int, run_over: int
+) -> Callable[[str, int], (str | None, int)]:
+    _first_line_re = re.compile(
+        f"\u2800{{{first_line_indent}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n"
+    )
+    _run_over_re = re.compile(
+        f"({_PROCESSING_INSTRUCTION_RE}?)\u2800{{{run_over}}}([\u2801-\u28ff][\u2800-\u28ff]*)\n"
+    )
+
+    def find_paragraph_braille(text: str, cursor: int) -> tuple[str | None, int]:
+        if line := _first_line_re.match(text[cursor:]):
+            lines = [line.group(1)]
+            new_cursor = cursor + line.end()
+            while line := _run_over_re.match(text[new_cursor:]):
+                lines.append(line.group(1) + line.group(2))
+                new_cursor += line.end()
+            brl = "\u2800".join([x for x in lines if x is not None])
+            return brl, new_cursor
+        return None, cursor
+
+    return find_paragraph_braille
+
+
+def _no_indicators_block_matcher(
+    brl: str, state: DetectionState, tags: tuple[str, str] = ("<p>", "</p>")
+) -> tuple[str | None, DetectionState]:
+    return f"{tags[0]}{brl}{tags[1]}", state
+
+
+def create_paragraph_detector(
+    first_line_indent: int,
+    run_over: int,
+    indicator_matcher: Callable[
+        [str, DetectionState], (str | None, DetectionState)
+    ] = _no_indicators_block_matcher,
+    confidence: float = 0.9,
+) -> Detector:
+    """Creates a detector for finding paragraphs with the specified first line indent and run over."""
+    find_paragraph_braille = _create_indented_block_finder(first_line_indent, run_over)
+
+    def detect_paragraph(
+        text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> DetectionResult | None:
+        brl, new_cursor = find_paragraph_braille(text, cursor)
+        if brl:
+            tag, new_state = indicator_matcher(brl, state)
+            if tag:
+                return DetectionResult(
+                    new_cursor, new_state, confidence, f"{output_text}{tag}\n"
+                )
+        return None
+
+    return detect_paragraph
 
 
 # detect block aligned paragraphs
