@@ -449,7 +449,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
 
     def match_block_list_line(
-        lines: list[list[int, str, str]], current_line: str, first_line: bool
+        lines: list[list[int, str, str]], current_line: str
     ) -> list[int,str,str]:
         """Match lines if they are possibly part of a block or a list"""
         toc = is_toc_page_transition(lines,current_line)
@@ -468,7 +468,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return [0, "", line.group(1), line.end()]
 
         line = run_over_re.match(current_line)
-        if not first_line and line:
+        if lines and line:
             
             level = len(line.group(1))
 
@@ -497,7 +497,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
             return [level, "", line.group(2), line.end()]
 
         line = pi_re.match(current_line)
-        if not first_line and line and line.group(1):
+        if lines and line and line.group(1):
             return [-1, line.group(1), "", line.end()]
 
         return []
@@ -585,9 +585,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         lines = []
         new_cursor = cursor
         brl = ""
-        first_line = True
-        while line := match_block_list_line(lines, text[new_cursor:], first_line):
-            first_line = False
+        while line := match_block_list_line(lines, text[new_cursor:]):
             lines.append(line[:3])
             new_cursor += line[3]
 
