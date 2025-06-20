@@ -40,20 +40,24 @@ class HeadingRef:
     heading_braille: str
     level: int
 
-def _make_heading_list(headings: Iterable[HeadingRef], current_level: int) -> HtmlElement:
-    ol = OL()
+def HEADING_LIST(headings: Iterable[HeadingRef]) -> HtmlElement:
+    return OL(*_make_heading_list(headings, 1))
+
+def _make_heading_list(headings: Iterable[HeadingRef], current_level: int) -> Iterable[HtmlElement]:
+    lis = []
     current_li = None
     for k,v in itertools.groupby(headings, lambda x: x.level > current_level):
         if k:
+            sub_headings = _make_heading_list(v, current_level + 1)
             if current_li is None:
-                current_li = LI()
-                ol.append(current_li)
-            current_li.append(_make_heading_list(v, current_level + 1))
+                lis.extend(sub_headings)
+            else:
+                current_li.append(OL(*sub_headings))
         else:
             for h in v:
                 current_li = LI(A(ATTR(href=h.href), h.heading_braille))
-                ol.append(current_li)
-    return ol
+                lis.append(current_li)
+    return lis
 
 def create_navigation_html(title: str = "-", braille_title: str = "⠤", heading_refs: Iterable[HeadingRef] = (), page_refs: Iterable[PageRef] = (), opf_name: str = "package.opf") -> str:
     root = HTML(
@@ -79,7 +83,7 @@ def create_navigation_html(title: str = "-", braille_title: str = "⠤", heading
                 ARIA_LABEL("Contents"),
                 EPUB_TYPE("toc"),
                 H2("⠠⠞⠁⠼ ⠷ ⠒⠞⠢⠞⠎"),
-                _make_heading_list(heading_refs, 1)
+                HEADING_LIST(heading_refs)
             ),
             NAV(
                 EPUB_TYPE("page-list"),
