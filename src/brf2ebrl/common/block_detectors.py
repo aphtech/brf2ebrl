@@ -277,10 +277,8 @@ def is_block_paragraph(
 ) -> bool:
     """Check if this is a list or block paragraph."""
 
-    # if it is length one it is a block because who makes a 1 line list in braille
-    if len(lines) == 1:
-        return True
 
+    
     _roman_re = re.compile(
         "^\u280d{0,3}(\u2809\u280d|\u2809\u2819|\u2819?\u2809{0,3})(\u282d\u2809|\u282d\u2807|\u2807?\u282d{0,3})(\u280a\u282d|\u280a\u2827|\u2827?\u280a{0,3})\u2800[2800-28ff]+$"
     )
@@ -295,6 +293,11 @@ def is_block_paragraph(
 
     # copy and remove just PI
     _lines = [line for line in lines if line[0] != -1]
+    # if it is length one it is a block because who makes a 1 line list in braille
+    if len(_lines) == 1:
+        return True
+
+
     block_len = len(_lines)
     block = [line[2] for line in _lines if line[0] == depth]
     # if not all lines have depth  indent
@@ -326,8 +329,8 @@ def is_block_paragraph(
         return False
 
     # if all lines end in punctuation assume list
-    #if not [line for line in block if not _end_punctuation_equal_re.match(line)]:
-        #return False
+    if not [line for line in block if not _end_punctuation_equal_re.match(line)]:
+        return False
 
     return True
 
