@@ -12,6 +12,7 @@ from collections import Counter, deque
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, UTC
+from importlib import resources
 from mimetypes import MimeTypes
 from pathlib import Path
 from typing import Sequence, AnyStr
@@ -23,8 +24,7 @@ from lxml.builder import ElementMaker
 
 from brf2ebrl.parser import Parser
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
-from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem, DateCopyrighted, DateTranscribed, BrailleSystem, \
-    Producer, ensure_default_metadata
+from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem, ensure_default_metadata
 from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META, FORMAT, DATE
 
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
@@ -116,6 +116,9 @@ class EBrlZippedBundler(Bundler):
         self.metadata_entries = metadata_entries
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
+        with resources.as_file(resources.files("brf2ebrl.ebrl.static")) as template_path:
+            for p in template_path.rglob("*"):
+                self._zipfile.write(p, arcname=p.relative_to(template_path))
     def _create_navigation_html(self, opf_name: str) -> str:
         page_refs = []
         headings = deque()
