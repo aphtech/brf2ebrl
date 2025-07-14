@@ -118,7 +118,8 @@ class EBrlZippedBundler(Bundler):
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
         with resources.as_file(resources.files("brf2ebrl.ebrl.static")) as template_path:
             for p in template_path.rglob("*"):
-                self._zipfile.write(p, arcname=p.relative_to(template_path))
+                if p.is_file():
+                    self.write_file(p.relative_to(template_path), p, add_to_spine=False)
     def _create_navigation_html(self, opf_name: str) -> str:
         page_refs = []
         headings = deque()

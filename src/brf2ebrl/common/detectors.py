@@ -12,7 +12,7 @@ from enum import Enum, auto
 
 import lxml.etree
 import lxml.html
-from lxml.html.builder import HTML, BODY
+from lxml.html.builder import HTML, BODY, HEAD, LINK
 
 from brf2ebrl import ParserContext
 from brf2ebrl.parser import DetectionResult, DetectionState, Detector
@@ -115,6 +115,9 @@ def create_running_head_detector(min_indent: int) -> Detector:
 def xhtml_fixup_detector(input_text: str, _: ParserContext) -> str:
     try:
         root = HTML(
+            HEAD(
+                LINK(rel="stylesheet", type="text/css", href="css/default.css")
+            ),
             BODY(
                 *(lxml.html.fragments_fromstring(input_text, parser=lxml.html.xhtml_parser))
             )
