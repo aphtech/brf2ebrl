@@ -1,7 +1,5 @@
 [tool.pdm]
 version = { source = "file", path = "src/brf2ebrl/__init__.py" }
-[tool.pdm.build]
-includes = ["src/"]
 [tool.pdm.scripts]
 build_exe = "python -m nuitka --include-package=brf2ebrl_bana --standalone {args} src/brf2ebrl/scripts/brf2ebrl.py"
 test = "pytest"
