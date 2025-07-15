@@ -23,6 +23,7 @@ name = "brf2ebrl"
 description = "A tool for converting BRF to eBRL."
 authors = [
     {name = "Michael Whapples", email = "mwhapples@aph.org"},
+    {name = "Ken Perry", email = "kperry@aph.org"},
 ]
 dependencies = [
     "regex>=2024.11.6",
