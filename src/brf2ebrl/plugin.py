@@ -7,6 +7,7 @@
 import importlib
 import os
 import pkgutil
+import shutil
 from abc import abstractmethod, ABC
 from collections import Counter, deque
 from collections.abc import Iterable
@@ -154,7 +155,12 @@ class EBrlZippedBundler(Bundler):
                                          in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
     def write_file(self, name: str, filename: str|Path, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
-        self._zipfile.write(filename, arch_name)
+        if filename is Path:
+            with self._zipfile.open(arch_name, mode='w') as dest:
+                with filename.open(mode='r') as src:
+                    shutil.copyfileobj(src, dest)
+        else:
+            self._zipfile.write(filename, arch_name)
         self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
     def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
