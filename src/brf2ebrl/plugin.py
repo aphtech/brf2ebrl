@@ -51,7 +51,7 @@ class Bundler(ABC):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
     @abstractmethod
-    def write_file(self, name: str, filename: str, add_to_spine: bool):
+    def write_file(self, name: str, path: Path, add_to_spine: bool):
         """Write an existing file to the bundle."""
         pass
     @abstractmethod
@@ -60,7 +60,7 @@ class Bundler(ABC):
         pass
     def write_image(self, name: str, filename: str):
         """Write an image file to the bundle"""
-        self.write_file(name, filename, False)
+        self.write_file(name, Path(filename), False)
     def write_volume(self, name: str, data: AnyStr):
         """Write a volume to the bundle."""
         self.write_str(name, data, True)
@@ -153,22 +153,18 @@ class EBrlZippedBundler(Bundler):
         media_type = next(m for m in get_media_type() if m is not None)
         self._files[name] = OpfFileEntry(media_type=media_type,
                                          in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
-    def write_file(self, name: str, filename: str|Path, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
+    def write_file(self, name: str, path: Path, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str | None = None):
         arch_name = Path(name).as_posix()
-        print(type(filename))
-        if isinstance(filename, Path):
-            with self._zipfile.open(arch_name, mode='w') as dest:
-                with filename.open(mode='rb') as src:
-                    shutil.copyfileobj(src, dest)
-        else:
-            self._zipfile.write(filename, arch_name)
+        with self._zipfile.open(arch_name, mode='w') as dest:
+            with path.open(mode='rb') as src:
+                shutil.copyfileobj(src, dest)
         self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
     def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
         self._zipfile.writestr(arch_name, data)
         self._add_to_files(arch_name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
     def write_image(self, name: str, filename: str):
-        self.write_file(f"ebraille/{name}", filename, False, tactile_graphic=True)
+        self.write_file(f"ebraille/{name}", Path(filename), False, tactile_graphic=True)
     def write_volume(self, name: str, data: AnyStr):
         self.write_str(f"ebraille/{name}", data, True, media_type="application/xhtml+xml")
     def close(self):
