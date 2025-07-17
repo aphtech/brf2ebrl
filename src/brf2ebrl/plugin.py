@@ -23,6 +23,7 @@ from lxml import etree
 from lxml.builder import ElementMaker
 
 from brf2ebrl.parser import Parser
+from brf2ebrl.utils import list_sub_paths
 from brf2ebrl.utils.ebrl import create_navigation_html, PageRef, HeadingRef
 from brf2ebrl.utils.metadata import DEFAULT_METADATA, MetadataItem, ensure_default_metadata
 from brf2ebrl.utils.opf import PACKAGE, METADATA, MANIFEST, SPINE, ITEM, ITEMREF, META, FORMAT, DATE
@@ -116,10 +117,10 @@ class EBrlZippedBundler(Bundler):
         self.metadata_entries = metadata_entries
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
-        with resources.as_file(resources.files("brf2ebrl.ebrl.static")) as template_path:
-            for p in template_path.rglob("*"):
-                if p.is_file():
-                    self.write_file(p.relative_to(template_path), p, add_to_spine=False)
+        files = resources.files("brf2ebrl.ebrl.static")
+        for k,v in list_sub_paths(files):
+            with resources.as_file(v) as p:
+                self.write_file("/".join(k[1:]), p, add_to_spine=False)
     def _create_navigation_html(self, opf_name: str) -> str:
         page_refs = []
         headings = deque()
@@ -151,7 +152,7 @@ class EBrlZippedBundler(Bundler):
         media_type = next(m for m in get_media_type() if m is not None)
         self._files[name] = OpfFileEntry(media_type=media_type,
                                          in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
-    def write_file(self, name: str, filename: str, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
+    def write_file(self, name: str, filename: str|Path, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
         self._zipfile.write(filename, arch_name)
         self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
