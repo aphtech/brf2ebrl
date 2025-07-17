@@ -155,9 +155,9 @@ class EBrlZippedBundler(Bundler):
                                          in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
     def write_file(self, name: str, filename: str|Path, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
         arch_name = Path(name).as_posix()
-        if filename is Path:
+        if isinstance(filename, Path):
             with self._zipfile.open(arch_name, mode='w') as dest:
-                with filename.open(mode='r') as src:
+                with filename.open(mode='rb') as src:
                     shutil.copyfileobj(src, dest)
         else:
             self._zipfile.write(filename, arch_name)
