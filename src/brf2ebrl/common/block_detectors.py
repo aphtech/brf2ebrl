@@ -1,6 +1,6 @@
-
 #  Copyright (c) 2024. American Printing House for the Blind.
 """
+
 #
 git log
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -273,12 +273,10 @@ def has_toc(lines: list[list[int, str, str]]) -> bool:
 
 
 def is_block_paragraph(
-    lines: list[list[str, int, str]], depth: int = 0, cells_per_line: int = 0
+    lines: list[list[int, str, str]], depth: int = 0, cells_per_line: int = 0
 ) -> bool:
     """Check if this is a list or block paragraph."""
 
-
-    
     _roman_re = re.compile(
         "^\u280d{0,3}(\u2809\u280d|\u2809\u2819|\u2819?\u2809{0,3})(\u282d\u2809|\u282d\u2807|\u2807?\u282d{0,3})(\u280a\u282d|\u280a\u2827|\u2827?\u280a{0,3})\u2800[2800-28ff]+$"
     )
@@ -296,7 +294,6 @@ def is_block_paragraph(
     # if it is length one it is a block because who makes a 1 line list in braille
     if len(_lines) == 1:
         return True
-
 
     block_len = len(_lines)
     block = [line[2] for line in _lines if line[0] == depth]
@@ -380,8 +377,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
         f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
     )
 
-
-
     def match_block_line(
         lines: list[list[int, str, str]], current_line: str
     ) -> list[int, str, str]:
@@ -437,7 +432,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
         return []
 
-    def make_block_paragrap(lines: list[list[str, int, str]]) -> str:
+    def make_block_paragrap(lines: list[list[int, str, str]]) -> str:
         return (
             '<p class="left-justified">'
             + "\u2800".join([item for tup in lines for item in tup[1:]])
@@ -467,7 +462,7 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 
 # detect lists
 def create_list_detector(cells_per_line: int) -> Detector:
-    """Creates a detector for finding blokc paragraphs"""
+    """Creates a detector for finding lists"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
     run_over_re = re.compile(
         "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
@@ -479,11 +474,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
     def join_list(lines: list[list[int, str, str]]) -> str:
         """
-        First fine out if toc
-        second if toc set class type
-        third if toc spin through and replace dot 5 and make span and anchor
-        check for dot five split if there take last item if not for anchor
-        if not toc make list
+        join lists
         """
         list_head = '\n<ul style="list-style-type: none">'
         list_tail = "</ul>"
@@ -500,6 +491,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
         lines: list[list[int, str, str]], current_line: str
     ) -> list[int, str, str]:
         """Match lines if they are possibly part of a list"""
+        # if toc return blank list
         if has_toc(lines):
             return []
 
@@ -648,51 +640,49 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
     )
 
-    pi_re = re.compile(
-        f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
+    toc_processing_instruction_re= re.compile(
+        f"((?:{_BLANK_LINE_RE}\n)|(?:{_BRAILLE_PAGE_RE}\n)|(?:{_BRAILLE_PPN_RE}\n)|(?:{_PRINT_PAGE_RE}\n)|(?:{_RUNNING_HEAD_RE}\n))"
+    )
+
+    min_indent = 3
+    heading_re = re.compile(
+        f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)\n+",
+    )
+
+    toc_entry_re = re.compile(
+        r"([\u2800-\u28FF]+?)"  # Group 1: Section title (non-greedy)
+        r"(?:\u2800\u2810{2,}\u2800|\u2800\u2800)"  # Divider: 2+ ⠐ or exactly two ⠀
+        r"([\u2801-\u28FF]+)"  # Group 2: Page number (must not include ⠀)
+        r"(<.*)?"  # Group 3: Optional <...>, only after ⠀
     )
 
     def parse_and_create_toc_entry(line: str) -> str:
-        """Do not use re because there were problems."""
-        end_line = ""
-        pos = line.find("<")
-        if pos != -1:
-            end_line = line[pos:]
-            line = line[:pos].strip("\u2800 ")
+        """use re because there were problems."""
+        toc_lines = line.split("\n")
+        match = toc_entry_re.fullmatch(toc_lines[0])
+        if not match:
+            return line
 
-        line = line.rsplit("\u2800", maxsplit=1)
-        if len(line) < 2:
-            return line[0]
-        line[0] = line[0].strip("\u2810\u2800")
-        return f"<span>{line[0]}</span> <span>{line[1]}</span>{end_line}"
+        if match.group(3):
+            toc_lines[0] = (
+                f"<span>{match.group(1)}</span> <span>{match.group(2)}</span>{match.group(3)}"
+            )
+        else:
+            toc_lines[0] = (
+                f"<span>{match.group(1)}</span> <span>{match.group(2)}</span>"
+            )
+        return "\n".join(toc_lines)
 
-    def join_list(lines: list[list[int, str, str]]) -> str:
+    def join_toc(lines: list[list[int, str, str]]) -> str:
         """
-        First fine out if toc
-        second if toc set class type
-        third if toc spin through and replace dot 5 and make span and anchor
         check for dot five split if there take last item if not for anchor
-        if not toc make list
         """
-        toc = None
-        for line in lines:
-            if line[0] == -1:
-                continue
-            if re.match(r"(.*)(\u2800\u2810{2,}\u2800)(.*)", line[2]):
-                toc = "toc"
-            if toc:
-                break
+        for index, line in enumerate(lines):
+            if line[2]:
+                lines[index][2] = parse_and_create_toc_entry(lines[index][2])
 
-        if toc:
-            for index, line in enumerate(lines):
-                if line[0] != -1 and line[2]:
-                    lines[index][2] = parse_and_create_toc_entry(lines[index][2])
-
-        list_head = '\n<ul style="list-style-type: none">'
-        list_tail = "</ul>"
-        if toc:
-            list_head = '<ol class="toc" style="list-style-type: none">'
-            list_tail = "</ol>"
+        list_head = '<ol class="toc" style="list-style-type: none">'
+        list_tail = "</ol>"
 
         list_str = f"{list_head}\n"
         for line in lines:
@@ -703,94 +693,14 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         list_str += f"{list_tail}\n"
         return list_str
 
-    def is_toc_page_transition(
-        current_line: str
-    ) -> list[int, str, str]:
-        """Return if we are crossing a toc blank page blank boundey.
-        return the .match if found None if not
-        """
-        pattern = re.compile(
-            r"(<\?blank-line\?>[\s]*?"
-            r"<\?braille-page[ \u2801-\u28ff]+\?>[\s]*?"
-            r"<\?braille-ppn[ \u2801-\u28ff]+\?>[\s]*?"
-            r"(?:<\?print-page[ \u2801-\u28ff]+\?>[\s]*?)?"
-            r"(?:<\?running-head[ \u2800-\u28ff]*?\?>[\s]*?)?"
-            r"<\?blank-line\?>[\s]*)"
-        )
-        match = pattern.match(current_line)
-        if match:
-            return match
-        return []
-
-    def match_toc_line(
-        lines: list[list[int, str, str]], current_line: str
-    ) -> list[int, str, str]:
-        """Match lines if they are possibly part of a Toc"""
-
-        toc = is_toc_page_transition(current_line)
-        if toc:
-            if not lines:
-                return []
-            return [-1, toc.group(1), "", toc.end()]
-
-        # if this is a page processing instruction with a blank line after.
-        _pattern = f"(?:(?:{_BRAILLE_PAGE_RE}[\n ])?(?:{_BRAILLE_PPN_RE}[\n ])?(?:{_PRINT_PAGE_RE}[\n ])?(?:</span role.*?</span>[\n ])?(?:{_RUNNING_HEAD_RE}[\n ])?{_BLANK_LINE_RE })"
-        if re.match(_pattern, current_line):
-            return []
-
-        if line := first_line_re.match(current_line):
-            return [0, "", line.group(1), line.end()]
-
-        line = run_over_re.match(current_line)
-        if lines and line:
-
-            level = len(line.group(1))
-
-            # create length of lines without pi
-            levels = [level[0] for level in lines if level[0] != -1]
-            levels_len = len(levels)
-            # # create clean set of levels acending in a list for access
-            levels = list(set(levels))
-
-            if lines[-1][0] == -1:
-                # check for heading on next page.
-                run_over = get_run_over_depth(lines, cells_per_line)
-                if has_toc(lines):
-                    if run_over and level > run_over:
-                        return []
-                else:
-                    if run_over and level >= run_over:
-                        return []
-                if level not in levels and level > (max(levels) + 2):
-                    return []
-
-            # this is to catch paragraphs after blocks with no blanks
-            if (
-                not has_toc(lines)
-                and levels_len > 2
-                and len(levels) == 1
-                and levels[0] == 0
-                and level == 2
-                and is_block_paragraph(lines, 0, cells_per_line)
-            ):
-                return []
-
-            return [level, "", line.group(2), line.end()]
-
-        line = pi_re.match(current_line)
-        if lines and line and line.group(1):
-            return [-1, line.group(1), "", line.end()]
-
-        return []
-
-    def build_list(
+    def build_toc(
         lines: list[list[int, str, str]],
         index: int,
         length: int,
         levels: list[int],
         current_level: int,
     ) -> list:
-        """Recursive list builder, preserving processing instructions and supporting nested lists"""
+        """Recursive list builder, preserving processing instructions and supporting nested toc's"""
         list_level = []
         original_index = index
 
@@ -807,7 +717,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             # Check for deeper nested structure
             if next_line and next_line[0] > current_level:
                 list_level.append(current)
-                nested_index_diff, nested_html = build_list(
+                nested_index_diff, nested_html = build_toc(
                     lines, index + 1, length, levels, next_line[0]
                 )
                 # Avoid mutating original line â€” use a copy
@@ -838,36 +748,104 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             return [index - original_index, joined]
 
         # Otherwise, render HTML list, preserving PI lines
-        return [index - original_index, join_list(list_level)]
+        return [index - original_index, join_toc(list_level)]
 
     def make_toc(lines: list[list[int, str, str]]) -> str:
         """Make a list or nested list"""
         if not has_toc(lines):
-            return []
+            return ""
 
         # create clean set of levels acending
         levels = list({level[0] for level in lines if level[0] != -1})
 
         # one level list
         if len(levels) == 1:
-            return join_list(lines)
+            return join_toc(lines)
 
         #  nested list or over run list
-        _, brl_str = build_list(lines, 0, len(lines), levels, 0)
-        return brl_str
+        _, brl_str = build_toc(lines, 0, len(lines), levels, 0)
+        return str(brl_str)
+
+    def match_toc_line(current_line: str) -> list[int, str, str]:
+        """Match lines if they are possibly part of a list"""
+        if line := first_line_re.match(current_line):
+            return [0, "", line.group(1), line.end()]
+
+        if line := run_over_re.match(current_line):
+            return [len(line.group(1)), "", line.group(2), line.end()]
+
+        return []
+
+    def get_toc_pages(
+        text: str, cursor_offset: int
+    ) -> list[list[list[int, str, str]], int]:
+        """
+        get toc pages
+        return lines and cursor to add to text
+        """
+        new_cursor = cursor_offset
+        new_lines = []
+
+        # consume PI's if consicutive blanks stop and return [[],0]
+        while line := toc_processing_instruction_re.match(text[new_cursor:]):
+            if (
+                new_lines
+                and line.group(1) == "<?blank-line?>\n"
+                and new_lines[-1][1] == line.group(1)
+            ):
+                return [[], cursor_offset]
+            new_lines.append([-1, line.group(1), ""])
+            new_cursor += line.end()
+
+        # if centered heading stop and return [[], 0]
+        center_line = heading_re.match(text[new_cursor:])
+        if center_line:
+            line_brl = center_line.group(2).rstrip("\u2800")
+            indent, indent_mod = divmod(cells_per_line - len(line_brl), 2)
+            indents = [indent] if indent_mod == 0 else [indent, indent + indent_mod]
+            if len(center_line.group(1)) in indents:
+                return [[], cursor_offset]
+
+        # consume all legal toc lines until does not match.
+        while line := match_toc_line(text[new_cursor:]):
+            new_lines.append(line[:3])
+            new_cursor += line[3]
+
+        if not new_lines:
+            return [[], cursor_offset]
+
+        # test if it has at least one with a single set of guide dots or two spaces has
+        # fail if any has two rows or a table divider. and return [[],0]
+        guide_dots = False
+        dots_re = re.compile("\u2810{2,}")
+        for index, line in enumerate(new_lines):
+            if re.findall("\u2810\u2812{2,}", line[2]):
+                return [[], cursor_offset]
+            if dots := dots_re.findall(line[2]):
+                if len(dots) > 1:
+                    return [[], cursor_offset]
+                guide_dots = True
+
+        # not a toc probably a list
+        if not guide_dots:
+            return [[], cursor_offset]
+
+        temp_list = get_toc_pages(text, new_cursor)
+        new_lines.extend(temp_list[0])
+        return [new_lines, temp_list[1]]
 
     def detect_toc(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
+        brl = ""
         lines = []
         new_cursor = cursor
-        brl = ""
-        while line := match_toc_line(lines, text[new_cursor:]):
-            lines.append(line[:3])
-            new_cursor += line[3]
-
+        if first_line_re.match(text[cursor:]):
+            lines, new_cursor = get_toc_pages(text, cursor)
         if lines and not is_block_paragraph(lines, 0, cells_per_line):
             brl = make_toc(lines)
+            if re.search(r"\u2810{3,}", brl):
+                brl = ""
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
             if brl
