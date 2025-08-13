@@ -265,7 +265,7 @@ def create_paragraph_detector(
 
 # tools for paragraphs and blocks:
 def has_toc(lines: list[list[int, str, str]]) -> bool:
-    """return if one of the tiems is a toc entry"""
+    """return if one of the ITEMS is a toc entry"""
     for line in lines:
         if re.search(r".*?\u2810{2,}.*", line[2]):
             return True
@@ -637,7 +637,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding TOC"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
     run_over_re = re.compile(
-        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
+        "(\u2800{2,})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
     )
 
     toc_processing_instruction_re= re.compile(
@@ -717,14 +717,17 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             # Check for deeper nested structure
             if next_line and next_line[0] > current_level:
                 list_level.append(current)
-                nested_index_diff, nested_html = build_toc(
-                    lines, index + 1, length, levels, next_line[0]
-                )
-                # Avoid mutating original line â€” use a copy
-                updated = current.copy()
-                updated[2] += nested_html
-                list_level[-1] = updated
-                index += nested_index_diff + 1
+                if not re.search(r".*?\u2810{2,}.*", current[2]):
+                    nested_index_diff, nested_html = build_toc(
+                        lines, index + 1, length, levels, next_line[0]
+                    )
+                    # Avoid mutating original line â€” use a copy
+                    updated = current.copy()
+                    updated[2] += nested_html
+                    list_level[-1] = updated
+                    index += nested_index_diff + 1
+                    continue
+                index += 1
                 continue
 
             # Check for return to a shallower level
@@ -844,8 +847,8 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             lines, new_cursor = get_toc_pages(text, cursor)
         if lines and not is_block_paragraph(lines, 0, cells_per_line):
             brl = make_toc(lines)
-            if re.search(r"\u2810{3,}", brl):
-                brl = ""
+            #if re.search(r"\u2810{3,}", brl):
+            #    brl = ""
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
             if brl
