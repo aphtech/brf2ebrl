@@ -4,7 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """BANA specific components for processing BRF."""
-
+import string
 from typing import Sequence
 
 from brf2ebrl.common import PageLayout
@@ -39,6 +39,10 @@ def create_brf2ebrl_parser(
     return [
         x
         for x in [
+            Parser(
+                "Ensure only valid BRF ASCII, eg. control characters",
+                lambda x,_: "".join(c for c in x if c in string.printable)
+            ),
             Parser(
                 "Transform to uppercase ASCII",
                 lambda x,_: x.upper()
