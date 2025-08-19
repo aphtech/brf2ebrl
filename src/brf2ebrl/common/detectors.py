@@ -77,7 +77,7 @@ def braille_page_counter_detector(text: str, cursor: int, state: DetectionState,
     return None
 
 
-_BLANK_LINE_RE = re.compile("\n{2,}")
+_BLANK_LINE_RE = re.compile("(\n[ \t\u2800]*)+\n")
 
 
 def convert_blank_line_to_pi(text: str, cursor: int, state: DetectionState, output_text: str) -> DetectionResult | None:
@@ -87,7 +87,7 @@ def convert_blank_line_to_pi(text: str, cursor: int, state: DetectionState, outp
 
 
 def convert_blank_lines_to_processing_instructions(text: str, _: ParserContext) -> str:
-    return _BLANK_LINE_RE.sub(lambda m: "<?blank-line?>".join(["\n"] * len(m.group())),
+    return _BLANK_LINE_RE.sub(lambda m: "<?blank-line?>".join(["\n"] * m.group().count('\n')),
                               text)
 
 
