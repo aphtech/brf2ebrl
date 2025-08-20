@@ -1,6 +1,5 @@
 #  Copyright (c) 2024. American Printing House for the Blind.
 """
-
 #
 git log
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -721,20 +720,25 @@ def create_toc_detector(cells_per_line: int) -> Detector:
 
             # Check for deeper nested structure
             if next_line and next_line[0] > current_level:
-                list_level.append(current)
+                list_level.append(current.copy())
                 nested_index_diff, nested_html = build_toc(
                     lines, index + 1, length, levels, next_line[0]
                 )
-                # Avoid mutating original line â€” use a copy
-                updated = current.copy()
-                updated[2] += nested_html
-                list_level[-1] = updated
+                if re.search("\u2800\u2810{2,}\u2800",current[2]) and not nested_html.startswith("<ol"):
+                    list_level.append(next_line.copy())
+                    list_level[-1][2] = nested_html
+                else:
+                    list_level[-1][2] += nested_html
                 index += nested_index_diff + 1
                 continue
 
             # Check for return to a shallower level
             if next_line and next_line[0] < current_level and next_line[0] != -1:
-                list_level.append(current)
+                list_level.append(current.copy())
+                if not re.search("\u2800\u2810{2,}\u2800",current[2]) and not re.search("\u2800\u2810{2,}\u2800",next_line[2]):
+                    list_level[-1][2] += f"\n{next_line[2]}"
+                    index+=2
+                    continue
                 index += 1
                 break
 
