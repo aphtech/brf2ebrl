@@ -464,178 +464,6 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     return detect_block_paragraph
 
 
-# detect lists
-def create_list_detector(cells_per_line: int) -> Detector:
-    """Creates a detector for finding lists"""
-    first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
-    run_over_re = re.compile(
-        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
-    )
-
-    pi_re = re.compile(
-        f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
-    )
-
-    def join_list(lines: list[list[int, str, str]]) -> str:
-        """
-        join lists
-        """
-        list_head = '\n<ul style="list-style-type: none">'
-        list_tail = "</ul>"
-        list_str = f"{list_head}\n"
-        for line in lines:
-            if line[1]:
-                list_str += f"{line[1]}\n"
-            if line[2]:
-                list_str += f"<li>{line[2]}</li>\n"
-        list_str += f"{list_tail}\n"
-        return list_str
-
-    def match_list_line(
-        lines: list[list[int, str, str]], current_line: str
-    ) -> list[int, str, str]:
-        """Match lines if they are possibly part of a list"""
-        # if toc return blank list
-        if has_toc(lines):
-            return []
-
-        # if this is a page processing instruction with a blank line after.
-        _pattern = f"(?:(?:{_BRAILLE_PAGE_RE}[\n ])?(?:{_BRAILLE_PPN_RE}[\n ])?(?:{_PRINT_PAGE_RE}[\n ])?(?:</span role.*?</span>[\n ])?(?:{_RUNNING_HEAD_RE}[\n ])?{_BLANK_LINE_RE })"
-        if re.match(_pattern, current_line):
-            return []
-
-        if line := first_line_re.match(current_line):
-            return [0, "", line.group(1), line.end()]
-
-        line = run_over_re.match(current_line)
-        if lines and line:
-
-            level = len(line.group(1))
-
-            # create length of lines without pi
-            levels = [level[0] for level in lines if level[0] != -1]
-            levels_len = len(levels)
-            # # create clean set of levels acending in a list for access
-            levels = list(set(levels))
-
-            if lines[-1][0] == -1:
-                # check for heading on next page.
-                run_over = get_run_over_depth(lines, cells_per_line)
-                if run_over and level >= run_over:
-                    return []
-                if level not in levels and level > (max(levels) + 2):
-                    return []
-
-            # this is to catch paragraphs after blocks with no blanks
-            if (
-                levels_len > 2
-                and len(levels) == 1
-                and levels[0] == 0
-                and level == 2
-                and is_block_paragraph(lines, 0, cells_per_line)
-            ):
-                return []
-
-            return [level, "", line.group(2), line.end()]
-
-        line = pi_re.match(current_line)
-        if lines and line and line.group(1):
-            return [-1, line.group(1), "", line.end()]
-
-        return []
-
-    def build_list(
-        lines: list[list[int, str, str]],
-        index: int,
-        length: int,
-        levels: list[int],
-        current_level: int,
-    ) -> list:
-        """Recursive list builder, preserving processing instructions and supporting nested lists"""
-        list_level = []
-        original_index = index
-
-        while index < length:
-            current = lines[index]
-            next_line = lines[index + 1] if (index + 1) < length else None
-
-            # Always include processing instructions
-            if current[0] == -1:
-                list_level.append(current)
-                index += 1
-                continue
-
-            # Check for deeper nested structure
-            if next_line and next_line[0] > current_level:
-                list_level.append(current)
-                nested_index_diff, nested_html = build_list(
-                    lines, index + 1, length, levels, next_line[0]
-                )
-                # Avoid mutating original line â€” use a copy
-                updated = current.copy()
-                updated[2] += nested_html
-                list_level[-1] = updated
-                index += nested_index_diff + 1
-                continue
-
-            # Check for return to a shallower level
-            if next_line and next_line[0] < current_level and next_line[0] != -1:
-                list_level.append(current)
-                index += 1
-                break
-
-            # Normal list entry
-            list_level.append(current)
-            index += 1
-
-        # At deepest level, check if it's a block paragraph
-        if current_level == levels[-1] and is_block_paragraph(
-            list_level, current_level, cells_per_line
-        ):
-            joined = "".join(
-                f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
-                for line in list_level
-            )
-            return [index - original_index, joined]
-
-        # Otherwise, render HTML list, preserving PI lines
-        return [index - original_index, join_list(list_level)]
-
-    def make_lists(lines: list[list[int, str, str]]) -> str:
-        """Make a list or nested list"""
-
-        # create clean set of levels acending
-        levels = list({level[0] for level in lines if level[0] != -1})
-
-        # one level list
-        if len(levels) == 1:
-            return join_list(lines)
-
-        #  nested list or over run list
-        _, brl_str = build_list(lines, 0, len(lines), levels, 0)
-        return brl_str
-
-    def detect_list(
-        text: str, cursor: int, state: DetectionState, output_text: str
-    ) -> DetectionResult | None:
-        lines = []
-        new_cursor = cursor
-        brl = ""
-        while line := match_list_line(lines, text[new_cursor:]):
-            lines.append(line[:3])
-            new_cursor += line[3]
-
-        if lines and not is_block_paragraph(lines, 0, cells_per_line):
-            brl = make_lists(lines)
-        return (
-            DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
-            if brl
-            else None
-        )
-
-    return detect_list
-
-
 # detect TOC
 def create_toc_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding TOC"""
@@ -863,3 +691,178 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         )
 
     return detect_toc
+
+
+# detect lists
+def create_list_detector(cells_per_line: int) -> Detector:
+    """Creates a detector for finding lists"""
+    first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
+    run_over_re = re.compile(
+        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
+    )
+
+    pi_re = re.compile(
+        f"((?:{_BRAILLE_PAGE_RE}\n)?(?:{_BRAILLE_PPN_RE}\n)?(?:{_PRINT_PAGE_RE}\n)?(?:{_RUNNING_HEAD_RE}\n)?)"
+    )
+
+    def join_list(lines: list[list[int, str, str]]) -> str:
+        """
+        join lists
+        """
+        list_head = '\n<ul style="list-style-type: none">'
+        list_tail = "</ul>"
+        list_str = f"{list_head}\n"
+        for line in lines:
+            if line[1]:
+                list_str += f"{line[1]}\n"
+            if line[2]:
+                list_str += f"<li>{line[2]}</li>\n"
+        list_str += f"{list_tail}\n"
+        return list_str
+
+    def match_list_line(
+        lines: list[list[int, str, str]], current_line: str
+    ) -> list[int, str, str]:
+        """Match lines if they are possibly part of a list"""
+        # if toc return blank list
+        if has_toc(lines):
+            return []
+
+        # if this is a page processing instruction with a blank line after.
+        _pattern = f"(?:(?:{_BRAILLE_PAGE_RE}[\n ])?(?:{_BRAILLE_PPN_RE}[\n ])?(?:{_PRINT_PAGE_RE}[\n ])?(?:</span role.*?</span>[\n ])?(?:{_RUNNING_HEAD_RE}[\n ])?{_BLANK_LINE_RE })"
+        if re.match(_pattern, current_line):
+            return []
+
+        if line := first_line_re.match(current_line):
+            return [0, "", line.group(1), line.end()]
+
+        line = run_over_re.match(current_line)
+        if lines and line:
+
+            level = len(line.group(1))
+
+            # create length of lines without pi
+            levels = [level[0] for level in lines if level[0] != -1]
+            levels_len = len(levels)
+            # # create clean set of levels acending in a list for access
+            levels = list(set(levels))
+
+            if lines[-1][0] == -1:
+                # check for heading on next page.
+                run_over = get_run_over_depth(lines, cells_per_line)
+                if run_over and level >= run_over:
+                    return []
+                if level not in levels and level > (max(levels) + 2):
+                    return []
+
+            # this is to catch paragraphs after blocks with no blanks
+            if (
+                levels_len > 2
+                and len(levels) == 1
+                and levels[0] == 0
+                and level == 2
+                and is_block_paragraph(lines, 0, cells_per_line)
+            ):
+                return []
+
+            return [level, "", line.group(2), line.end()]
+
+        line = pi_re.match(current_line)
+        if lines and line and line.group(1):
+            return [-1, line.group(1), "", line.end()]
+
+        return []
+
+    def build_list(
+        lines: list[list[int, str, str]],
+        index: int,
+        length: int,
+        levels: list[int],
+        current_level: int,
+    ) -> list:
+        """Recursive list builder, preserving processing instructions and supporting nested lists"""
+        list_level = []
+        original_index = index
+
+        while index < length:
+            current = lines[index]
+            next_line = lines[index + 1] if (index + 1) < length else None
+
+            # Always include processing instructions
+            if current[0] == -1:
+                list_level.append(current)
+                index += 1
+                continue
+
+            # Check for deeper nested structure
+            if next_line and next_line[0] > current_level:
+                list_level.append(current)
+                nested_index_diff, nested_html = build_list(
+                    lines, index + 1, length, levels, next_line[0]
+                )
+                # Avoid mutating original line â€” use a copy
+                updated = current.copy()
+                updated[2] += nested_html
+                list_level[-1] = updated
+                index += nested_index_diff + 1
+                continue
+
+            # Check for return to a shallower level
+            if next_line and next_line[0] < current_level and next_line[0] != -1:
+                list_level.append(current)
+                index += 1
+                break
+
+            # Normal list entry
+            list_level.append(current)
+            index += 1
+
+        # At deepest level, check if it's a block paragraph
+        if current_level == levels[-1] and is_block_paragraph(
+            list_level, current_level, cells_per_line
+        ):
+            joined = "".join(
+                f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
+                for line in list_level
+            )
+            return [index - original_index, joined]
+
+        # Otherwise, render HTML list, preserving PI lines
+        return [index - original_index, join_list(list_level)]
+
+    def make_lists(lines: list[list[int, str, str]]) -> str:
+        """Make a list or nested list"""
+
+        # create clean set of levels acending
+        levels = list({level[0] for level in lines if level[0] != -1})
+
+        # one level list
+        if len(levels) == 1:
+            return join_list(lines)
+
+        #  nested list or over run list
+        _, brl_str = build_list(lines, 0, len(lines), levels, 0)
+        return brl_str
+
+    def detect_list(
+        text: str, cursor: int, state: DetectionState, output_text: str
+    ) -> DetectionResult | None:
+        lines = []
+        new_cursor = cursor
+        brl = ""
+        while line := match_list_line(lines, text[new_cursor:]):
+            lines.append(line[:3])
+            new_cursor += line[3]
+
+        if lines and not is_block_paragraph(lines, 0, cells_per_line):
+            brl = make_lists(lines)
+        return (
+            DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
+            if brl
+            else None
+        )
+
+    return detect_list
+
+
+
