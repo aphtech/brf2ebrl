@@ -682,6 +682,9 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             lines, new_cursor = get_toc_pages(text, cursor)
         if lines :
             brl = make_toc(lines)
+            # do not suck in table
+            if re.findall("\u2810\u2812+\u2800+\u2810+\u2812+",brl):
+                brl = ""
             #if re.search(r"\u2810{3,}", brl):
                 #brl = ""
         return (
@@ -733,6 +736,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
         if re.match(_pattern, current_line):
             return []
 
+        
         if line := first_line_re.match(current_line):
             return [0, "", line.group(1), line.end()]
 
@@ -856,6 +860,8 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
         if lines and not is_block_paragraph(lines, 0, cells_per_line):
             brl = make_lists(lines)
+            if re.findall("\u2810\u2812+\u2800+\u2810+\u2812+",brl):
+                brl = ""
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
             if brl
