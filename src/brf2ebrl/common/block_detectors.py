@@ -469,7 +469,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding TOC"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
     run_over_re = re.compile(
-        "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
+        "(\u2800+)([\u2801-\u28ff][\u2800-\u28ff]*)\n"
     )
 
     toc_processing_instruction_re= re.compile(
@@ -640,7 +640,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             line_brl = center_line.group(2).rstrip("\u2800")
             indent, indent_mod = divmod(cells_per_line - len(line_brl), 2)
             indents = [indent] if indent_mod == 0 else [indent, indent + indent_mod]
-            if len(center_line.group(1)) in indents:
+            if len(center_line.group(1)) in indents and not re.findall("\u2808\u2828\u2823[\u2800-\u28ff]*\n",text[new_cursor:]):
                 return [[], cursor_offset]
 
 
