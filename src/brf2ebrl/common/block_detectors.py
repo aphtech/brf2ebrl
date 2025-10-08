@@ -300,10 +300,10 @@ def is_block_paragraph(
     # if not all lines have depth  indent
     if len(block) != block_len:
         return False
-        
+
     # if all lines start with the same symbole then not block
     if all(line[0] == block[0][0] for line in block):
-        return False    
+        return False
 
     # Willo idea.
     # # if any of the lines start with a word that could fit on the previous line its a list
@@ -340,7 +340,7 @@ def is_block_paragraph(
 def is_list(
     lines: list[list[int, str, str]], depth: int = 0, cells_per_line: int = 0
 ) -> bool:
-    """Check if this is a list """
+    """Check if this is a list"""
 
     _roman_re = re.compile(
         "^\u280d{0,3}(\u2809\u280d|\u2809\u2819|\u2819?\u2809{0,3})(\u282d\u2809|\u282d\u2807|\u2807?\u282d{0,3})(\u280a\u282d|\u280a\u2827|\u2827?\u280a{0,3})\u2800[2800-28ff]+$"
@@ -365,7 +365,7 @@ def is_list(
     # if not all lines have depth  indent
     if len(block) != block_len:
         return False
-        
+
     # if all lines start with the same symbole then list
     if all(line[0] == block[0][0] for line in block):
         return True
@@ -400,6 +400,7 @@ def is_list(
 
     # do not know so default
     return False
+
 
 def get_run_over_depth(
     lines: list[list[int, str]], cells_per_line: int
@@ -504,7 +505,11 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
     def make_block_paragrap(lines: list[list[int, str, str]]) -> str:
         return (
             '<p class="left-justified">'
-            + ("\u2800".join([item.strip("\u2800") for tup in lines for item in tup[1:]])).strip("\u2800")
+            + (
+                "\u2800".join(
+                    [item.strip("\u2800") for tup in lines for item in tup[1:]]
+                )
+            ).strip("\u2800")
             + "</p>"
         )
 
@@ -533,11 +538,9 @@ def create_block_paragraph_detector(cells_per_line: int) -> Detector:
 def create_toc_detector(cells_per_line: int) -> Detector:
     """Creates a detector for finding TOC"""
     first_line_re = re.compile("([\u2801-\u28ff][\u2800-\u28ff]*)\n")
-    run_over_re = re.compile(
-        "(\u2800+)([\u2801-\u28ff][\u2800-\u28ff]*)\n"
-    )
+    run_over_re = re.compile("(\u2800+)([\u2801-\u28ff][\u2800-\u28ff]*)\n")
 
-    toc_processing_instruction_re= re.compile(
+    toc_processing_instruction_re = re.compile(
         f"((?:{_BLANK_LINE_RE}\n)|(?:{_BRAILLE_PAGE_RE}\n)|(?:{_BRAILLE_PPN_RE}\n)|(?:{_PRINT_PAGE_RE}\n)|(?:{_RUNNING_HEAD_RE}\n))"
     )
 
@@ -617,7 +620,9 @@ def create_toc_detector(cells_per_line: int) -> Detector:
                 nested_index_diff, nested_html = build_toc(
                     lines, index + 1, length, levels, next_line[0]
                 )
-                if re.search("\u2800\u2810{2,}\u2800",current[2]) and not nested_html.startswith("<ol"):
+                if re.search(
+                    "\u2800\u2810{2,}\u2800", current[2]
+                ) and not nested_html.startswith("<ol"):
                     list_level.append(next_line.copy())
                     list_level[-1][2] = nested_html
                 else:
@@ -628,9 +633,11 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             # Check for return to a shallower level
             if next_line and next_line[0] < current_level and next_line[0] != -1:
                 list_level.append(current.copy())
-                if not re.search("\u2800\u2810{2,}\u2800",current[2]) and not re.search("\u2800\u2810{2,}\u2800",next_line[2]):
+                if not re.search(
+                    "\u2800\u2810{2,}\u2800", current[2]
+                ) and not re.search("\u2800\u2810{2,}\u2800", next_line[2]):
                     list_level[-1][2] += f"\n{next_line[2]}"
-                    index+=2
+                    index += 2
                     continue
                 index += 1
                 break
@@ -679,7 +686,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         return []
 
     def get_toc_pages(
-        text: str, cursor_offset: int,debug: int = 0
+        text: str, cursor_offset: int, debug: int = 0
     ) -> list[list[list[int, str, str]], int]:
         """
         get toc pages
@@ -705,9 +712,10 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             line_brl = center_line.group(2).rstrip("\u2800")
             indent, indent_mod = divmod(cells_per_line - len(line_brl), 2)
             indents = [indent] if indent_mod == 0 else [indent, indent + indent_mod]
-            if len(center_line.group(1)) in indents and not re.findall("\u2808\u2828\u2823[\u2800-\u28ff]*\n",text[new_cursor:]):
+            if len(center_line.group(1)) in indents and not re.findall(
+                "\u2808\u2828\u2823[\u2800-\u28ff]*\n", text[new_cursor:]
+            ):
                 return [[], cursor_offset]
-
 
         # consume all legal toc lines until does not match.
         while line := match_toc_line(text[new_cursor:]):
@@ -721,7 +729,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         # fail if any has two rows or a table divider. and return [[],0]
         guide_dots = False
         dots_re = re.compile("\u2810{2,}")
-        for index, line in enumerate(new_lines):
+        for line in new_lines:
             if re.findall("\u2810\u2812{2,}", line[2]):
                 return [[], cursor_offset]
             if dots := dots_re.findall(line[2]):
@@ -732,8 +740,8 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         # not a toc probably a list
         if not guide_dots:
             return [[], cursor_offset]
-        
-        temp_list = get_toc_pages(text, new_cursor,debug+1)
+
+        temp_list = get_toc_pages(text, new_cursor, debug + 1)
         new_lines.extend(temp_list[0])
         return [new_lines, temp_list[1]]
 
@@ -745,13 +753,13 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         new_cursor = cursor
         if first_line_re.match(text[cursor:]):
             lines, new_cursor = get_toc_pages(text, cursor)
-        if lines :
+        if lines:
             brl = make_toc(lines)
             # do not suck in table
-            if re.findall("\u2810\u2812+\u2800+\u2810+\u2812+",brl):
+            if re.findall("\u2810\u2812+\u2800+\u2810+\u2812+", brl):
                 brl = ""
-            #if re.search(r"\u2810{3,}", brl):
-                #brl = ""
+            # if re.search(r"\u2810{3,}", brl):
+            # brl = ""
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
             if brl
@@ -769,7 +777,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
         "(\u2800{2}|\u2800{4}|\u2800{6}|\u2800{8}|\u2800{10}|\u2800{12}|\u2800{14})([\u2801-\u28ff][\u2800-\u28ff]*)\n"
     )
 
-    list_processing_instruction_re= re.compile(
+    list_processing_instruction_re = re.compile(
         f"((?:{_BLANK_LINE_RE}\n)|(?:{_BRAILLE_PAGE_RE}\n)|(?:{_BRAILLE_PPN_RE}\n)|(?:{_PRINT_PAGE_RE}\n)|(?:{_RUNNING_HEAD_RE}\n))"
     )
 
@@ -777,8 +785,6 @@ def create_list_detector(cells_per_line: int) -> Detector:
     heading_re = re.compile(
         f"(\u2800{{{min_indent},}})([\u2801-\u28ff][\u2800-\u28ff]*)\n+",
     )
-
-    
 
     def join_list(lines: list[list[int, str, str]]) -> str:
         """
@@ -795,50 +801,6 @@ def create_list_detector(cells_per_line: int) -> Detector:
         list_str += f"{list_tail}\n"
         return list_str
 
-    def match_old_list_line(
-        lines: list[list[int, str, str]], current_line: str
-    ) -> list[int, str, str]:
-        """Match lines if they are possibly part of a list"""
-        # if toc return blank list
-        if has_toc(lines):
-            return []
-
-        # if this is a page processing instruction with a blank line after.
-        _pattern = f"(?:(?:{_BRAILLE_PAGE_RE}[\n ])?(?:{_BRAILLE_PPN_RE}[\n ])?(?:{_PRINT_PAGE_RE}[\n ])?(?:</span role.*?</span>[\n ])?(?:{_RUNNING_HEAD_RE}[\n ])?{_BLANK_LINE_RE })"
-        if re.match(_pattern, current_line):
-            return []
-
-        if line := first_line_re.match(current_line):
-            return [0, "", line.group(1), line.end()]
-
-        line = run_over_re.match(current_line)
-        if lines and line:
-
-            level = len(line.group(1))
-
-            # create length of lines without pi
-            levels = [level[0] for level in lines if level[0] != -1]
-            levels_len = len(levels)
-            # # create clean set of levels acending in a list for access
-            levels = list(set(levels))
-
-            if lines[-1][0] == -1:
-                # check for heading on next page.
-                run_over = get_run_over_depth(lines, cells_per_line)
-                if run_over and level >= run_over:
-                    return []
-                if level not in levels and level > (max(levels) + 2):
-                    return []
-
-            
-            return [level, "", line.group(2), line.end()]
-
-        line = list_processing_instruction_re.match(current_line)
-        if lines and line and line.group(1):
-            return [-1, line.group(1), "", line.end()]
-
-        return []
-
     def build_list(
         lines: list[list[int, str, str]],
         index: int,
@@ -849,47 +811,38 @@ def create_list_detector(cells_per_line: int) -> Detector:
         """Recursive list builder, preserving processing instructions and supporting nested lists"""
         list_level = []
         original_index = index
+        list_index = -1
 
         while index < length:
-            current = lines[index]
-            next_index = index+1
+            list_level.append(lines[index].copy())
+            if list_level[-1][0] == current_level:
+                list_index = len(list_level) - 1
+            index += 1
 
-            # Always include processing instructions
-            while  current and current[0] == -1:
-                list_level.append(current.copy())
-                index += 1
-                current  = lines[index] if index < length else None
-
-            if not current:
+            if index == length:
                 break
 
-            if next_index != index+1:
-                next_index = index
-            next_line = lines[next_index] if next_index < length else None
-            while  next_line and next_line[0] == -1:
-                list_level.append(next_line.copy())
-                next_index += 1
-                next_line = lines[next_index ] if next_index< length else None
-            
-            # Check for deeper nested structure
-            if next_line and next_line[0] > current_level:
-                list_level.append(current.copy())
+            if (
+                lines[index] and lines[index][0] > current_level
+            ):  # and lines[index-1][0] != -1:# Check for deeper nested structure
                 nested_index_diff, nested_html = build_list(
-                    lines, next_index, length, levels, next_line[0]
+                    lines, index, length, levels, lines[index][0]
                 )
-                list_level[-1][2] += nested_html
-                index += nested_index_diff + 1
-                continue
-
-            # Check for return to a shallower level
-            if next_line and next_line[0] < current_level and next_line[0] != -1:
-                list_level.append(current.copy())
-                index = next_index
+                if list_index >= 0:
+                    list_level[list_index][2] += (
+                        "\u2800".join(
+                            [item[1] for item in list_level[list_index + 1 :]]
+                        )
+                        + nested_html
+                    )
+                    list_level = list_level[: list_index + 1]
+                else:
+                    list_level[-1][2] += nested_html
+                index += nested_index_diff
+            elif (
+                lines[index][0] < current_level and lines[index][0] != -1
+            ):  # Check for return to a shallower level
                 break
-
-            # Normal list entry
-            list_level.append(current)
-            index = next_index
 
         # At deepest level, check if it's a block paragraph
         if current_level >= levels[-1] and is_block_paragraph(
@@ -899,10 +852,11 @@ def create_list_detector(cells_per_line: int) -> Detector:
                 f"{line[1]}\u2800{line[2]}" if line[1] else line[2]
                 for line in list_level
             )
-            return [index - original_index, joined]
+            return [index - original_index, re.sub(r"[\u2800]{2,}", "\u2800", joined)]
 
         # Otherwise, render HTML list, preserving PI lines
-        return [index - original_index, join_list(list_level)]
+        joined = join_list(list_level)
+        return [index - original_index, re.sub(r"[\u2800]{2,}", "\u2800", joined)]
 
     def make_list(lines: list[list[int, str, str]]) -> str:
         """Make a list or nested list"""
@@ -918,8 +872,6 @@ def create_list_detector(cells_per_line: int) -> Detector:
         _, brl_str = build_list(lines, 0, len(lines), levels, 0)
         return brl_str
 
-
-
     def match_list_line(current_line: str) -> list[int, str, str]:
         """Match lines if they are possibly part of a list"""
         if line := first_line_re.match(current_line):
@@ -931,9 +883,10 @@ def create_list_detector(cells_per_line: int) -> Detector:
         return []
 
     _BRAILLE_PAGE_CAPTURE_RE = re.compile("(?:<\\?braille-page([ \u2800-\u28ff]*)\\?>)")
-    
+    _BRAILLE_PPN_CAPTURE_RE = re.compile("(?:<\\?braille-ppn([ \u2800-\u28ff]*)\\?>)")
+
     def get_list_pages(
-        text: str, cursor_offset: int,debug: int = 0
+        text: str, cursor_offset: int, debug: int = 0
     ) -> list[list[list[int, str, str]], int]:
         """
         get list pages
@@ -947,8 +900,8 @@ def create_list_detector(cells_per_line: int) -> Detector:
         while line := list_processing_instruction_re.match(text[new_cursor:]):
             if line.group(1) == "<?blank-line?>\n":
                 _blank_lines += 1
-            # more than one blank line this is a hard stop 
-            # if _blank_lines > 1:
+                # more than one blank line this is a hard stop
+                # if _blank_lines > 1:
                 return [[], cursor_offset]
             new_lines.append([-1, line.group(1), ""])
             new_cursor += line.end()
@@ -956,76 +909,75 @@ def create_list_detector(cells_per_line: int) -> Detector:
         # last item is a blank line stop
         if new_lines and new_lines[-1][1] == "<?blank-line?>\n":
             return [[], cursor_offset]
-        
+
         # get page number length for two calculations later
-        page_number_length = 0
+        braille_page_length = 0
+        braille_ppn_length = 0
         for line in new_lines:
-            m = _BRAILLE_PAGE_CAPTURE_RE.match(line[1])
-            if m:
-                page_number_length = len(m.group(1).strip()) if m.group(1) else 0
+            if match := _BRAILLE_PAGE_CAPTURE_RE.match(line[1]):
+                braille_page_length = (
+                    len(match.group(1).strip()) if match.group(1) else 0
+                )
+            elif match := _BRAILLE_PPN_CAPTURE_RE.match(line[1]):
+                braille_ppn_length = (
+                    len(match.group(1).strip()) if match.group(1) else 0
+                )
+            elif braille_page_length and braille_ppn_length:
                 break
 
-        if new_lines and new_lines[0][1] == "<?blank-line?>\n" :
-            #if no page number stop because blank line stops if it fits
-            if page_number_length:
+        if new_lines and new_lines[0][1] == "<?blank-line?>\n":
+            # if no page number stop because blank line stops if it fits
+            if braille_page_length:
                 return [[], cursor_offset]
-        
+
             # get line
-            line =  match_list_line(text[new_cursor:])
+            line = match_list_line(text[new_cursor:])
             # #add indent, 3 spaces, page number length, and line to see if less thancells_per_line
-            #stop if line fits because it could have been on previous page
-            if (line[0] + 3 + page_number_length + len(line[2])) <  cells_per_line:
-                return [[], cursor_offset]+len(line[2])
-
-
+            # stop if line fits because it could have been on previous page
+            if (line[0] + 3 + braille_page_length + len(line[2])) < cells_per_line:
+                return [[], cursor_offset] + len(line[2])
 
         # if centered heading stop and return [[], 0]
         center_line = heading_re.match(text[new_cursor:])
-        #test with out center just any heading
+        # test with out center just any heading
         if center_line:
-            return [[],cursor_offset]
-            """"""
-            line_brl = center_line.group(2).rstrip("\u2800")
-            indent, indent_mod = divmod(cells_per_line - len(line_brl), 2)
-            indents = [indent] if indent_mod == 0 else [indent, indent + indent_mod]
-            if len(center_line.group(1)) in indents:
-                return [[], cursor_offset]
-            """"""
-
+            return [[], cursor_offset]
 
         # consume all legal list items until does not match.
+        # if first line and has ppn then add spaces
+        count = 1
         while line := match_list_line(text[new_cursor:]):
+            # if first line length is less than cells per line and page number then add remaining spaces
+            if count == 1 and braille_ppn_length:
+                line[2] += "\u2800" * (cells_per_line - len(line[2]))
+            count += 1
             new_lines.append(line[:3])
             new_cursor += line[3]
 
-        _block = [line for line in new_lines if line[0] != -1] 
+        _block = [line for line in new_lines if line[0] != -1]
         if not _block:
             return [[], cursor_offset]
 
-        # fail if any has 1 set of guide dots rows or a table divider. and return 
+        # fail if any has 1 set of guide dots rows or a table divider. and return
         dots_re = re.compile("\u2810{2,}")
-        for index, line in enumerate(new_lines):
+        for line in new_lines:
             if re.findall("\u2810\u2812{2,}", line[2]):
                 return [[], cursor_offset]
-            if dots := dots_re.findall(line[2]):
+            if dots_re.findall(line[2]):
                 return [[], cursor_offset]
-        
-        # if last line length is less than cells per line and page number then add 3 +page number length *\u2800
-        if not page_number_length:
+
+        # if last line length is less than cells per line and page number then add remaining spaces
+        if not braille_page_length:
             line = list_processing_instruction_re.match(text[new_cursor:])
             if line and line.group(1) != "<?blank-line?>\n":
-                new_lines[-1][2] +=  ("\u2800" *(cells_per_line - len(new_lines[-1][2])))
-
-
-
+                new_lines[-1][2] += "\u2800" * (cells_per_line - len(new_lines[-1][2]))
 
         if is_block_paragraph(_block[1:]):
-             return [[],cursor_offset]        
-        
-        temp_list = get_list_pages(text, new_cursor,debug+1)
+            return [[], cursor_offset]
+
+        temp_list = get_list_pages(text, new_cursor, debug + 1)
         new_lines.extend(temp_list[0])
         return [new_lines, temp_list[1]]
-
 
     def detect_list(
         text: str, cursor: int, state: DetectionState, output_text: str
@@ -1035,16 +987,14 @@ def create_list_detector(cells_per_line: int) -> Detector:
         new_cursor = cursor
         if first_line_re.match(text[cursor:]):
             lines, new_cursor = get_list_pages(text, cursor)
-        if lines :
+        if lines:
             brl = make_list(lines)
-            #if re.search(r"\u2810{3,}", brl):
-                #brl = ""
+            # if re.search(r"\u2810{3,}", brl):
+            # brl = ""
         return (
             DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
             if brl
             else None
         )
-    
+
     return detect_list
-
-
