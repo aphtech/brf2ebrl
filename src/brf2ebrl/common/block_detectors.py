@@ -839,10 +839,10 @@ def create_list_detector(cells_per_line: int) -> Detector:
                     list_level = list_level[: list_index + 1]
                 else:
                     list_level[-1][2] += nested_html
-                index += nested_index_diff
+                index += nested_index_diff-1
             elif (
                 lines[index][0] < current_level and lines[index][0] != -1
-            ):  # Check for return to a shallower level
+            ):  # Check for return to a shallower 
                 break
 
         # At deepest level, check if it's a block paragraph
