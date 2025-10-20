@@ -8,6 +8,7 @@
 import os
 from tempfile import TemporaryDirectory
 from typing import Iterable, Callable
+import zipfile
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import detector_parser, parse, ParserContext, ParserException
@@ -21,7 +22,7 @@ def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], output_ebrf:
     with selected_plugin.create_bundler(output_ebrf, **parser_context.options) as out_bundle:
         with TemporaryDirectory() as temp_dir:
             os.makedirs(os.path.join(temp_dir, "images"), exist_ok=True)
-            for index, brf in enumerate(input_brf_list):
+            for index, brf in enumerate(expand_all_files(input_brf_list)):
                 out_name = selected_plugin.file_mapper(brf, index)
                 temp_file = os.path.join(temp_dir, out_name)
                 selected_parser = selected_plugin.create_brf_parser(
@@ -63,3 +64,24 @@ def convert_brf2ebrl_str(input_brf: str, brf_parser: Iterable[detector_parser],
             brf,
             brf_parser, progress_callback=progress_callback, parser_context=parser_context
         )
+
+def expand_all_files(filenames):
+    "Allows directory and zip files to be included in input"
+    for filename in filenames:
+        if os.path.isdir(filename):
+            # Assume we want everything under that directory
+            # including all subdirectories (recursive call)
+            yield from expand_all_files(
+                filename+os.sep+f for f in
+                sorted(os.listdir(filename),key=lambda x: x.lower()))
+        elif filename.endswith(".zip"):
+            # Assume we want everything inside that zip file
+            # (unpack to temporary directory)
+            with TemporaryDirectory() as temp_dir:
+                with zipfile.ZipFile(filename, 'r') as zip_ref:
+                    zip_ref.extractall(temp_dir)
+                yield from expand_all_files([temp_dir])
+                # and now temp_dir is deleted, which is OK as
+                # the caller processes each file immediately
+                # after the yield: don't need to keep it longer
+        else: yield filename
