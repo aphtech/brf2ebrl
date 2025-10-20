@@ -74,7 +74,7 @@ def expand_all_files(filenames):
             yield from expand_all_files(
                 filename+os.sep+f for f in
                 sorted(os.listdir(filename),key=lambda x: x.lower()))
-        elif filename.endswith(".zip"):
+        elif filename.lower().endswith(".zip"):
             # Assume we want everything inside that zip file
             # (unpack to temporary directory)
             with TemporaryDirectory() as temp_dir:
