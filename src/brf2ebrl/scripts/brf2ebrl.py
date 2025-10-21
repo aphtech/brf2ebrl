@@ -88,7 +88,7 @@ def main():
     debug_args = arg_parser.add_argument_group(title="Debug options")
     debug_args.add_argument("-pp", "--parser-passes", type=int, default=None, help="Only run number of parser passes.")
     arg_parser.add_argument("-o", "--output", dest="output_file", help="The output file name", required=True)
-    arg_parser.add_argument("brfs", help="The input BRFs to convert", nargs="+")
+    arg_parser.add_argument("brfs", help="The input BRFs to convert (you can also specify directories and zip files if these contain nothing but BRFs)", nargs="+")
     args = arg_parser.parse_args()
 
     try:
