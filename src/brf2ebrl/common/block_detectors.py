@@ -810,40 +810,28 @@ def create_list_detector(cells_per_line: int) -> Detector:
         current_level: int,
     ) -> list:
         """Recursive list builder, preserving processing instructions and supporting nested lists"""
-        list_level = []
+        list_level = [lines[index].copy()]
         original_index = index
-        list_index = -1
+        index += 1
 
         while index < length:
-            list_level.append(lines[index].copy())
-            if list_level[-1][0] == current_level:
-                list_index = len(list_level) - 1
-            index += 1
-
-            if index == length:
-                break
-
-            if (
-                lines[index] and lines[index][0] > current_level
-            ):  # and lines[index-1][0] != -1:# Check for deeper nested structure
+            if lines[index][0]== -1:  # Always include processing instructions
+                list_level[-1][2]+= lines[index][1]
+                index += 1
+            elif lines[index] and lines[index][0] > current_level: # Check for deeper nested structure
                 nested_index_diff, nested_html = build_list(
                     lines, index, length, levels, lines[index][0]
                 )
-                if list_index >= 0:
-                    list_level[list_index][2] += (
-                        "\u2800".join(
-                            [item[1] for item in list_level[list_index + 1 :]]
-                        )
-                        + nested_html
-                    )
-                    list_level = list_level[: list_index + 1]
-                else:
-                    list_level[-1][2] += nested_html
-                index += nested_index_diff-1
-            elif (
-                lines[index][0] < current_level and lines[index][0] != -1
-            ):  # Check for return to a shallower 
+                sp=""
+                if not nested_html.startswith('</ul'):
+                    sp="\u2800"
+                list_level[-1][2] += (sp+ nested_html)
+                index += nested_index_diff
+            elif lines[index][0] < current_level and lines[index][0] != -1:  # Check for return to a shallower
                 break
+            else:
+                list_level.append(lines[index].copy())  # Normal list entry
+                index += 1
 
         # At deepest level, check if it's a block paragraph
         if current_level >= levels[-1] and is_block_paragraph(
