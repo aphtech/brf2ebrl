@@ -34,3 +34,7 @@ To create a stand alone executable of the command line tool run:
 pdm build_exe
 ```
 You will find a subdirectory named brf2ebrl.dist will be created containing the executable.
+
+## Contributing
+
+If you would like to contribute code to the project, please create an issue on GitHub first explaining what you would like to change and why. This will give an opportunity for your idea to be discussed, for us to get a feeling of how much demand there is for what you propose and to be able to give feedback on how it may be done. Having these discussions prior to pull requests being submitted is likely to increase the chance your contribution will be accepted.
