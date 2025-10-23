@@ -303,8 +303,8 @@ def is_block_paragraph(
         return False
 
     # if all lines start with the same symbole then not block
-    if all(line[0] == block[0][0] for line in block):
-        return False
+    #if all(line[0] == block[0][0] for line in block):
+        #return False
 
     # Willo idea.
     # # if any of the lines start with a word that could fit on the previous line its a list
@@ -981,7 +981,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
             # if re.search(r"\u2810{3,}", brl):
             # brl = ""
         return (
-            DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
+            DetectionResult(new_cursor, state, 0.90, f"{output_text}{brl}\n")
             if brl
             else None
         )
