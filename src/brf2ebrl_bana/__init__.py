@@ -156,6 +156,10 @@ def create_brf2ebrl_parser(
                 xhtml_fixup_detector
             ),
             Parser(
+                "Make processing instructions comments, eBraille is HTML5 and so processing instructions not valid.",
+                lambda x,_: x.replace("<?", "<!--").replace("?>", "-->")
+            ),
+            Parser(
                 "Convert u+2800 to regular space as per ebraille standard",
                 lambda x,_: x.replace("\u2800", " ")
             )
