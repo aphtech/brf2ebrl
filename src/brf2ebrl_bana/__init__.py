@@ -9,8 +9,8 @@ from typing import Sequence
 
 from brf2ebrl.common import PageLayout
 from brf2ebrl.common.block_detectors import create_centered_detector, create_cell_heading, create_paragraph_detector, \
-    create_table_detector, detect_pre, create_block_paragraph_detector, \
-    create_list_detector,create_toc_detector 
+    create_table_detector, detect_pre, \
+    create_list_detector,create_toc_detector, bp_indicators_block_matcher 
 from brf2ebrl.common.box_line_detectors import remove_box_lines_processing_instructions, tag_boxlines
 from brf2ebrl.common.detectors import detect_and_pass_processing_instructions, \
     create_running_head_detector, braille_page_counter_detector, xhtml_fixup_detector, \
@@ -112,9 +112,9 @@ def create_brf2ebrl_parser(
                     create_centered_detector(page_layout.cells_per_line, 3, "h1"),
                     create_cell_heading(6, "h3"),
                     create_cell_heading(4, "h2"),
-                    create_paragraph_detector(6, 4, tn_indicators_block_matcher, confidence=0.95),
-                    create_paragraph_detector(2, 0),
-                    create_block_paragraph_detector(page_layout.cells_per_line),
+                    create_paragraph_detector(6, 4,page_layout.cells_per_line, tn_indicators_block_matcher, confidence=0.95),
+                    create_paragraph_detector(2, 0,page_layout.cells_per_line, confidence=0.9),
+                    create_paragraph_detector(0, 0,page_layout.cells_per_line ,bp_indicators_block_matcher, confidence=0.90),
                     create_toc_detector(page_layout.cells_per_line),
                     create_list_detector(page_layout.cells_per_line),
                     create_table_detector(),  # might add arguments later
