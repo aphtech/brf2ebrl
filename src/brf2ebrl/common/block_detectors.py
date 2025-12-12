@@ -242,6 +242,7 @@ def _create_indented_block_finder(
         get list pages
         return lines and cursor to add to text
         """
+
         new_cursor = cursor_offset
         new_lines = []
 
@@ -319,7 +320,7 @@ def _create_indented_block_finder(
             if line and line.group(1) != "<?blank-line?>\n":
                 new_lines[-1][2] += "\u2800" * (cells_per_line - len(new_lines[-1][2]))
 
-        if len(_block) > 1 and not is_block_paragraph(_block[1:]):
+        if len(_block) > 1 and not is_block_paragraph(_block, cells_per_line=cells_per_line):
             return [[], cursor_offset]
 
         temp_para = get_paragraph_pages(text, new_cursor, debug + 1)
@@ -337,7 +338,7 @@ def _create_indented_block_finder(
             lines.extend(temp_para[0])
             new_cursor = temp_para[1]
         brl = ""
-        if lines:
+        if lines and is_block_paragraph(lines[1:],cells_per_line=cells_per_line):
             brl = make_paragraph(lines)
         if brl:
             return brl, new_cursor
@@ -399,6 +400,34 @@ def has_toc(lines: list[list[int, str, str]]) -> bool:
             return True
     return False
 
+def detect_paragraph_wrapping(
+    lines: list[list[int, str, str]], cells_per_line: int, depth:int=0) -> bool:
+    """Detect if paragraph is wrapped or not."""
+    
+    if cells_per_line <= 0:
+        raise ValueError("cells_per_line must be greater than 0 for is_block_paragraph")
+    
+# Willo idea.
+    #  if any of the lines start with a word that could fit on the previous line not a paragraph
+    for i in range(1, len(lines)):
+        prev_line_len = len(lines[i - 1][2]) + depth
+        if prev_line_len < cells_per_line:
+            word = lines[i][2].strip("\u2800").split("\u2800", maxsplit=1)[0]
+            available_space = cells_per_line - prev_line_len
+            word_plus_space = len(word) + 1
+            if word_plus_space <= available_space:
+                return False
+    
+    return True
+
+
+
+
+
+
+
+
+        
 
 def is_block_paragraph(
     lines: list[list[int, str, str]], depth: int = 0, cells_per_line: int = 0
@@ -429,21 +458,16 @@ def is_block_paragraph(
     if len(block) != block_len:
         return False
 
-    # if all lines start with the same symbole then not block
-    # if all(line[0] == block[0][0] for line in block):
-    # return False
+     #if all lines start with the same symbole then not block
+   ##if all(line[0] == block[0][0] for line in block):
+        #return False
 
-    # Willo idea.
-    # # if any of the lines start with a word that could fit on the previous line its a list
-    i = 1
-    line_len = len(_lines)
-    while i < line_len:
-        prev_line_len = len(_lines[i - 1][2]) + depth
-        if prev_line_len < _cells_per_line:
-            word = _lines[i][2].strip("\u2800").split("\u2800", maxsplit=1)[0]
-            if (len(word) + 1) < (_cells_per_line - prev_line_len):
-                return False
-        i += 1
+    if not detect_paragraph_wrapping(_lines, _cells_per_line, depth):
+        return False    
+        
+
+
+
 
     # if all lines start with roman with out punctuation
     if not [line for line in block if not _roman_re.match(line)]:
@@ -463,71 +487,6 @@ def is_block_paragraph(
 
     # do not know so default
     return True
-
-
-def is_list(
-    lines: list[list[int, str, str]], depth: int = 0, cells_per_line: int = 0
-) -> bool:
-    """Check if this is a list"""
-
-    _roman_re = re.compile(
-        "^\u280d{0,3}(\u2809\u280d|\u2809\u2819|\u2819?\u2809{0,3})(\u282d\u2809|\u282d\u2807|\u2807?\u282d{0,3})(\u280a\u282d|\u280a\u2827|\u2827?\u280a{0,3})\u2800[2800-28ff]+$"
-    )
-    _lower_alpha_with_period_re = re.compile(
-        "[\u2801\u2803\u2805\u2807\u2809\u280a\u280b\u280d\u280e\u280f\u2811\u2813\u2815\u2817\u2819\u281a\u281b\u281d\u281e\u281f\u2825\u2827\u282d\u2835\u283a\u283d]+\u2832\u2800[2800-28ff]+"
-    )
-    _lower_alpha_with_paran_re = re.compile(
-        "[\u2801\u2803\u2805\u2807\u2809\u280a\u280b\u280d\u280e\u280f\u2811\u2813\u2815\u2817\u2819\u281a\u281b\u281d\u281e\u281f\u2825\u2827\u282d\u2835\u283a\u283d]+\u2802\u28c1\u2800[\u2800-\u28ff]+"
-    )
-    _cells_per_line = cells_per_line
-    _end_punctuation_equal_re = re.compile(".*[\u2832\u2826\u2816][\u2804\u2834]*$")
-
-    # copy and remove just PI
-    _lines = [line for line in lines if line[0] != -1]
-    # if it is length one it is a block because who makes a 1 line list in braille
-    if len(_lines) == 1:
-        return False
-
-    block_len = len(_lines)
-    block = [line[2] for line in _lines if line[0] == depth]
-    # if not all lines have depth  indent
-    if len(block) != block_len:
-        return False
-
-    # if all lines start with the same symbole then list
-    if all(line[0] == block[0][0] for line in block):
-        return True
-
-    # Willo idea.
-    # # if any of the lines start with a word that could fit on the previous line its a list
-    i = 1
-    line_len = len(_lines)
-    while i < line_len:
-        prev_line_len = len(_lines[i - 1][2]) + depth
-        if prev_line_len < _cells_per_line:
-            word = _lines[i][2].strip("\u2800").split("\u2800", maxsplit=1)[0]
-            if (len(word) + 1) < (_cells_per_line - prev_line_len):
-                return False
-        i += 1
-
-    # if all lines start with roman with out punctuation
-    if not [line for line in block if not _roman_re.match(line)]:
-        return False
-
-    # if all lines start with letter  period  assume list with small letters or small roman
-    if not [line for line in block if not _lower_alpha_with_period_re.match(line)]:
-        return True
-
-    # if all lines start with letter  right paran   assume list with small letters or small roman
-    if not [line for line in block if not _lower_alpha_with_paran_re.match(line)]:
-        return True
-
-    # if all lines end in punctuation assume list
-    if not [line for line in block if not _end_punctuation_equal_re.match(line)]:
-        return True
-
-    # do not know so default
-    return False
 
 
 def get_run_over_depth(
@@ -884,7 +843,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
         # create clean set of levels acending
         levels = list({level[0] for level in lines if level[0] != -1})
-
+        
         # one level list
         if len(levels) == 1:
             return join_list(lines)
@@ -908,7 +867,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
     def get_list_pages(
         text: str, cursor_offset: int, debug: int = 0
-    ) -> list[list[list[int, str, str]], int]:
+    ) -> list[list[list[int, str, str, int]], int]:
         """
         get list pages
         return lines and cursor to add to text
@@ -924,7 +883,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
                 # more than one blank line this is a hard stop
                 # if _blank_lines > 1:
                 return [[], cursor_offset]
-            new_lines.append([-1, line.group(1), ""])
+            new_lines.append([-1, line.group(1), "",line.end()])
             new_cursor += line.end()
 
         # last item is a blank line stop
@@ -972,7 +931,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
             if count == 1 and braille_ppn_length:
                 line[2] += "\u2800" * (cells_per_line - len(line[2]))
             count += 1
-            new_lines.append(line[:3])
+            new_lines.append(line[:])
             new_cursor += line[3]
 
         _block = [line for line in new_lines if line[0] != -1]
@@ -993,7 +952,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
             if line and line.group(1) != "<?blank-line?>\n":
                 new_lines[-1][2] += "\u2800" * (cells_per_line - len(new_lines[-1][2]))
 
-        if is_block_paragraph(_block[1:]):
+        if is_block_paragraph(_block, cells_per_line=cells_per_line):
             return [[], cursor_offset]
 
         temp_list = get_list_pages(text, new_cursor, debug + 1)
@@ -1008,12 +967,37 @@ def create_list_detector(cells_per_line: int) -> Detector:
         new_cursor = cursor
         if first_line_re.match(text[cursor:]):
             lines, new_cursor = get_list_pages(text, cursor)
-        if lines:
+        confidence= 0.91
+        levels = list({level[0] for level in lines if level[0] != -1})
+        if levels == [0,2]:
+            _lines = [line for line in lines if line[0] != -1]
+            #if all lines before the first level 2 is wrapped like a paragraph ignore -1 depth
+            first_level_2_index = next(
+                (index for index, level in enumerate(_lines) if level[0] == 2),
+                None,
+            )
+            if first_level_2_index is not None and first_level_2_index > 1:
+                if not detect_paragraph_wrapping(_lines[first_level_2_index-1:first_level_2_index+1], cells_per_line, depth=0) and detect_paragraph_wrapping(_lines[:first_level_2_index], cells_per_line, depth=0):
+                    lines = []
+
+            #if any level 2 are consecutive  then return lines =[]
+            for index in range(1, len(lines)):
+                if lines[index][0] == 2 and lines[index - 1][0] == 2:
+                    lines = []
+                    break
+        else:
+            while not all(level == index*2 for index, level in enumerate(levels)):
+                new_cursor -=lines[-1][3]
+                lines=lines[:-1]
+                levels = list({level[0] for level in lines if level[0] != -1})
+        if lines and not is_block_paragraph(lines, cells_per_line=cells_per_line):
+            if len(lines) >25:
+                confidence= 0.89
             brl = make_list(lines)
             # if re.search(r"\u2810{3,}", brl):
             # brl = ""
         return (
-            DetectionResult(new_cursor, state, 0.91, f"{output_text}{brl}\n")
+            DetectionResult(new_cursor, state, confidence, f"{output_text}{brl}\n")
             if brl
             else None
         )
