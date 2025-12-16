@@ -338,7 +338,7 @@ def _create_indented_block_finder(
             lines.extend(temp_para[0])
             new_cursor = temp_para[1]
         brl = ""
-        if lines and is_block_paragraph(lines[1:],cells_per_line=cells_per_line):
+        if lines and (is_block_paragraph(lines[1:],cells_per_line=cells_per_line) or len(lines) ==1 ):
             brl = make_paragraph(lines)
         if brl:
             return brl, new_cursor
