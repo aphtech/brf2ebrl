@@ -233,10 +233,12 @@ def _create_indented_block_finder(
         brl_lines = []
         for line in lines:
             brl_lines.append(f"{line[1]}{line[2]}")
-        return "\n".join(brl_lines)
+        return "\n".join(brl_lines).lstrip("\u2800")
 
     def get_paragraph_pages(
-        text: str, cursor_offset: int, debug: int = 0
+        text: str, cursor_offset: int,
+        first_line: list[int, str, str, int] = [],
+        debug: int = 0
     ) -> list[list[list[int, str, str]], int]:
         """
         get list pages
@@ -289,10 +291,22 @@ def _create_indented_block_finder(
                 len(line.group(1)) + 3 + braille_page_length + len(line.group(2))
             ) < cells_per_line:
                 return [[], cursor_offset]
+        # add first line
+
+        if first_line:
+            new_lines.insert(0,[0, first_line[1], ("\u2800"*first_line[0])+first_line[2]])
+            new_cursor += first_line[3]
+            if braille_ppn_length:
+                new_lines[0][2] += "\u2800" * (cells_per_line - len(line[1]))
+            count = 2
+        else:
+            count = 1
+            
+
 
         # consume all legal paragraph items until does not match.
         # if first line and has ppn then add spaces
-        count = 1
+        
         while line := _run_over_re.match(text[new_cursor:]):
             line = [len(line.group(1)), line.group(2), line.end()]
             # if first line length is less than cells per line and page number then add remaining spaces
@@ -323,7 +337,7 @@ def _create_indented_block_finder(
         if len(_block) > 1 and not is_block_paragraph(_block, cells_per_line=cells_per_line):
             return [[], cursor_offset]
 
-        temp_para = get_paragraph_pages(text, new_cursor, debug + 1)
+        temp_para = get_paragraph_pages(text, new_cursor, [], debug + 1)
         new_lines.extend(temp_para[0])
         return [new_lines, temp_para[1]]
 
@@ -332,11 +346,10 @@ def _create_indented_block_finder(
         new_cursor = cursor
         debug = 0
         if line := _first_line_re.match(text[cursor:]):
-            lines.append([len(line.group(1)), "", line.group(2), line.end()])
-            new_cursor += line.end()
-            temp_para = get_paragraph_pages(text, new_cursor, debug + 1)
-            lines.extend(temp_para[0])
-            new_cursor = temp_para[1]
+            first_line=[len(line.group(1)), "", line.group(2), line.end()]
+            temp_para = get_paragraph_pages(text, new_cursor, first_line, debug + 1)
+            lines = temp_para[0]
+            new_cursor =  temp_para[1]
         brl = ""
         if lines and (is_block_paragraph(lines[1:],cells_per_line=cells_per_line) or len(lines) ==1 ):
             brl = make_paragraph(lines)
@@ -461,7 +474,6 @@ def is_block_paragraph(
      #if all lines start with the same symbole then not block
    ##if all(line[0] == block[0][0] for line in block):
         #return False
-
     if not detect_paragraph_wrapping(_lines, _cells_per_line, depth):
         return False    
         
@@ -482,8 +494,8 @@ def is_block_paragraph(
         return False
 
     # if all lines end in punctuation assume list
-    if not [line for line in block if not _end_punctuation_equal_re.match(line)]:
-        return False
+    #if not [line for line in block if not _end_punctuation_equal_re.match(line)]:
+        #return False
 
     # do not know so default
     return True
