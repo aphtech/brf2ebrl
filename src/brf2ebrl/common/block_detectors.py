@@ -228,12 +228,6 @@ def _create_indented_block_finder(
     _BRAILLE_PAGE_CAPTURE_RE = re.compile("(?:<\\?braille-page([ \u2800-\u28ff]*)\\?>)")
     _BRAILLE_PPN_CAPTURE_RE = re.compile("(?:<\\?braille-ppn([ \u2800-\u28ff]*)\\?>)")
 
-    def make_paragraph(lines: list[list[int, str, str]]) -> str:
-        """Make a paragraph or block paragraph"""
-        brl_lines = []
-        for line in lines:
-            brl_lines.append(f"{line[1]}{line[2]}")
-        return "\n".join(brl_lines).lstrip("\u2800")
 
     def get_paragraph_pages(
         text: str, cursor_offset: int,
@@ -292,9 +286,9 @@ def _create_indented_block_finder(
             ) < cells_per_line:
                 return [[], cursor_offset]
         # add first line
-
         if first_line:
-            new_lines.insert(0,[0, first_line[1], ("\u2800"*first_line[0])+first_line[2]])
+            #use spaces so they don't get removed in testing for wrap.
+            new_lines.insert(0,[0, first_line[1],(" "*first_line[0]) +first_line[2]])
             new_cursor += first_line[3]
             if braille_ppn_length:
                 new_lines[0][2] += "\u2800" * (cells_per_line - len(line[1]))
@@ -334,28 +328,32 @@ def _create_indented_block_finder(
             if line and line.group(1) != "<?blank-line?>\n":
                 new_lines[-1][2] += "\u2800" * (cells_per_line - len(new_lines[-1][2]))
 
-        if len(_block) > 1 and not is_block_paragraph(_block, cells_per_line=cells_per_line):
-            return [[], cursor_offset]
-
+        
         temp_para = get_paragraph_pages(text, new_cursor, [], debug + 1)
+        block_lines_test = new_lines+temp_para[0]
+        if detect_paragraph_wrapping(block_lines_test, cells_per_line=cells_per_line) is True:
+            new_lines.extend(temp_para[0])
+            return [new_lines, temp_para[1]]
+        elif not is_block_paragraph([line for line in block_lines_test if line[0] != -1], cells_per_line=cells_per_line):
+            return [new_lines, new_cursor]
+        elif _block and not is_block_paragraph(_block, cells_per_line=cells_per_line):
+            return [[], cursor_offset]
         new_lines.extend(temp_para[0])
         return [new_lines, temp_para[1]]
 
-    def find_paragraph_braille(text: str, cursor: int) -> tuple[str | None, int]:
+    def find_paragraph_braille(text: str, cursor: int) -> list[list[list[int, str, str]], int]:
         lines = []
         new_cursor = cursor
         debug = 0
-        if line := _first_line_re.match(text[cursor:]):
+        if (cursor == 0 or  text[cursor-1] == "\n") and (line := _first_line_re.match(text[cursor:])):
+            #ibreakpoint()
             first_line=[len(line.group(1)), "", line.group(2), line.end()]
             temp_para = get_paragraph_pages(text, new_cursor, first_line, debug + 1)
             lines = temp_para[0]
             new_cursor =  temp_para[1]
-        brl = ""
-        if lines and (is_block_paragraph(lines[1:],cells_per_line=cells_per_line) or len(lines) ==1 ):
-            brl = make_paragraph(lines)
-        if brl:
-            return brl, new_cursor
-        return None, cursor
+        if lines and is_block_paragraph(lines,cells_per_line=cells_per_line):
+            return [lines, new_cursor ]
+        return [[], new_cursor]
 
     return find_paragraph_braille
 
@@ -390,10 +388,22 @@ def create_paragraph_detector(
         first_line_indent, run_over, cells_per_line
     )
 
+    def make_paragraph(lines: list[list[int, str, str]]) -> str:
+        """Make a paragraph or block paragraph"""
+        brl_lines = []
+        for line in lines:
+            brl_lines.append(f"{line[1]}{line[2]}")
+        return "\n".join(brl_lines).lstrip("\u2800")
+
+
     def detect_paragraph(
         text: str, cursor: int, state: DetectionState, output_text: str
     ) -> DetectionResult | None:
-        brl, new_cursor = find_paragraph_braille(text, cursor)
+        confidence =0.9
+        new_lines, new_cursor = find_paragraph_braille(text, cursor)
+        if len([line for line in new_lines if line[0]  != -1] ) == 1:
+            confidence-=0.01
+        brl = make_paragraph(new_lines) 
         if brl:
             tag, new_state = indicator_matcher(brl, state)
             if tag:
@@ -423,7 +433,7 @@ def detect_paragraph_wrapping(
 # Willo idea.
     #  if any of the lines start with a word that could fit on the previous line not a paragraph
     for i in range(1, len(lines)):
-        prev_line_len = len(lines[i - 1][2]) + depth
+        prev_line_len = len(lines[i - 1][2].strip("\u2800")) + depth
         if prev_line_len < cells_per_line:
             word = lines[i][2].strip("\u2800").split("\u2800", maxsplit=1)[0]
             available_space = cells_per_line - prev_line_len
@@ -461,9 +471,6 @@ def is_block_paragraph(
 
     # copy and remove just PI
     _lines = [line for line in lines if line[0] != -1]
-    # if it is length one it is a block because who makes a 1 line list in braille
-    if len(_lines) == 1:
-        return True
 
     block_len = len(_lines)
     block = [line[2] for line in _lines if line[0] == depth]
@@ -471,15 +478,15 @@ def is_block_paragraph(
     if len(block) != block_len:
         return False
 
-     #if all lines start with the same symbole then not block
-   ##if all(line[0] == block[0][0] for line in block):
+     
+   
         #return False
     if not detect_paragraph_wrapping(_lines, _cells_per_line, depth):
         return False    
-        
 
-
-
+    # if it is length one it is a block because who makes a 1 line list in braille
+    if len(_lines) == 1:
+        return True
 
     # if all lines start with roman with out punctuation
     if not [line for line in block if not _roman_re.match(line)]:
@@ -491,6 +498,10 @@ def is_block_paragraph(
 
     # if all lines start with letter  right paran   assume list with small letters or small roman
     if not [line for line in block if not _lower_alpha_with_paran_re.match(line)]:
+        return False
+    
+        #if all lines start with the same symbole then not block
+    if all(line[0] == block[0][0] for line in block):
         return False
 
     # if all lines end in punctuation assume list
@@ -751,7 +762,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         brl = ""
         lines = []
         new_cursor = cursor
-        if first_line_re.match(text[cursor:]):
+        if (cursor == 0 or text[cursor-1] == "\n") and first_line_re.match(text[cursor:]): 
             lines, new_cursor = get_toc_pages(text, cursor)
         if lines:
             brl = make_toc(lines)
@@ -813,6 +824,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
         original_index = index
         index += 1
 
+
         while index < length:
             if lines[index][0] == -1:  # Always include processing instructions
                 list_level[-1][2] += lines[index][1]
@@ -855,6 +867,8 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
         # create clean set of levels acending
         levels = list({level[0] for level in lines if level[0] != -1})
+
+
         
         # one level list
         if len(levels) == 1:
@@ -977,7 +991,8 @@ def create_list_detector(cells_per_line: int) -> Detector:
         brl = ""
         lines = []
         new_cursor = cursor
-        if first_line_re.match(text[cursor:]):
+        if (cursor == 0 or text[cursor-1] =="\n") and first_line_re.match(text[cursor:]) :
+            #breakpoint()    
             lines, new_cursor = get_list_pages(text, cursor)
         confidence= 0.91
         levels = list({level[0] for level in lines if level[0] != -1})
@@ -993,10 +1008,12 @@ def create_list_detector(cells_per_line: int) -> Detector:
                     lines = []
 
             #if any level 2 are consecutive  then return lines =[]
+            found = False
             for index in range(1, len(lines)):
                 if lines[index][0] == 2 and lines[index - 1][0] == 2:
-                    lines = []
+                    found = True
                     break
+            confedence = 0.91 if found else  0.89
         else:
             while not all(level == index*2 for index, level in enumerate(levels)):
                 new_cursor -=lines[-1][3]
