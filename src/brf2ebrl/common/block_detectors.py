@@ -346,7 +346,6 @@ def _create_indented_block_finder(
         new_cursor = cursor
         debug = 0
         if (cursor == 0 or  text[cursor-1] == "\n") and (line := _first_line_re.match(text[cursor:])):
-            #ibreakpoint()
             first_line=[len(line.group(1)), "", line.group(2), line.end()]
             temp_para = get_paragraph_pages(text, new_cursor, first_line, debug + 1)
             lines = temp_para[0]
@@ -741,6 +740,9 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         guide_dots = False
         dots_re = re.compile("\u2810{2,}")
         for line in new_lines:
+            # fail if a line has two sets of "\u2800\u2800"  non consecutive
+            if len(re.findall("\u2800\u2800", line[2])) > 1:
+                return [[], cursor_offset]
             if re.findall("\u2810\u2812{2,}", line[2]):
                 return [[], cursor_offset]
             if dots := dots_re.findall(line[2]):
@@ -992,7 +994,6 @@ def create_list_detector(cells_per_line: int) -> Detector:
         lines = []
         new_cursor = cursor
         if (cursor == 0 or text[cursor-1] =="\n") and first_line_re.match(text[cursor:]) :
-            #breakpoint()    
             lines, new_cursor = get_list_pages(text, cursor)
         confidence= 0.91
         levels = list({level[0] for level in lines if level[0] != -1})
