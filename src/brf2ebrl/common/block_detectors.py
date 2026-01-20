@@ -305,7 +305,7 @@ def _create_indented_block_finder(
             line = [len(line.group(1)), line.group(2), line.end()]
             # if first line length is less than cells per line and page number then add remaining spaces
             if count == 1 and braille_ppn_length:
-                line[1] += "\u2800" * (cells_per_line - len(line[1]))
+                line[1] += " " * (cells_per_line - len(line[1]))
             count += 1
             new_lines.append([line[0], "", line[1]])
             new_cursor += line[2]
@@ -331,7 +331,7 @@ def _create_indented_block_finder(
         
         temp_para = get_paragraph_pages(text, new_cursor, [], debug + 1)
         block_lines_test = new_lines+temp_para[0]
-        if detect_paragraph_wrapping(block_lines_test, cells_per_line=cells_per_line) is True:
+        if detect_paragraph_wrapping([line for line in block_lines_test if line[0] != -1], cells_per_line=cells_per_line) is True:
             new_lines.extend(temp_para[0])
             return [new_lines, temp_para[1]]
         elif not is_block_paragraph([line for line in block_lines_test if line[0] != -1], cells_per_line=cells_per_line):
@@ -391,8 +391,8 @@ def create_paragraph_detector(
         """Make a paragraph or block paragraph"""
         brl_lines = []
         for line in lines:
-            brl_lines.append(f"{line[1]}{line[2]}")
-        return "\n".join(brl_lines).lstrip("\u2800")
+            brl_lines.append(f"{line[1]}{line[2]}".strip(" ").lstrip("\u2800"))
+        return "\n".join(brl_lines)
 
 
     def detect_paragraph(
