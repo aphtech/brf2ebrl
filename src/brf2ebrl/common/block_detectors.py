@@ -1,3 +1,4 @@
+
 #  Copyright (c) 2024. American Printing House for the Blind.
 """
 #
@@ -258,20 +259,16 @@ def _create_indented_block_finder(
             return [[], cursor_offset]
 
         # get page number length for two calculations later
-        braille_page_length = 0
         braille_ppn_length = 0
         for line in new_lines:
-            if match := _BRAILLE_PAGE_CAPTURE_RE.match(line[1]):
-                braille_page_length = (
-                    len(match.group(1).strip()) if match.group(1) else 0
-                )
-            elif match := _BRAILLE_PPN_CAPTURE_RE.match(line[1]):
+            if match := _BRAILLE_PPN_CAPTURE_RE.match(line[1]):
                 braille_ppn_length = (
                     len(match.group(1).strip()) if match.group(1) else 0
                 )
-            elif braille_page_length and braille_ppn_length:
                 break
 
+        
+        braille_page_length = find_last_braille_page_length(text, new_cursor)
         if new_lines and new_lines[0][1] == "<?blank-line?>\n":
             # if no page number stop because blank line stops if it fits
             if braille_page_length:
@@ -282,16 +279,15 @@ def _create_indented_block_finder(
             # #add indent, 3 spaces, page number length, and line to see if less thancells_per_line
             # stop if line fits because it could have been on previous page
             if (
-                len(line.group(1)) + 3 + braille_page_length + len(line.group(2))
+                len(line.group(1)) + braille_page_length + len(line.group(2))
             ) < cells_per_line:
                 return [[], cursor_offset]
         # add first line
         if first_line:
-            #use spaces so they don't get removed in testing for wrap.
-            new_lines.insert(0,[0, first_line[1],(" "*first_line[0]) +first_line[2]])
+            new_lines.insert(0,[0, first_line[1],first_line[2]])
             new_cursor += first_line[3]
             if braille_ppn_length:
-                new_lines[0][2] += "\u2800" * (cells_per_line - len(line[1]))
+                new_lines[0][2] += " " * (cells_per_line - len(line[1]))
             count = 2
         else:
             count = 1
@@ -323,10 +319,9 @@ def _create_indented_block_finder(
                 return [[], cursor_offset]
 
         # if last line length is less than cells per line and page number then add remaining spaces
-        if not braille_page_length:
-            line = paragraph_processing_instruction_re.match(text[new_cursor:])
-            if line and line.group(1) != "<?blank-line?>\n":
-                new_lines[-1][2] += "\u2800" * (cells_per_line - len(new_lines[-1][2]))
+        line = paragraph_processing_instruction_re.match(text[new_cursor:])
+        if not line or (line and line.group(1) != "<?blank-line?>\n"):
+            new_lines[-1][2] += (" " * braille_page_length) 
 
         
         temp_para = get_paragraph_pages(text, new_cursor, [], debug + 1)
@@ -346,7 +341,8 @@ def _create_indented_block_finder(
         new_cursor = cursor
         debug = 0
         if (cursor == 0 or  text[cursor-1] == "\n") and (line := _first_line_re.match(text[cursor:])):
-            first_line=[len(line.group(1)), "", line.group(2), line.end()]
+
+            first_line=[len(line.group(1)), "",(" "*len(line.group(1))+ line.group(2)), line.end()]
             temp_para = get_paragraph_pages(text, new_cursor, first_line, debug + 1)
             lines = temp_para[0]
             new_cursor =  temp_para[1]
@@ -442,6 +438,16 @@ def detect_paragraph_wrapping(
     
     return True
 
+_BRAILLE_PAGE_LENGTH_RE = re.compile("(?:<\\?braille-page([ \u2800-\u28ff]*)\\?>)")
+
+def find_last_braille_page_length(text: str, before_index: int) -> int:
+    last_match = None
+    for m in _BRAILLE_PAGE_LENGTH_RE .finditer(text, 0, before_index):
+        last_match = m
+
+    if last_match:
+        return len(last_match.group(1) )+3 # may be 0 +3
+    return 0
 
 
 
@@ -957,7 +963,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
         while line := match_list_line(text[new_cursor:]):
             # if first line length is less than cells per line and page number then add remaining spaces
             if count == 1 and braille_ppn_length:
-                line[2] += "\u2800" * (cells_per_line - len(line[2]))
+                line[2] += " " * (cells_per_line - len(line[2]))
             count += 1
             new_lines.append(line[:])
             new_cursor += line[3]
@@ -978,7 +984,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
         if not braille_page_length:
             line = list_processing_instruction_re.match(text[new_cursor:])
             if line and line.group(1) != "<?blank-line?>\n":
-                new_lines[-1][2] += "\u2800" * (cells_per_line - len(new_lines[-1][2]))
+                new_lines[-1][2] += " " * (cells_per_line - len(new_lines[-1][2]))
 
         if is_block_paragraph(_block, cells_per_line=cells_per_line):
             return [[], cursor_offset]
