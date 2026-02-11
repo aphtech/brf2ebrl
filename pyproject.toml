@@ -1,13 +1,10 @@
 [tool.pdm]
 version = { source = "file", path = "src/brf2ebrl/__init__.py" }
 [tool.pdm.scripts]
-build_exe = "python -m nuitka --include-package=brf2ebrl_bana --standalone {args} src/brf2ebrl/scripts/brf2ebrl.py"
 test = "pytest"
-[dependency-groups]test = [
+[dependency-groups]
+test = [
     "pytest>=7.3.1",
-]
-exe = [
-    "nuitka>=1.7.9",
 ]
 
 [tool.pytest.ini_options]
