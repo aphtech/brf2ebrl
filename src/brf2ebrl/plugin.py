@@ -4,9 +4,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """Module used when defining a plugin."""
-import importlib
 import os
-import pkgutil
 import shutil
 from abc import abstractmethod, ABC
 from collections import Counter, deque
@@ -14,6 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, UTC
 from importlib import resources
+from importlib.metadata import entry_points
 from mimetypes import MimeTypes
 from pathlib import Path
 from typing import Sequence, AnyStr
@@ -33,37 +32,37 @@ _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
 
 def find_plugins():
-    return {
-        k: v.PLUGIN
-        for k, v in {
-            name: importlib.import_module(name)
-            for finder, name, ispkg in pkgutil.iter_modules()
-            if name.startswith("brf2ebrl_")
-        }.items()
-        if hasattr(v, "PLUGIN") and isinstance(v.PLUGIN, Plugin)
-    }
+    return {k: v for k, v in {ep.name: ep.load() for ep in (entry_points(group="brf2ebrl.plugins"))}.items()
+            if isinstance(v, Plugin)}
 
 
 class Bundler(ABC):
     """Base class for bundlers"""
+
     def __enter__(self):
         return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
+
     @abstractmethod
     def write_file(self, name: str, path: Path, add_to_spine: bool):
         """Write an existing file to the bundle."""
         pass
+
     @abstractmethod
     def write_str(self, name: str, data: AnyStr, add_to_spine: bool):
         """Write a file containing the content to the bundle."""
         pass
+
     def write_image(self, name: str, filename: str):
         """Write an image file to the bundle"""
         self.write_file(name, Path(filename), False)
+
     def write_volume(self, name: str, data: AnyStr):
         """Write a volume to the bundle."""
         self.write_str(name, data, True)
+
     @abstractmethod
     def close(self):
         """Close the bundle."""
@@ -75,13 +74,15 @@ _OPF_NAME = "package.opf"
 
 
 def _create_container_xml(opf_name: str):
-    e = ElementMaker(namespace="urn:oasis:names:tc:opendocument:xmlns:container", nsmap={None: "urn:oasis:names:tc:opendocument:xmlns:container"})
+    e = ElementMaker(namespace="urn:oasis:names:tc:opendocument:xmlns:container",
+                     nsmap={None: "urn:oasis:names:tc:opendocument:xmlns:container"})
     container = e.container({"version": "1.0"},
-        e.rootfiles(
-            e.rootfile({"full-path": opf_name, "media-type": "application/oebps-package+xml"})
-        )
-    )
+                            e.rootfiles(
+                                e.rootfile({"full-path": opf_name, "media-type": "application/oebps-package+xml"})
+                            )
+                            )
     return etree.tostring(container, xml_declaration=True, encoding="UTF-8", pretty_print=True)
+
 
 @dataclass(frozen=True)
 class OpfFileEntry:
@@ -90,9 +91,14 @@ class OpfFileEntry:
     tactile_graphic: bool = False
     is_nav_document: bool = False
 
-def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Iterable[MetadataItem] = DEFAULT_METADATA) -> bytes:
-    files_list = [(f"file{i}", n, d.media_type, d.in_spine, d.is_nav_document) for i,(n,(d)) in enumerate(file_entries.items())]
-    graphic_types = " ".join(sorted(Counter(_MIMETYPES.guess_extension(d.media_type)[1:] for n,d in file_entries.items() if d.tactile_graphic), key=lambda item: item[1], reverse=True))
+
+def _create_opf_str(file_entries: dict[str, OpfFileEntry],
+                    metadata_entries: Iterable[MetadataItem] = DEFAULT_METADATA) -> bytes:
+    files_list = [(f"file{i}", n, d.media_type, d.in_spine, d.is_nav_document) for i, (n, (d)) in
+                  enumerate(file_entries.items())]
+    graphic_types = " ".join(sorted(
+        Counter(_MIMETYPES.guess_extension(d.media_type)[1:] for n, d in file_entries.items() if d.tactile_graphic),
+        key=lambda item: item[1], reverse=True))
     opf = PACKAGE(
         {"unique-identifier": "bookid", "version": "3.0"},
         METADATA(
@@ -106,8 +112,10 @@ def _create_opf_str(file_entries: dict[str, OpfFileEntry], metadata_entries: Ite
             # User defined metadata
             *[x.to_xml() for x in ensure_default_metadata(metadata_entries)],
         ),
-        MANIFEST(*[ITEM({"id": i, "href": n, "media-type": t, **({"properties": "nav"} if nav else {})}) for i,n,t,_,nav in files_list]),
-        SPINE(*[ITEMREF({"idref": i}) for i,_,_,s,_ in files_list if s])
+        MANIFEST(
+            *[ITEM({"id": i, "href": n, "media-type": t, **({"properties": "nav"} if nav else {})}) for i, n, t, _, nav
+              in files_list]),
+        SPINE(*[ITEMREF({"idref": i}) for i, _, _, s, _ in files_list if s])
     )
     return etree.tostring(opf, xml_declaration=True, pretty_print=True, encoding="UTF-8")
 
@@ -119,13 +127,14 @@ class EBrlZippedBundler(Bundler):
         self._zipfile = ZipFile(name, 'w', compression=ZIP_DEFLATED)
         self._zipfile.writestr("mimetype", b"application/epub+zip", compress_type=ZIP_STORED)
         files = resources.files("brf2ebrl.ebrl.static")
-        for k,v in list_sub_paths(files):
+        for k, v in list_sub_paths(files):
             if v.is_file():
                 self.write_file("/".join(k[1:]), v, add_to_spine=False)
+
     def _create_navigation_html(self, opf_name: str) -> str:
         page_refs = []
         headings = deque()
-        vols = [k for k,v in self._files.items() if v.in_spine]
+        vols = [k for k, v in self._files.items() if v.in_spine]
         detected_title = None
         for vol_name in vols:
             with self._zipfile.open(vol_name) as f:
@@ -144,32 +153,47 @@ class EBrlZippedBundler(Bundler):
                             PageRef(href=f"{vol_name}#{page_id}", page_num_braille=element.text_content(), title=""))
         if detected_title is None:
             detected_title = ""
-        return create_navigation_html(opf_name=opf_name, page_refs=page_refs, heading_refs=headings, braille_title=detected_title)
-    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool, is_nav_document: bool, media_type: str|None = None):
+        return create_navigation_html(opf_name=opf_name, page_refs=page_refs, heading_refs=headings,
+                                      braille_title=detected_title)
+
+    def _add_to_files(self, name, add_to_spine, tactile_graphic: bool, is_nav_document: bool,
+                      media_type: str | None = None):
         def get_media_type():
             yield media_type
             yield _MIMETYPES.guess_type(name)[0]
             yield "application/octet-stream"
+
         media_type = next(m for m in get_media_type() if m is not None)
         self._files[name] = OpfFileEntry(media_type=media_type,
-                                         in_spine=add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document)
-    def write_file(self, name: str, path: Path, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str | None = None):
+                                         in_spine=add_to_spine, tactile_graphic=tactile_graphic,
+                                         is_nav_document=is_nav_document)
+
+    def write_file(self, name: str, path: Path, add_to_spine: bool, tactile_graphic: bool = False,
+                   is_nav_document: bool = False, media_type: str | None = None):
         arch_name = Path(name).as_posix()
         with self._zipfile.open(arch_name, mode='w') as dest:
             with path.open(mode='rb') as src:
                 shutil.copyfileobj(src, dest)
-        self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
-    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False, is_nav_document: bool = False, media_type: str|None = None):
+        self._add_to_files(arch_name, add_to_spine, tactile_graphic=tactile_graphic, is_nav_document=is_nav_document,
+                           media_type=media_type)
+
+    def write_str(self, name: str, data: AnyStr, add_to_spine: bool, tactile_graphic: bool = False,
+                  is_nav_document: bool = False, media_type: str | None = None):
         arch_name = Path(name).as_posix()
         self._zipfile.writestr(arch_name, data)
-        self._add_to_files(arch_name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document, media_type=media_type)
+        self._add_to_files(arch_name, add_to_spine, tactile_graphic, is_nav_document=is_nav_document,
+                           media_type=media_type)
+
     def write_image(self, name: str, filename: str):
         self.write_file(f"ebraille/{name}", Path(filename), False, tactile_graphic=True)
+
     def write_volume(self, name: str, data: AnyStr):
         self.write_str(f"ebraille/{name}", data, True, media_type="application/xhtml+xml")
+
     def close(self):
         try:
-            self.write_str("index.html", self._create_navigation_html(_OPF_NAME), True, is_nav_document=True, media_type="application/xhtml+xml")
+            self.write_str("index.html", self._create_navigation_html(_OPF_NAME), True, is_nav_document=True,
+                           media_type="application/xhtml+xml")
             self._zipfile.writestr(_OPF_NAME, _create_opf_str(self._files, metadata_entries=self.metadata_entries))
             self._zipfile.writestr("META-INF/container.xml", _create_container_xml(_OPF_NAME))
         finally:
@@ -206,6 +230,7 @@ class Plugin(ABC):
     def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
         """Maps the input file name to the output file name."""
         return os.path.basename(input_file)
+
     @abstractmethod
     def create_bundler(self, output_file: str, *args, **kwargs) -> Bundler:
         """Creates a bundler for bundling the output"""
@@ -228,6 +253,7 @@ class _DelegatingPluginImpl(Plugin):
 
     def file_mapper(self, input_file: str, index: int, *args, **kwargs) -> str:
         return self._file_mapper(input_file=input_file, index=index, *args, **kwargs)
+
     def create_bundler(self, output_file: str, *args, **kwargs) -> Bundler:
         return self._bundler_factory(output_file, *args, **kwargs)
 
@@ -235,4 +261,5 @@ class _DelegatingPluginImpl(Plugin):
 def create_plugin(plugin_id: str, name: str, brf_parser_factory,
                   file_mapper, bundler_factory=EBrlZippedBundler) -> Plugin:
     """Create a plugin by providing the information required"""
-    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory, file_mapper=file_mapper, bundler_factory=bundler_factory)
+    return _DelegatingPluginImpl(plugin_id, name, brf_parser_factory=brf_parser_factory, file_mapper=file_mapper,
+                                 bundler_factory=bundler_factory)
