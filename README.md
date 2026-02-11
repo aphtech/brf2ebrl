@@ -29,11 +29,6 @@ For details of using the brf2ebrl command, do the following:
 ```command line
 pdm run brf2ebrl --help
 ```
-To create a stand alone executable of the command line tool run:
-```command line
-pdm build_exe
-```
-You will find a subdirectory named brf2ebrl.dist will be created containing the executable.
 
 ## Contributing
 
