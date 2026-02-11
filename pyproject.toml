@@ -3,8 +3,7 @@ version = { source = "file", path = "src/brf2ebrl/__init__.py" }
 [tool.pdm.scripts]
 build_exe = "python -m nuitka --include-package=brf2ebrl_bana --standalone {args} src/brf2ebrl/scripts/brf2ebrl.py"
 test = "pytest"
-[tool.pdm.dev-dependencies]
-test = [
+[dependency-groups]test = [
     "pytest>=7.3.1",
 ]
 exe = [
@@ -28,7 +27,7 @@ authors = [
 dependencies = [
     "regex>=2024.11.6",
     "pypdf>=5.3.0",
-    "lxml>=5.3.0",
+    "lxml>=6.0.0",
     "html5lib>=1.1",
 ]
 requires-python = ">=3.12"
