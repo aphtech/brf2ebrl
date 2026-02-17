@@ -381,7 +381,15 @@ def _ensure_ebrf_folder(ebrf_folder: str) -> None:
 
 def _collect_image_files(images_path: str | None, in_filename_base: str) -> list[str]:
     def _normalize_for_length_match(name: str) -> str:
-        return re.sub(r"[^a-z0-9]", "", name.lower())
+        normalized = re.sub(r"[^a-z0-9]", "", name.lower())
+        for suffix in ("graphics", "graphic", "images", "image", "pdf"):
+            if normalized.endswith(suffix):
+                normalized = normalized[: -len(suffix)]
+                break
+        return normalized
+
+    def _strip_volume_leading_zeros(normalized: str) -> str:
+        return re.sub(r"([vs])0+(\d)", r"\1\2", normalized)
 
     def _is_prefix_match(brf_base: str, pdf_base: str) -> bool:
         brf_clean = brf_base.strip().casefold()
@@ -399,6 +407,11 @@ def _collect_image_files(images_path: str | None, in_filename_base: str) -> list
     def _build_brf_prefixes(brf_base: str) -> list[str]:
         normalized = _normalize_for_length_match(brf_base)
         prefixes = [normalized] if normalized else []
+
+        if normalized:
+            stripped = _strip_volume_leading_zeros(normalized)
+            if stripped and stripped != normalized:
+                prefixes.append(stripped)
 
         tokens = [t for t in re.split(r"[^a-z0-9]+", brf_base.lower()) if t]
         if "00" in tokens:
