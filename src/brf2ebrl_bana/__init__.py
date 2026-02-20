@@ -142,7 +142,7 @@ def create_brf2ebrl_parser(
                 tag_emphasis
             ),
             # PDF Graphics
-            create_image_detection_parser_pass(brf_path, images_path, output_path),
+            create_image_detection_parser_pass(brf_path, images_path, output_path, page_layout),
             # Convert print page numbers to ebrf tags
             detector_parser(
                 "Print page numbers to ebrf",
@@ -172,8 +172,8 @@ PLUGIN = create_plugin(plugin_id="BANA", name="Convert BANA BRF to eBraille", br
                        file_mapper=lambda input_file, index: f"vol{index}.html")
 
 
-def create_image_detection_parser_pass(brf_path, images_path, output_path) -> Parser | None:
-    if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path)):
+def create_image_detection_parser_pass(brf_path, images_path, output_path, page_layout: PageLayout) -> Parser | None:
+    if images_path and (image_detector := create_pdf_graphic_detector(brf_path, output_path, images_path, page_layout)):
         return Parser(
             "Convert PDF to single files and links",
             image_detector

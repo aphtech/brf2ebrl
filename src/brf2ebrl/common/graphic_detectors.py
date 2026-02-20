@@ -10,11 +10,12 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Callable, List, Set
+from typing import Any, Callable, List, Set
 
 import pdfplumber
 import pypdf
 
+from brf2ebrl.common import PageLayout, PageNumberPosition
 from brf2ebrl.common.detectors import _ASCII_TO_UNICODE_DICT
 from brf2ebrl.parser import ParserContext, NotifyLevel
 
@@ -238,8 +239,183 @@ def extract_text_blocks_from_pdf(page) -> List[str]:
     return text_blocks
 
 
+def _normalize_ppn_text(value: str) -> str:
+    return value.strip().lower()
+
+
+def _unicode_braille_to_ascii(ppn: str) -> str:
+    ascii_ppn = ''
+    for char in ppn:
+        if char in UNICODE_TO_ASCII:
+            ascii_ppn += UNICODE_TO_ASCII[char]
+    return ascii_ppn
+
+
+def _build_ppn_variation_map(braille_ppns_list: List[str]) -> dict[str, str]:
+    variation_map: dict[str, str] = {}
+    for original_ppn in braille_ppns_list:
+        ascii_ppn = _unicode_braille_to_ascii(original_ppn)
+        for variation in generate_ppn_variations(ascii_ppn):
+            variation_map[_normalize_ppn_text(variation)] = original_ppn
+    return variation_map
+
+
+def _expected_print_position(page_layout: PageLayout, page_count: int) -> PageNumberPosition:
+    return (
+        page_layout.odd_print_page_number
+        if page_count % 2
+        else page_layout.even_print_page_number
+    )
+
+
+def _matches_horizontal_zone(
+    x0: float,
+    x1: float,
+    page_width: float,
+    expected_position: PageNumberPosition,
+) -> bool:
+    if expected_position == PageNumberPosition.NONE:
+        return True
+
+    right_threshold = page_width * 0.58
+    left_threshold = page_width * 0.42
+
+    if expected_position.is_right():
+        return x0 >= right_threshold
+    if expected_position.is_left():
+        return x1 <= left_threshold
+    return True
+
+
+def _collect_page_word_lines(page) -> list[dict[str, Any]]:
+    words = page.extract_words()
+    if not words:
+        return []
+
+    sorted_words = sorted(words, key=lambda w: (w.get("top", 0.0), w.get("x0", 0.0)))
+    lines: list[dict[str, Any]] = []
+    tolerance = 3.0
+
+    for word in sorted_words:
+        text = word.get("text", "").strip()
+        if not text:
+            continue
+
+        top = float(word.get("top", 0.0))
+        x0 = float(word.get("x0", 0.0))
+        x1 = float(word.get("x1", x0))
+
+        if not lines or abs(top - lines[-1]["top_ref"]) > tolerance:
+            lines.append({
+                "top_ref": top,
+                "min_top": top,
+                "max_bottom": float(word.get("bottom", top)),
+                "words": [{"text": text, "x0": x0, "x1": x1, "top": top}],
+            })
+        else:
+            line = lines[-1]
+            line["min_top"] = min(line["min_top"], top)
+            line["max_bottom"] = max(line["max_bottom"], float(word.get("bottom", top)))
+            line["words"].append({"text": text, "x0": x0, "x1": x1, "top": top})
+
+    for line in lines:
+        line["words"].sort(key=lambda w: w["x0"])
+
+    return lines
+
+
+def _find_matching_ppn_in_positioned_words(
+    page,
+    braille_ppns_list: List[str],
+    page_layout: PageLayout,
+    page_count: int,
+) -> str | None:
+    if not braille_ppns_list:
+        return None
+
+    variation_map = _build_ppn_variation_map(braille_ppns_list)
+    if not variation_map:
+        return None
+
+    lines = _collect_page_word_lines(page)
+    if not lines:
+        return None
+
+    expected_position = _expected_print_position(page_layout, page_count)
+    page_width = float(page.width or 1.0)
+    page_height = float(page.height or 1.0)
+
+    lines_per_page = max(page_layout.lines_per_page, 1)
+    strict_header_lines = 3
+    extended_header_lines = min(max(6, strict_header_lines), lines_per_page)
+    strict_header_y = page_height * (strict_header_lines / lines_per_page)
+    extended_header_y = page_height * (extended_header_lines / lines_per_page)
+
+    candidates: list[tuple[int, str]] = []
+    for line in lines:
+        top = float(line["min_top"])
+        if expected_position.is_top() and top > extended_header_y:
+            continue
+        if expected_position.is_bottom() and top < (page_height - extended_header_y):
+            continue
+
+        words = line["words"]
+        if not words:
+            continue
+
+        rightmost = max(words, key=lambda w: w["x1"])
+        leftmost = min(words, key=lambda w: w["x0"])
+
+        for word in words:
+            normalized = _normalize_ppn_text(word["text"])
+            matched_ppn = variation_map.get(normalized)
+            if not matched_ppn:
+                continue
+
+            score = 100
+            x0 = float(word["x0"])
+            x1 = float(word["x1"])
+
+            if not _matches_horizontal_zone(x0, x1, page_width, expected_position):
+                continue
+
+            if expected_position.is_top():
+                if top <= strict_header_y:
+                    score += 20
+                elif top <= extended_header_y:
+                    score += 5
+                else:
+                    score -= 35
+            elif expected_position.is_bottom():
+                bottom_threshold = page_height - strict_header_y
+                extended_bottom_threshold = page_height - extended_header_y
+                if top >= bottom_threshold:
+                    score += 20
+                elif top >= extended_bottom_threshold:
+                    score += 5
+                else:
+                    score -= 35
+
+            if expected_position.is_right() and word is rightmost:
+                score += 10
+            if expected_position.is_left() and word is leftmost:
+                score += 10
+
+            if len(words) > 1:
+                score -= 6
+
+            candidates.append((score, matched_ppn))
+
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    best_score, best_ppn = candidates[0]
+    return best_ppn if best_score >= 60 else None
+
+
 def find_matching_ppn_in_blocks(text_blocks: List[str],
-                                braille_ppns_list: List[str]) -> str:
+                                braille_ppns_list: List[str]) -> str | None:
     """
     Find a matching PPN by searching through text blocks against PPNs in reverse order.
 
@@ -253,37 +429,18 @@ def find_matching_ppn_in_blocks(text_blocks: List[str],
     if not text_blocks or not braille_ppns_list:
         return None
 
-    # Convert Unicode braille PPNs to ASCII for comparison with PDF text
-    ascii_ppns_list = []
-    for ppn in braille_ppns_list:
-        # Convert Unicode braille to ASCII character by character
-        ascii_ppn = ''
-        for char in ppn:
-            if char in UNICODE_TO_ASCII:
-                ascii_ppn += UNICODE_TO_ASCII[char]
-
-        ascii_ppns_list.append(ascii_ppn)
+    variation_map = _build_ppn_variation_map(braille_ppns_list)
 
     # Search PPNs in reverse order (last to first)
-    for original_ppn, ascii_ppn in zip(reversed(braille_ppns_list),
-                                      reversed(ascii_ppns_list)):
-        ppn_variations = generate_ppn_variations(ascii_ppn)
+    for block_text in text_blocks:
+        block_text_clean = _normalize_ppn_text(block_text)
 
-        # Search through all text blocks for any variation of this PPN
-        for block_text in text_blocks:
-            block_text_clean = block_text.strip().lower()
+        if block_text_clean in variation_map:
+            return variation_map[block_text_clean]
 
-            # Test exact matches against all PPN variations
-            for variation in ppn_variations:
-                variation_lower = variation.lower()
-
-                # Direct exact match
-                if block_text_clean == variation_lower:
-                    return original_ppn  # Return the original Unicode braille PPN
-
-                # Check if the block contains the variation
-                if variation_lower in block_text_clean:
-                    return original_ppn  # Return the original Unicode braille PPN
+        for candidate_variation, original_ppn in variation_map.items():
+            if candidate_variation in block_text_clean:
+                return original_ppn
 
     return None
 
@@ -344,7 +501,12 @@ def is_valid_page_number_candidate(text: str) -> bool:
 
 
 
-def extract_page_number_from_pdf(pdf_path: str, braille_ppns_list: List[str]) -> str:
+def extract_page_number_from_pdf(
+    pdf_path: str,
+    braille_ppns_list: List[str],
+    page_layout: PageLayout,
+    page_count: int,
+) -> str | None:
     """
     Extract page number from a single PDF using direct PPN matching.
 
@@ -359,6 +521,15 @@ def extract_page_number_from_pdf(pdf_path: str, braille_ppns_list: List[str]) ->
         with pdfplumber.open(pdf_path) as pdf:
             if len(pdf.pages) > 0:
                 page = pdf.pages[0]  # Single page PDF
+                matching_ppn = _find_matching_ppn_in_positioned_words(
+                    page,
+                    braille_ppns_list,
+                    page_layout,
+                    page_count,
+                )
+                if matching_ppn:
+                    return matching_ppn
+
                 text_blocks = extract_text_blocks_from_pdf(page)
                 return find_matching_ppn_in_blocks(text_blocks, braille_ppns_list)
     except OSError as e:
@@ -490,6 +661,7 @@ def _match_split_pages(
     split_pdf_paths: list[dict[str, str | int]],
     braille_ppns_list: list[str],
     image_file: str,
+    page_layout: PageLayout,
 ) -> tuple[int, int]:
     processed_pages = 0
     matched_pages = 0
@@ -498,7 +670,11 @@ def _match_split_pages(
         processed_pages += 1
 
         matching_ppn = extract_page_number_from_pdf(
-            split_info['full_path'], braille_ppns_list)
+            split_info['full_path'],
+            braille_ppns_list,
+            page_layout,
+            int(split_info['pdf_counter']),
+        )
 
         if matching_ppn:
             bp_page_trans = matching_ppn.strip().upper().translate(
@@ -523,6 +699,7 @@ def _process_image_file(
     image_file: str,
     ebrf_folder: str,
     braille_ppns_list: list[str],
+    page_layout: PageLayout,
 ) -> tuple[int, int]:
     """
     Split a single image PDF into pages and match pages to braille PPNs.
@@ -537,7 +714,7 @@ def _process_image_file(
         split_pdf_paths = _split_pdf_to_pages(
             image_file, full_subdir_path, pdf_subdir)
         return _match_split_pages(
-            split_pdf_paths, braille_ppns_list, image_file)
+            split_pdf_paths, braille_ppns_list, image_file, page_layout)
     except OSError as e:
         logging.error("Error processing %s: %s", image_file, e)
         return 0, 0
@@ -581,6 +758,7 @@ def _prepare_volume_references(
     brf_path: str,
     output_path: str,
     images_path: str,
+    page_layout: PageLayout,
     parser_context: ParserContext,
 ) -> bool:
     if _STATE["current_volume_path"] == brf_path:
@@ -604,7 +782,7 @@ def _prepare_volume_references(
         return False
 
     _STATE["references"] = create_images_references(
-        brf_path, output_path, images_path, braille_ppns)
+        brf_path, output_path, images_path, braille_ppns, page_layout)
 
     if not _STATE["references"]:
         logging.warning("No valid PDF references created for volume %s",
@@ -658,7 +836,11 @@ def _build_pdf_object_tags(braille_page: str) -> str:
 
 
 def create_images_references(
-        brf_path: str, output_path: str, images_path: str, braille_ppns: Set[str]
+    brf_path: str,
+    output_path: str,
+    images_path: str,
+    braille_ppns: Set[str],
+    page_layout: PageLayout = PageLayout(),
 ) -> dict[str, str]:
     """
     Creates the PDF files and the references dictionary using simplified PPN matching.
@@ -676,7 +858,7 @@ def create_images_references(
         Dictionary mapping braille PPNs to their corresponding PDF file paths
     """
     # Check if we've already processed this combination
-    cache_key = f"{brf_path}_{images_path}"
+    cache_key = f"{brf_path}_{images_path}_{page_layout}"
     if cache_key in _STATE["pdf_cache"]:
         return _STATE["pdf_cache"][cache_key]
 
@@ -699,7 +881,7 @@ def create_images_references(
 
     for image_file in images_files:
         pages_processed, pages_matched = _process_image_file(
-            image_file, ebrf_folder, braille_ppns_list)
+            image_file, ebrf_folder, braille_ppns_list, page_layout)
         processed_pages += pages_processed
         matched_pages += pages_matched
 
@@ -713,7 +895,10 @@ def create_images_references(
 
 
 def create_pdf_graphic_detector(
-        brf_path: str, output_path: str, images_path: str
+    brf_path: str,
+    output_path: str,
+    images_path: str,
+    page_layout: PageLayout = PageLayout(),
 ) -> Callable[[str, ParserContext], str] | None:
     """
     Creates a detector for finding graphic page numbers and matching with PDF pages.
@@ -739,7 +924,7 @@ def create_pdf_graphic_detector(
         This inner function handles the actual detection and replacement logic.
         """
         if not _prepare_volume_references(
-            text, brf_path, output_path, images_path, parser_context
+            text, brf_path, output_path, images_path, page_layout, parser_context
         ):
             return text
 
