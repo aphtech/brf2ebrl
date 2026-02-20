@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, List, Set
 
@@ -120,6 +121,23 @@ _STATE = {
     "braille_ppns_cache": None,
     "current_volume_path": None,
 }
+
+
+@dataclass(frozen=True)
+class _PpnMatchContext:
+    expected_position: PageNumberPosition
+    page_width: float
+    page_height: float
+    strict_header_y: float
+    extended_header_y: float
+
+
+@dataclass(frozen=True)
+class _VolumeReferenceContext:
+    brf_path: str
+    output_path: str
+    images_path: str
+    page_layout: PageLayout
 
 
 def reset_pdf_detector_cache():
@@ -239,9 +257,6 @@ def extract_text_blocks_from_pdf(page) -> List[str]:
     return text_blocks
 
 
-def _normalize_ppn_text(value: str) -> str:
-    return value.strip().lower()
-
 
 def _unicode_braille_to_ascii(ppn: str) -> str:
     ascii_ppn = ''
@@ -256,7 +271,7 @@ def _build_ppn_variation_map(braille_ppns_list: List[str]) -> dict[str, str]:
     for original_ppn in braille_ppns_list:
         ascii_ppn = _unicode_braille_to_ascii(original_ppn)
         for variation in generate_ppn_variations(ascii_ppn):
-            variation_map[_normalize_ppn_text(variation)] = original_ppn
+            variation_map[variation.strip().lower()] = original_ppn
     return variation_map
 
 
@@ -324,6 +339,98 @@ def _collect_page_word_lines(page) -> list[dict[str, Any]]:
     return lines
 
 
+def _build_ppn_match_context(
+    page,
+    page_layout: PageLayout,
+    page_count: int,
+) -> _PpnMatchContext:
+    expected_position = _expected_print_position(page_layout, page_count)
+    page_width = float(page.width or 1.0)
+    page_height = float(page.height or 1.0)
+
+    lines_per_page = max(page_layout.lines_per_page, 1)
+    strict_header_lines = 3
+    extended_header_lines = min(max(6, strict_header_lines), lines_per_page)
+    strict_header_y = page_height * (strict_header_lines / lines_per_page)
+    extended_header_y = page_height * (extended_header_lines / lines_per_page)
+
+    return _PpnMatchContext(
+        expected_position=expected_position,
+        page_width=page_width,
+        page_height=page_height,
+        strict_header_y=strict_header_y,
+        extended_header_y=extended_header_y,
+    )
+
+
+def _line_in_expected_vertical_zone(top: float, context: _PpnMatchContext) -> bool:
+    if context.expected_position.is_top() and top > context.extended_header_y:
+        return False
+    if context.expected_position.is_bottom() and top < (
+        context.page_height - context.extended_header_y
+    ):
+        return False
+    return True
+
+
+def _vertical_position_score(top: float, context: _PpnMatchContext) -> int:
+    if context.expected_position.is_top():
+        if top <= context.strict_header_y:
+            return 20
+        if top <= context.extended_header_y:
+            return 5
+        return -35
+
+    if context.expected_position.is_bottom():
+        bottom_threshold = context.page_height - context.strict_header_y
+        extended_bottom_threshold = context.page_height - context.extended_header_y
+        if top >= bottom_threshold:
+            return 20
+        if top >= extended_bottom_threshold:
+            return 5
+        return -35
+
+    return 0
+
+
+def _score_positioned_candidate(
+    word: dict[str, Any],
+    words: list[dict[str, Any]],
+    top: float,
+    context: _PpnMatchContext,
+) -> int | None:
+    x0 = float(word["x0"])
+    x1 = float(word["x1"])
+    if not _matches_horizontal_zone(
+        x0,
+        x1,
+        context.page_width,
+        context.expected_position,
+    ):
+        return None
+
+    score = 100 + _vertical_position_score(top, context)
+    rightmost = max(words, key=lambda item: item["x1"])
+    leftmost = min(words, key=lambda item: item["x0"])
+
+    if context.expected_position.is_right() and word is rightmost:
+        score += 10
+    if context.expected_position.is_left() and word is leftmost:
+        score += 10
+    if len(words) > 1:
+        score -= 6
+
+    return score
+
+
+def _best_candidate_ppn(candidates: list[tuple[int, str]]) -> str | None:
+    if not candidates:
+        return None
+
+    best_score, best_ppn = max(candidates, key=lambda candidate: candidate[0])
+    return best_ppn if best_score >= 60 else None
+
+
 def _find_matching_ppn_in_positioned_words(
     page,
     braille_ppns_list: List[str],
@@ -341,77 +448,30 @@ def _find_matching_ppn_in_positioned_words(
     if not lines:
         return None
 
-    expected_position = _expected_print_position(page_layout, page_count)
-    page_width = float(page.width or 1.0)
-    page_height = float(page.height or 1.0)
-
-    lines_per_page = max(page_layout.lines_per_page, 1)
-    strict_header_lines = 3
-    extended_header_lines = min(max(6, strict_header_lines), lines_per_page)
-    strict_header_y = page_height * (strict_header_lines / lines_per_page)
-    extended_header_y = page_height * (extended_header_lines / lines_per_page)
+    context = _build_ppn_match_context(page, page_layout, page_count)
 
     candidates: list[tuple[int, str]] = []
     for line in lines:
         top = float(line["min_top"])
-        if expected_position.is_top() and top > extended_header_y:
-            continue
-        if expected_position.is_bottom() and top < (page_height - extended_header_y):
+        if not _line_in_expected_vertical_zone(top, context):
             continue
 
         words = line["words"]
         if not words:
             continue
 
-        rightmost = max(words, key=lambda w: w["x1"])
-        leftmost = min(words, key=lambda w: w["x0"])
-
         for word in words:
-            normalized = _normalize_ppn_text(word["text"])
+            normalized = word["text"].strip().lower()
             matched_ppn = variation_map.get(normalized)
             if not matched_ppn:
                 continue
 
-            score = 100
-            x0 = float(word["x0"])
-            x1 = float(word["x1"])
-
-            if not _matches_horizontal_zone(x0, x1, page_width, expected_position):
+            score = _score_positioned_candidate(word, words, top, context)
+            if score is None:
                 continue
-
-            if expected_position.is_top():
-                if top <= strict_header_y:
-                    score += 20
-                elif top <= extended_header_y:
-                    score += 5
-                else:
-                    score -= 35
-            elif expected_position.is_bottom():
-                bottom_threshold = page_height - strict_header_y
-                extended_bottom_threshold = page_height - extended_header_y
-                if top >= bottom_threshold:
-                    score += 20
-                elif top >= extended_bottom_threshold:
-                    score += 5
-                else:
-                    score -= 35
-
-            if expected_position.is_right() and word is rightmost:
-                score += 10
-            if expected_position.is_left() and word is leftmost:
-                score += 10
-
-            if len(words) > 1:
-                score -= 6
-
             candidates.append((score, matched_ppn))
 
-    if not candidates:
-        return None
-
-    candidates.sort(key=lambda x: x[0], reverse=True)
-    best_score, best_ppn = candidates[0]
-    return best_ppn if best_score >= 60 else None
+    return _best_candidate_ppn(candidates)
 
 
 def find_matching_ppn_in_blocks(text_blocks: List[str],
@@ -433,7 +493,7 @@ def find_matching_ppn_in_blocks(text_blocks: List[str],
 
     # Search PPNs in reverse order (last to first)
     for block_text in text_blocks:
-        block_text_clean = _normalize_ppn_text(block_text)
+        block_text_clean = block_text.strip().lower()
 
         if block_text_clean in variation_map:
             return variation_map[block_text_clean]
@@ -755,12 +815,10 @@ def _get_reference_key(brf_page: str, references: dict[str, str]) -> str:
 
 def _prepare_volume_references(
     text: str,
-    brf_path: str,
-    output_path: str,
-    images_path: str,
-    page_layout: PageLayout,
     parser_context: ParserContext,
+    volume_context: _VolumeReferenceContext,
 ) -> bool:
+    brf_path = volume_context.brf_path
     if _STATE["current_volume_path"] == brf_path:
         return True
 
@@ -782,7 +840,12 @@ def _prepare_volume_references(
         return False
 
     _STATE["references"] = create_images_references(
-        brf_path, output_path, images_path, braille_ppns, page_layout)
+        brf_path,
+        volume_context.output_path,
+        volume_context.images_path,
+        braille_ppns,
+        volume_context.page_layout,
+    )
 
     if not _STATE["references"]:
         logging.warning("No valid PDF references created for volume %s",
@@ -918,13 +981,22 @@ def create_pdf_graphic_detector(
                     brf_path)
         reset_pdf_detector_cache()
 
+    volume_context = _VolumeReferenceContext(
+        brf_path=brf_path,
+        output_path=output_path,
+        images_path=images_path,
+        page_layout=page_layout,
+    )
+
     def detect_pdf(text: str, parser_context: ParserContext) -> str:
         """
         Detect and process PDF graphics within the text.
         This inner function handles the actual detection and replacement logic.
         """
         if not _prepare_volume_references(
-            text, brf_path, output_path, images_path, page_layout, parser_context
+            text,
+            parser_context,
+            volume_context,
         ):
             return text
 
