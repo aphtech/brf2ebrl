@@ -13,9 +13,6 @@ from brf2ebrl.common import PageLayout
 from brf2ebrl.parser import detector_parser, parse, ParserContext, ParserException
 from brf2ebrl.plugin import Plugin, EBrlZippedBundler
 
-__version__ = "0.1.0"
-
-
 def convert(selected_plugin: Plugin, input_brf_list: Iterable[str], output_ebrf: str,
             progress_callback: Callable[[int, float], None] = lambda x,y: None, parser_passes: int|None =None, parser_context: ParserContext = ParserContext()):
     with selected_plugin.create_bundler(output_ebrf, **parser_context.options) as out_bundle:
