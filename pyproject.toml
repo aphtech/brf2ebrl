@@ -1,5 +1,3 @@
-[tool.pdm.scripts]
-test = "pytest"
 [dependency-groups]
 dev = [
     "pytest>=7.3.1",
