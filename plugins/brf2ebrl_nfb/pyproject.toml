@@ -1,0 +1,19 @@
+[project]
+name = "brf2ebrl-nfb"
+version = "0.1.0"
+description = "Plugin to convert NFB BRF to eBraille."
+readme = "README.md"
+authors = [
+    { name = "Michael Whapples", email = "mwhapples@aph.org" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "brf2ebrl",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.8,<0.11.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+brf2ebrl = { workspace = true }

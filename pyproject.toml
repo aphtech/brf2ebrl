@@ -11,6 +11,12 @@ addopts = [
 ]
 pythonpath = "src"
 testpaths = ["tests",]
+
+[tool.uv.workspace]
+members = [
+    "plugins/brf2ebrl_bana",
+    "plugins/brf2ebrl_nfb",
+]
 [project]
 name = "brf2ebrl"
 version = "0.1.0"
