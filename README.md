@@ -11,23 +11,19 @@ receive updates to produce files to comply with that specification.
 
 ## Building and running
 
-To build and run brf2ebrl you will need to install PDM. The PDM web site is https://pdm.fming.dev and contains details of the various install methods.
+To build and run brf2ebrl you will need to install UV. The UV web site is https://docs.astral.sh/uv/ and contains details of the various install methods.
 
-Once PDM is installed you can run the brf2ebrl tests with the following command:
+Once UV is installed you can run the brf2ebrl tests with the following command:
 ```command line
-pdm test
+uv run pytest
 ```
-There is a basic command line script for demonstration purposes. To run the brf2ebrl script, you first need to install brf2ebrl with the following command:
+There is a basic command line script for demonstration purposes. To run the brf2ebrl script, use the following command:
 ```command line
-pdm install
-```
-Then you can run:
-```command line
-pdm run brf2ebrl -o  <output_file> <brf>
+uv run --all-packages brf2ebrl -o  <output_file> <brf>
 ```
 For details of using the brf2ebrl command, do the following:
 ```command line
-pdm run brf2ebrl --help
+uv run --all-packages brf2ebrl --help
 ```
 
 ## Contributing
