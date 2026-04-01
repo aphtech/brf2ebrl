@@ -390,8 +390,6 @@ def _create_indented_block_finder(
         new_cursor = cursor
         debug = 0
         if line := _first_line_re.match(text[cursor:]):
-            if "⠀⠀⠘⠂⠠⠕⠏⠻" in (line.group(1)+line.group(2)):
-                breakpoint()
         #if (cursor == 0 or  text[cursor-1] in ["\n","\f"]) and (line := _first_line_re.match(text[cursor:])):
             first_line=[len(line.group(1)), "",(" "*len(line.group(1))+ line.group(2)), line.end()]
             temp_para = get_paragraph_pages(text, new_cursor, first_line, debug + 1)
