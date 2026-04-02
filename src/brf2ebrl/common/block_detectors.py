@@ -447,7 +447,9 @@ def create_paragraph_detector(
     """Creates a detector for finding paragraphs with the
     specified first line indent and run over."""
     find_paragraph_braille = _create_indented_block_finder(
-        first_line_indent, run_over, layout
+        first_line_indent=first_line_indent,
+        run_over=run_over,
+        layout=layout,
     )
 
     def make_paragraph(lines: list[list[int, str, str]]) -> str:

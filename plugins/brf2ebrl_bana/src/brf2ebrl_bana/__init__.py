@@ -112,8 +112,19 @@ def create_brf2ebrl_parser(
                     create_centered_detector(page_layout.cells_per_line, 3, "h1"),
                     create_cell_heading(6, "h3"),
                     create_cell_heading(4, "h2"),
-                    create_paragraph_detector(6, 4,page_layout, tn_indicators_block_matcher, confidence=0.95),
-                    create_paragraph_detector(2, 0,page_layout, confidence=0.9),
+                    create_paragraph_detector(
+                        first_line_indent=6,
+                        run_over=4,
+                        layout=page_layout,
+                        indicator_matcher=tn_indicators_block_matcher,
+                        confidence=0.95,
+                    ),
+                    create_paragraph_detector(
+                        first_line_indent=2,
+                        run_over=0,
+                        layout=page_layout,
+                        confidence=0.9,
+                    ),
                     create_toc_detector(page_layout.cells_per_line),
                     create_list_detector(page_layout.cells_per_line),
                     create_table_detector(),  # might add arguments later
