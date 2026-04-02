@@ -228,7 +228,7 @@ _PROCESSING_INSTRUCTION_RE = (
 
 def _create_indented_block_finder(
     first_line_indent: int, run_over: int, layout: PageLayout
-) -> Callable[[str, int], list]:
+) -> Callable[[str, int], tuple[list[ParsedLine], int]]:
 
     cells_per_line = layout.cells_per_line
     is_right = (
@@ -337,14 +337,19 @@ def _create_indented_block_finder(
             if not page_length:
                 return ([], cursor_offset)
 
-            # get line
+            # Determine whether the next line still fits on the previous page.
             if first_line:
-                line = first_line
+                line_indent_length = first_line.depth
+                line_text_length = len(first_line.line_text)
             else:
-                line = _run_over_re.match(text[new_cursor:])
+                next_line_match = _run_over_re.match(text[new_cursor:])
+                if not next_line_match:
+                    return ([], cursor_offset)
+                line_indent_length = len(next_line_match.group(1))
+                line_text_length = len(next_line_match.group(2))
             # #add indent, 3 spaces, page number length, and line to see if less thancells_per_line
             # stop if line fits because it could have been on previous page
-            if (len(line.group(1)) + page_length + len(line.group(2))) < cells_per_line:
+            if (line_indent_length + page_length + line_text_length) < cells_per_line:
                 return ([], cursor_offset)
         # add first line
         if first_line:
@@ -388,7 +393,7 @@ def _create_indented_block_finder(
         if not line or (line and line.group(1) != "<?blank-line?>\n"):
             new_lines[-1].line_text += " " * page_length
 
-        temp_para = get_paragraph_pages(text, new_cursor, [], debug + 1)
+        temp_para = get_paragraph_pages(text, new_cursor, None, debug + 1)
         block_lines_test = new_lines + temp_para[0]
         if (
             detect_paragraph_wrapping(
@@ -455,7 +460,7 @@ def create_paragraph_detector(
     run_over: int,
     layout: PageLayout,
     indicator_matcher: Callable[
-        [str, DetectionState], (str | None, DetectionState)
+        [str, DetectionState], tuple[str | None, DetectionState]
     ] = _no_indicators_block_matcher,
     confidence: float = 0.9,
 ) -> Detector:
