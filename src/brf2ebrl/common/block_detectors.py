@@ -311,13 +311,13 @@ def _create_indented_block_finder(
                 _blank_lines += 1
                 # more than one blank line this is a hard stop
                 # if _blank_lines > 1:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             new_lines.append(ParsedLine(-1, line.group(1), "", line.end()))
             new_cursor += line.end()
 
         # last item is a blank line stop
         if new_lines and new_lines[-1].pi == "<?blank-line?>\n":
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         # get page number length for two calculations later
         page_length = 0
@@ -335,7 +335,7 @@ def _create_indented_block_finder(
         if new_lines and new_lines[0].pi == "<?blank-line?>\n":
             # if no page number stop because blank line stops if it fits
             if not page_length:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
 
             # get line
             if first_line:
@@ -345,7 +345,7 @@ def _create_indented_block_finder(
             # #add indent, 3 spaces, page number length, and line to see if less thancells_per_line
             # stop if line fits because it could have been on previous page
             if (len(line.group(1)) + page_length + len(line.group(2))) < cells_per_line:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
         # add first line
         if first_line:
             new_lines.insert(
@@ -373,15 +373,15 @@ def _create_indented_block_finder(
 
         _block = [line for line in new_lines if line.depth != -1]
         if not _block:
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         # fail if any has 1 set of guide dots rows or a table divider. and return
         dots_re = re.compile("\u2810{2,}")
         for line in new_lines:
             if re.findall("\u2810\u2812{2,}", line.line_text):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             if dots_re.findall(line.line_text):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
 
         # if last line length is less than cells per line and page number then add remaining spaces
         line = paragraph_processing_instruction_re.match(text[new_cursor:])
@@ -398,16 +398,16 @@ def _create_indented_block_finder(
             is True
         ):
             new_lines.extend(temp_para[0])
-            return [new_lines, temp_para[1]]
+            return (new_lines, temp_para[1])
         if not is_block_paragraph(
             [line for line in block_lines_test if line.depth != -1],
             cells_per_line=cells_per_line,
         ):
-            return [new_lines, new_cursor]
+            return (new_lines, new_cursor)
         if _block and not is_block_paragraph(_block, cells_per_line=cells_per_line):
-            return [[], cursor_offset]
+            return ([], cursor_offset)
         new_lines.extend(temp_para[0])
-        return [new_lines, temp_para[1]]
+        return (new_lines, temp_para[1])
 
     def find_paragraph_braille(
         text: str, cursor: int
@@ -428,8 +428,8 @@ def _create_indented_block_finder(
             lines = temp_para[0]
             new_cursor = temp_para[1]
         if lines and is_block_paragraph(lines, cells_per_line=cells_per_line):
-            return [lines, new_cursor]
-        return [[], new_cursor]
+            return (lines, new_cursor)
+        return ([], new_cursor)
 
     return find_paragraph_braille
 
@@ -790,7 +790,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
                 and line.group(1) == "<?blank-line?>\n"
                 and new_lines[-1].pi == line.group(1)
             ):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             new_lines.append(ParsedLine(-1, line.group(1), "", line.end()))
             new_cursor += line.end()
 
@@ -803,7 +803,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             if len(center_line.group(1)) in indents and not re.findall(
                 "\u2808\u2828\u2823[\u2800-\u28ff]*\n", text[new_cursor:]
             ):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
 
         # consume all legal toc lines until does not match.
         while line := match_toc_line(text[new_cursor:]):
@@ -811,7 +811,7 @@ def create_toc_detector(cells_per_line: int) -> Detector:
             new_cursor += line.line_length
 
         if not [line for line in new_lines if line.depth != -1]:
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         # test if it has at least one with a single set of guide dots or two spaces has
         # fail if any has two rows or a table divider. and return [[],0]
@@ -820,21 +820,21 @@ def create_toc_detector(cells_per_line: int) -> Detector:
         for line in new_lines:
             # fail if a line has two sets of "\u2800\u2800"  non consecutive
             if len(re.findall("\u2800\u2800", line.line_text)) > 1:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             if re.findall("\u2810\u2812{2,}", line.line_text):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             if dots := dots_re.findall(line.line_text):
                 if len(dots) > 1:
-                    return [[], cursor_offset]
+                    return ([], cursor_offset)
                 guide_dots = True
 
         # not a toc probably a list
         if not guide_dots:
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         temp_list = get_toc_pages(text, new_cursor, debug + 1)
         new_lines.extend(temp_list[0])
-        return [new_lines, temp_list[1]]
+        return (new_lines, temp_list[1])
 
     def detect_toc(
         text: str, cursor: int, state: DetectionState, output_text: str
@@ -991,13 +991,13 @@ def create_list_detector(cells_per_line: int) -> Detector:
                 _blank_lines += 1
             # more than one blank line this is a hard stop
             if _blank_lines > 1:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             new_lines.append(ParsedLine(-1, line.group(1), "", line.end()))
             new_cursor += line.end()
 
         # last item is a blank line stop
         if new_lines and new_lines[-1].pi == "<?blank-line?>\n":
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         # get page number length for two calculations later
         page_length = 0
@@ -1010,22 +1010,22 @@ def create_list_detector(cells_per_line: int) -> Detector:
         if new_lines and new_lines[0].pi == "<?blank-line?>\n":
             # if no page number stop because blank line stops if it fits
             if not page_length:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             # get line
             line = match_list_line(text[new_cursor:])
             if line is None:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             # #add indent, 3 spaces, page number length, and line to see if less thancells_per_line
             # stop if line fits because it could have been on previous page
             if (line.depth + 3 + page_length + len(line.line_text)) < cells_per_line:
-                return [[], cursor_offset]
+                return ([], cursor_offset)
                 # return [[], cursor_offset] + len(line[2])
 
         # if centered heading stop and return [[], 0]
         center_line = heading_re.match(text[new_cursor:])
         # test with out center just any heading
         if center_line:
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         # consume all legal list items until does not match.
         # if first line and has page_length then add spaces
@@ -1041,15 +1041,15 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
         _block = [line for line in new_lines if line.depth != -1]
         if not _block:
-            return [[], cursor_offset]
+            return ([], cursor_offset)
 
         # fail if any has 1 set of guide dots rows or a table divider. and return
         dots_re = re.compile("\u2810{2,}")
         for line in new_lines:
             if re.findall("\u2810\u2812{2,}", line.line_text):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
             if dots_re.findall(line.line_text):
-                return [[], cursor_offset]
+                return ([], cursor_offset)
 
         # if last line length is less than cells per line and page number then add remaining spaces
         if not page_length:
@@ -1061,7 +1061,7 @@ def create_list_detector(cells_per_line: int) -> Detector:
 
         temp_list = get_list_pages(text, new_cursor, debug + 1)
         new_lines.extend(temp_list[0])
-        return [new_lines, temp_list[1]]
+        return (new_lines, temp_list[1])
 
     def detect_list(
         text: str, cursor: int, state: DetectionState, output_text: str
