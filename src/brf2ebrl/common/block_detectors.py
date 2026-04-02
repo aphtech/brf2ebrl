@@ -281,7 +281,7 @@ def _create_indented_block_finder(
     def get_paragraph_pages(
         text: str,
         cursor_offset: int,
-        first_line: list[int, str, str, int] | None = None,
+        first_line: list | None = None,
         debug: int = 0,
     ) -> list[list[list[int, str, str]], int]:
         """
