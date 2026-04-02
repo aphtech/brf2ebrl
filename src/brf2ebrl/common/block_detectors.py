@@ -216,7 +216,7 @@ _PROCESSING_INSTRUCTION_RE = (
 
 def _create_indented_block_finder(
     first_line_indent: int, run_over: int, layout: PageLayout
-) -> Callable[[str, int], (str | None, int)]:
+) -> Callable[[str, int], list]:
 
     cells_per_line = layout.cells_per_line
     is_right = (
