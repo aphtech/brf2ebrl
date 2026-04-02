@@ -11,8 +11,6 @@ I think I might change this after it is working so that all
 the regular expressions are pre-built  and I might remove the for loops that create them.
 """
 
-import re
-
 from brf2ebrl import ParserContext
 import re
 

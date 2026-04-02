@@ -71,7 +71,7 @@ def create_centered_detector(
     )
 
     _next_line_re = re.compile(
-        rf"{_BLANK_LINE_RE}\n|<div type=.*\n|\u283f{{{cells_per_line/2},{cells_per_line}}}\n|"
+        rf"{_BLANK_LINE_RE}\n|<div type=.*\n|\u283f{{{cells_per_line / 2},{cells_per_line}}}\n|"
         "^[\u2801-\u28ff][\u2800-\u28ff]*\n"
     )
 
